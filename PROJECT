@@ -1,0 +1,7 @@
+domain: dell.com
+repo: github.com/dell/csi-baremetal-operator
+resources:
+- group: csi-baremetal
+  kind: Deployment
+  version: v1
+version: "2"
