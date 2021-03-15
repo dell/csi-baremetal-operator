@@ -16,8 +16,8 @@ limitations under the License.
 
 package components
 
-// CSIBaremetalSpec represent all CSI components need to be deployed by operator
-type CSIBaremetalSpec struct {
+// DeploymentSpec represent all CSI components need to be deployed by operator
+type DeploymentSpec struct {
 	Driver         *Driver           `json:"driver,omitempty"`
 	NodeOperator   *NodeOperator     `json:"operator,omitempty"`
 	Scheduler      *Scheduler        `json:"scheduler,omitempty"`

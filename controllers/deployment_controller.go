@@ -27,27 +27,27 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
 
-// CSIBaremetalReconciler reconciles a CSIBaremetal object
-type CSIBaremetalReconciler struct {
+// DeploymentReconciler reconciles a Deployment object
+type DeploymentReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=csibaremetals,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=csibaremetals/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments/status,verbs=get;update;patch
 
-func (r *CSIBaremetalReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	_ = r.Log.WithValues("csibaremetal", req.NamespacedName)
+	_ = r.Log.WithValues("deployment", req.NamespacedName)
 
 	// your logic here
 
 	return ctrl.Result{}, nil
 }
 
-func (r *CSIBaremetalReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&csibaremetalv1.CSIBaremetal{}).
+		For(&csibaremetalv1.Deployment{}).
 		Complete(r)
 }

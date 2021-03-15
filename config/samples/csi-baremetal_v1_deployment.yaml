@@ -1,5 +1,5 @@
-apiVersion:  csi-baremetal.dell.com/v1
-kind: CSIBaremetal
+apiVersion: csi-baremetal.dell.com/v1
+kind: Deployment
 metadata:
   name: csi
   namespace: default
