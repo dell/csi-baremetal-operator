@@ -65,14 +65,6 @@ func main() {
 
 	if err = (&controllers.CSIBaremetalReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Deployment"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
-		os.Exit(1)
-	}
-	if err = (&controllers.CSIBaremetalReconciler{
-		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("CSIBaremetal"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
