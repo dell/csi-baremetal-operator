@@ -19,5 +19,5 @@ package components
 // Metrics encapsulates necessary information to expose metric for different components
 type Metrics struct {
 	Path string `json:"path"`
-	Port string `json:"port"`
+	Port uint64 `json:"port"`
 }

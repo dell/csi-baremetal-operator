@@ -48,6 +48,13 @@ type DeploymentList struct {
 	Items           []Deployment `json:"items"`
 }
 
+func (in *Deployment) DeepCopyInto(out *Deployment) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	out.Spec = in.Spec
+}
+
 func init() {
 	SchemeBuilder.Register(&Deployment{}, &DeploymentList{})
 }

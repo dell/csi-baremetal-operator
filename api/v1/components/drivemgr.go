@@ -21,6 +21,6 @@ type DriveMgr struct {
 	Image            *Image `json:"image,omitempty"`
 	Endpoint         string `json:"string"`
 	DeployConfig     bool   `json:"deployConfig"`
-	AmountOfLoopback bool   `json:"amountOfLoopback"`
-	SizeOfLoopback   bool   `json:"sizeOfLoopback"`
+	AmountOfLoopback uint64 `json:"amountOfLoopback"`
+	SizeOfLoopback   string `json:"sizeOfLoopback"`
 }
