@@ -9,7 +9,7 @@ rules:
 - apiGroups:
   - csi-baremetal.dell.com
   resources:
-  - deployments
+  - csibaremetals
   verbs:
   - create
   - delete
@@ -21,7 +21,7 @@ rules:
 - apiGroups:
   - csi-baremetal.dell.com
   resources:
-  - deployments/status
+  - csibaremetals/status
   verbs:
   - get
   - patch

@@ -5,4 +5,4 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
-  name: deployments.csi-baremetal.dell.com
+  name: csibaremetals.csi-baremetal.dell.com

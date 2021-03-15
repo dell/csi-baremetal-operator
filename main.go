@@ -21,7 +21,6 @@ import (
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -37,9 +36,7 @@ var (
 )
 
 func init() {
-	_ = clientgoscheme.AddToScheme(scheme)
-
-	_ = csibaremetalv1.AddToScheme(scheme)
+	_ = csibaremetalv1.AddToSchemeCSIBaremetal(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -66,12 +63,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.DeploymentReconciler{
+	if err = (&controllers.CSIBaremetalReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Deployment"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
+		os.Exit(1)
+	}
+	if err = (&controllers.CSIBaremetalReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("CSIBaremetal"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CSIBaremetal")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

@@ -1,20 +1,24 @@
-# permissions for end users to view deployments.
+# permissions for end users to edit csibaremetals.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: deployment-viewer-role
+  name: csibaremetal-editor-role
 rules:
 - apiGroups:
   - csi-baremetal.dell.com
   resources:
-  - deployments
+  - csibaremetals
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - csi-baremetal.dell.com
   resources:
-  - deployments/status
+  - csibaremetals/status
   verbs:
   - get
