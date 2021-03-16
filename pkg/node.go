@@ -167,7 +167,7 @@ func createNodeContainers() []corev1.Container {
 			Name:            "csi-node-driver-registrar",
 			Image:           "csi-node-driver-registrar:v1.0.1-gke.0",
 			ImagePullPolicy: corev1.PullIfNotPresent,
-			Args:            []string{"--v=5", "--csi-address=$(ADDRESS)",
+			Args: []string{"--v=5", "--csi-address=$(ADDRESS)",
 				"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"},
 			Lifecycle: &corev1.Lifecycle{PreStop: &corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
 				"/bin/sh", "-c", "rm -rf /registration/csi-baremetal /registration/csi-baremetal-reg.sock"}}}},

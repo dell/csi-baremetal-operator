@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"github.com/dell/csi-baremetal-operator/pkg"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,6 +50,12 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	}
 
 	log.Info("Custom resource obtained")
+
+	node := pkg.Node{}
+	if err = node.Create(req.Namespace); err != nil {
+		log.Error(err, "Unable to deploy node service")
+		return ctrl.Result{Requeue: true}, err
+	}
 
 	return ctrl.Result{}, nil
 }
