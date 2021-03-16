@@ -38,10 +38,17 @@ type DeploymentReconciler struct {
 // +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments/status,verbs=get;update;patch
 
 func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("deployment", req.NamespacedName)
+	ctx := context.Background()
+	log := r.Log.WithValues("deployment", req.NamespacedName)
 
-	// your logic here
+	deployment := new(csibaremetalv1.Deployment)
+	err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
+	if err != nil {
+		log.Error(err, "Unable to read custom resource")
+		return ctrl.Result{Requeue: true}, err
+	}
+
+	log.Info("Custom resource obtained")
 
 	return ctrl.Result{}, nil
 }
