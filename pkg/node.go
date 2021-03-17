@@ -17,10 +17,19 @@ import (
 const (
 	csiName                       = "csi-baremetal"
 	componentName                 = "csi-baremetal-node"
-	prometheusPort                = 8787
 	serviceAccountName            = "csi-node-sa"
 	terminationGracePeriodSeconds = 10
 	loopbackManagerConfigName     = "loopback-config"
+
+	// versions
+	csiVersion = "0.0.13-375.3c20841"
+
+	// feature flags
+	useNodeAnnotation = false
+
+	// ports
+	prometheusPort   = 8787
+	driveManagerPort = 8888
 
 	// volumes
 	csiSocketDirVolume    = "csi-socket-dir"
@@ -43,20 +52,21 @@ const (
 
 type Node struct {
 	kubernetes.Clientset
-	log logr.Logger
+	logr.Logger
 }
 
 func (n *Node) Create(namespace string) error {
 	// todo when create resource we need to control it and revert any changes done by user manually
 	dsClient := n.AppsV1().DaemonSets(namespace)
+
 	// create daemonset
 	ds := createNodeDaemonSet(namespace)
 	if _, err := dsClient.Create(ds); err != nil {
-		n.log.Error(err, "Failed to create daemon set")
+		n.Logger.Error(err, "Failed to create daemon set")
 		return err
 	}
 
-	n.log.Info("Daemon set created successfully")
+	n.Logger.Info("Daemon set created successfully")
 	return nil
 }
 
@@ -144,8 +154,10 @@ func createNodeVolumes() []corev1.Volume {
 		}},
 		// todo optional
 		{Name: driveConfigVolume, VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{
-				Name: loopbackManagerConfigName}},
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{Name: loopbackManagerConfigName},
+				Optional:             pointer.BoolPtr(true),
+			},
 		}},
 	}
 }
@@ -185,18 +197,18 @@ func createNodeContainers() []corev1.Container {
 		},
 		{
 			Name:            "node",
-			Image:           "csi-baremetal-node:green",
+			Image:           "csi-baremetal-node:" + csiVersion,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--usenodeannotation=true",
+				"--usenodeannotation=" + strconv.FormatBool(useNodeAnnotation),
 				"--loglevel=info",
-				"--metrics-address=:%d" + strconv.Itoa(prometheusPort),
+				"--metrics-address=:" + strconv.Itoa(prometheusPort),
 				"--metrics-path=/metrics",
-				"--drivemgrendpoint=tcp://localhost:8888",
+				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
 			},
 			Ports: []corev1.ContainerPort{
 				{Name: livenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
@@ -245,6 +257,28 @@ func createNodeContainers() []corev1.Container {
 				{Name: mountPointDirVolume, MountPath: "/var/lib/kubelet/pods", MountPropagation: &bidirectional},
 				{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
 				{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
+			},
+		},
+		{
+			Name:            "drivemgr",
+			Image:           "csi-baremetal-loopbackmgr:" + csiVersion,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Args: []string{
+				"--loglevel=info",
+				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
+				"--usenodeannotation=" + strconv.FormatBool(useNodeAnnotation),
+			},
+			Env: []corev1.EnvVar{
+				{Name: "LOG_FORMAT", Value: "text"},
+				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
+				}},
+			},
+			SecurityContext: &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
+			VolumeMounts: []corev1.VolumeMount{
+				{Name: hostDevVolume, MountPath: "/dev"},
+				{Name: hostHomeVolume, MountPath: "/host/home"},
+				{Name: driveConfigVolume, MountPath: "/etc/config"},
 			},
 		},
 	}

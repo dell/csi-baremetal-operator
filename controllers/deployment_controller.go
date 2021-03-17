@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"github.com/dell/csi-baremetal-operator/pkg"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,7 +52,9 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 	log.Info("Custom resource obtained")
 
-	node := pkg.Node{}
+	config, _ := ctrl.GetConfig()
+	k8sClient, _ := kubernetes.NewForConfig(config)
+	node := pkg.Node{Clientset: *k8sClient, Logger: r.Log.WithValues("node", req.NamespacedName)}
 	if err = node.Create(req.Namespace); err != nil {
 		log.Error(err, "Unable to deploy node service")
 		return ctrl.Result{Requeue: true}, err
