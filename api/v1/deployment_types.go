@@ -18,19 +18,9 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// DeploymentSpec defines the desired state of Deployment
-type DeploymentSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Deployment. Edit Deployment_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
-}
 
 // DeploymentStatus defines the observed state of Deployment
 type DeploymentStatus struct {
@@ -45,8 +35,8 @@ type Deployment struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DeploymentSpec   `json:"spec,omitempty"`
-	Status DeploymentStatus `json:"status,omitempty"`
+	Spec   components.DeploymentSpec `json:"spec,omitempty"`
+	Status DeploymentStatus          `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -56,6 +46,13 @@ type DeploymentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Deployment `json:"items"`
+}
+
+func (in *Deployment) DeepCopyInto(out *Deployment) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	out.Spec = in.Spec
 }
 
 func init() {
