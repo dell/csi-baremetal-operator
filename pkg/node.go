@@ -15,26 +15,18 @@ import (
 )
 
 const (
-	csiName                       = "csi-baremetal"
-	componentName                 = "csi-baremetal-node"
-	serviceAccountName            = "csi-node-sa"
-	terminationGracePeriodSeconds = 10
-	loopbackManagerConfigName     = "loopback-config"
-
-	// versions
-	csiVersion = "0.0.13-375.3c20841"
+	nodeName                  = csiName + "-node"
+	nodeServiceAccountName    = "csi-node-sa"
+	loopbackManagerConfigName = "loopback-config"
 
 	// feature flags
 	useNodeAnnotation = false
 
 	// ports
-	prometheusPort   = 8787
 	driveManagerPort = 8888
 
 	// volumes
-	csiSocketDirVolume    = "csi-socket-dir"
 	registrationDirVolume = "registration-dir"
-	logsVolume            = "logs"
 	hostDevVolume         = "host-dev"
 	hostHomeVolume        = "host-home"
 	hostSysVolume         = "host-sys"
@@ -45,9 +37,6 @@ const (
 	mountPointDirVolume   = "mountpoint-dir"
 	csiPathVolume         = "csi-path"
 	driveConfigVolume     = "drive-config"
-
-	// ports
-	livenessPort = "liveness-port"
 )
 
 type Node struct {
@@ -55,6 +44,7 @@ type Node struct {
 	logr.Logger
 }
 
+// todo add rbac
 func (n *Node) Create(namespace string) error {
 	// todo when create resource we need to control it and revert any changes done by user manually
 	dsClient := n.AppsV1().DaemonSets(namespace)
@@ -73,11 +63,11 @@ func (n *Node) Create(namespace string) error {
 func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 	// todo split this definition
 	return &v1.DaemonSet{
-		ObjectMeta: metav1.ObjectMeta{Name: componentName, Namespace: namespace},
+		ObjectMeta: metav1.ObjectMeta{Name: nodeName, Namespace: namespace},
 		Spec: appsv1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": componentName},
+				MatchLabels: map[string]string{"app": nodeName},
 			},
 			// template
 			Template: corev1.PodTemplateSpec{
@@ -85,7 +75,7 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
 					Labels: map[string]string{
-						"app":                    componentName,
+						"app":                    nodeName,
 						"app.kubernetes.io/name": csiName,
 					},
 					// integration with monitoring
@@ -100,9 +90,10 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 					Containers: createNodeContainers(),
 					// todo what is the hack?
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(terminationGracePeriodSeconds),
-					NodeSelector:                  map[string]string{},
-					ServiceAccountName:            serviceAccountName,
-					HostIPC:                       true,
+					// todo fill in selectors when passed
+					NodeSelector:       map[string]string{},
+					ServiceAccountName: nodeServiceAccountName,
+					HostIPC:            true,
 				},
 			},
 		},

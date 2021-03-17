@@ -52,11 +52,21 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 	log.Info("Custom resource obtained")
 
+	// todo CRDs?
+	// todo SCs?
+	// todo RBACs?
 	config, _ := ctrl.GetConfig()
 	k8sClient, _ := kubernetes.NewForConfig(config)
+	// deploy node
 	node := pkg.Node{Clientset: *k8sClient, Logger: r.Log.WithValues("node", req.NamespacedName)}
 	if err = node.Create(req.Namespace); err != nil {
 		log.Error(err, "Unable to deploy node service")
+		return ctrl.Result{Requeue: true}, err
+	}
+	// deploy controller
+	controller := pkg.Controller{Clientset: *k8sClient, Logger: r.Log.WithValues("controller", req.NamespacedName)}
+	if err = controller.Create(req.Namespace); err != nil {
+		log.Error(err, "Unable to deploy controller service")
 		return ctrl.Result{Requeue: true}, err
 	}
 
