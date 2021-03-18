@@ -44,6 +44,11 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	ctx := context.Background()
 	log := r.Log.WithValues("deployment", req.NamespacedName)
 
+	namespace := req.Namespace
+	if namespace == "" {
+		namespace = "default"
+	}
+
 	deployment := new(csibaremetalv1.Deployment)
 	err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
 	if err != nil {
@@ -60,25 +65,25 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	k8sClient, _ := kubernetes.NewForConfig(config)
 	// deploy node
 	node := pkg.Node{Clientset: *k8sClient, Logger: r.Log.WithValues("node", req.NamespacedName)}
-	if err = node.Create(req.Namespace); err != nil {
+	if err = node.Create(namespace); err != nil {
 		log.Error(err, "Unable to deploy node service")
 		return ctrl.Result{Requeue: true}, err
 	}
 	// deploy controller
 	controller := pkg.Controller{Clientset: *k8sClient, Logger: r.Log.WithValues("controller", req.NamespacedName)}
-	if err = controller.Create(req.Namespace); err != nil {
+	if err = controller.Create(namespace); err != nil {
 		log.Error(err, "Unable to deploy controller service")
 		return ctrl.Result{Requeue: true}, err
 	}
 	// deploy scheduler extender
 	extender := scheduler.Extender{Clientset: *k8sClient, Logger: r.Log.WithValues("extender", req.NamespacedName)}
-	if err = extender.Create(req.Namespace); err != nil {
+	if err = extender.Create(namespace); err != nil {
 		log.Error(err, "Unable to deploy scheduler extender service")
 		return ctrl.Result{Requeue: true}, err
 	}
 	// deploy scheduler patcher
 	patcher := scheduler.Patcher{Clientset: *k8sClient, Logger: r.Log.WithValues("patcher", req.NamespacedName)}
-	if err = patcher.Create(req.Namespace); err != nil {
+	if err = patcher.Create(namespace); err != nil {
 		log.Error(err, "Unable to deploy scheduler patcher service")
 		return ctrl.Result{Requeue: true}, err
 	}
