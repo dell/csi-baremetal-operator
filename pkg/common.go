@@ -1,18 +1,21 @@
 package pkg
 
 const (
-	csiName = "csi-baremetal"
+	CSIName = "csi-baremetal"
 	// versions
-	csiVersion = "0.0.13-375.3c20841"
+	CSIVersion = "0.0.13-375.3c20841"
 
 	// ports
-	prometheusPort = 8787
-	livenessPort   = "liveness-port"
+	PrometheusPort = 8787
+	LivenessPort   = "liveness-port"
 
 	// timeouts
-	terminationGracePeriodSeconds = 10
+	TerminationGracePeriodSeconds = 10
 
 	// volumes
-	logsVolume         = "logs"
-	csiSocketDirVolume = "csi-socket-dir"
+	LogsVolume         = "logs"
+	CSISocketDirVolume = "csi-socket-dir"
+
+	// feature flags
+	UseNodeAnnotation = false
 )

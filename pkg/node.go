@@ -3,7 +3,6 @@ package pkg
 import (
 	"strconv"
 
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,12 +14,9 @@ import (
 )
 
 const (
-	nodeName                  = csiName + "-node"
+	nodeName                  = CSIName + "-node"
 	nodeServiceAccountName    = "csi-node-sa"
 	loopbackManagerConfigName = "loopback-config"
-
-	// feature flags
-	useNodeAnnotation = false
 
 	// ports
 	driveManagerPort = 8888
@@ -64,7 +60,7 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 	// todo split this definition
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{Name: nodeName, Namespace: namespace},
-		Spec: appsv1.DaemonSetSpec{
+		Spec: v1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": nodeName},
@@ -76,12 +72,12 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 					// labels
 					Labels: map[string]string{
 						"app":                    nodeName,
-						"app.kubernetes.io/name": csiName,
+						"app.kubernetes.io/name": CSIName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",
-						"prometheus.io/port":   strconv.Itoa(prometheusPort),
+						"prometheus.io/port":   strconv.Itoa(PrometheusPort),
 						"prometheus.io/path":   "/metrics",
 					},
 				},
@@ -89,7 +85,7 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 					Volumes:    createNodeVolumes(),
 					Containers: createNodeContainers(),
 					// todo what is the hack?
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(terminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
 					// todo fill in selectors when passed
 					NodeSelector:       map[string]string{},
 					ServiceAccountName: nodeServiceAccountName,
@@ -106,7 +102,7 @@ func createNodeVolumes() []corev1.Volume {
 	directoryOrCreate := corev1.HostPathDirectoryOrCreate
 
 	return []corev1.Volume{
-		{Name: logsVolume, VolumeSource: corev1.VolumeSource{
+		{Name: LogsVolume, VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}},
 		{Name: hostDevVolume, VolumeSource: corev1.VolumeSource{
@@ -131,7 +127,7 @@ func createNodeVolumes() []corev1.Volume {
 		{Name: hostRunLock, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/run/lock", Type: &directory},
 		}},
-		{Name: csiSocketDirVolume, VolumeSource: corev1.VolumeSource{
+		{Name: CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/csi-baremetal", Type: &directoryOrCreate},
 		}},
 		{Name: registrationDirVolume, VolumeSource: corev1.VolumeSource{
@@ -163,7 +159,7 @@ func createNodeContainers() []corev1.Container {
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args:            []string{"--csi-address=/csi/csi.sock"},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: csiSocketDirVolume, MountPath: "/csi"},
+				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
 		},
 		{
@@ -182,33 +178,33 @@ func createNodeContainers() []corev1.Container {
 				}},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: csiSocketDirVolume, MountPath: "/csi"},
+				{Name: CSISocketDirVolume, MountPath: "/csi"},
 				{Name: registrationDirVolume, MountPath: "/registration"},
 			},
 		},
 		{
 			Name:            "node",
-			Image:           "csi-baremetal-node:" + csiVersion,
+			Image:           "csi-baremetal-node:" + CSIVersion,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--usenodeannotation=" + strconv.FormatBool(useNodeAnnotation),
+				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
 				"--loglevel=info",
-				"--metrics-address=:" + strconv.Itoa(prometheusPort),
+				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
 				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
 			},
 			Ports: []corev1.ContainerPort{
-				{Name: livenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
-				{Name: "metrics", ContainerPort: prometheusPort, Protocol: corev1.ProtocolTCP},
+				{Name: LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
+				{Name: "metrics", ContainerPort: PrometheusPort, Protocol: corev1.ProtocolTCP},
 			},
 			LivenessProbe: &corev1.Probe{
 				Handler: corev1.Handler{HTTPGet: &corev1.HTTPGetAction{
 					Path: "/healthz",
-					Port: intstr.FromString(livenessPort)}},
+					Port: intstr.FromString(LivenessPort)}},
 				InitialDelaySeconds: 300,
 				TimeoutSeconds:      3,
 				PeriodSeconds:       10,
@@ -238,13 +234,13 @@ func createNodeContainers() []corev1.Container {
 			},
 			SecurityContext: &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: logsVolume, MountPath: "/var/log"},
+				{Name: LogsVolume, MountPath: "/var/log"},
 				{Name: hostDevVolume, MountPath: "/dev"},
 				{Name: hostSysVolume, MountPath: "/sys"},
 				{Name: hostRunUdevVolume, MountPath: "/run/udev"},
 				{Name: hostRunLVMVolume, MountPath: "/run/lvm"},
 				{Name: hostRunLock, MountPath: "/run/lock"},
-				{Name: csiSocketDirVolume, MountPath: "/csi"},
+				{Name: CSISocketDirVolume, MountPath: "/csi"},
 				{Name: mountPointDirVolume, MountPath: "/var/lib/kubelet/pods", MountPropagation: &bidirectional},
 				{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
 				{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
@@ -252,12 +248,12 @@ func createNodeContainers() []corev1.Container {
 		},
 		{
 			Name:            "drivemgr",
-			Image:           "csi-baremetal-loopbackmgr:" + csiVersion,
+			Image:           "csi-baremetal-loopbackmgr:" + CSIVersion,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args: []string{
 				"--loglevel=info",
 				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
-				"--usenodeannotation=" + strconv.FormatBool(useNodeAnnotation),
+				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
 			},
 			Env: []corev1.EnvVar{
 				{Name: "LOG_FORMAT", Value: "text"},

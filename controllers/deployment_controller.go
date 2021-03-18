@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"github.com/dell/csi-baremetal-operator/pkg"
+	"github.com/dell/csi-baremetal-operator/pkg/scheduler"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/go-logr/logr"
@@ -67,6 +68,12 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	controller := pkg.Controller{Clientset: *k8sClient, Logger: r.Log.WithValues("controller", req.NamespacedName)}
 	if err = controller.Create(req.Namespace); err != nil {
 		log.Error(err, "Unable to deploy controller service")
+		return ctrl.Result{Requeue: true}, err
+	}
+	//deploy scheduler extender
+	extender := scheduler.Extender{Clientset: *k8sClient, Logger: r.Log.WithValues("extender", req.NamespacedName)}
+	if err = extender.Create(req.Namespace); err != nil {
+		log.Error(err, "Unable to deploy scheduler extender service")
 		return ctrl.Result{Requeue: true}, err
 	}
 

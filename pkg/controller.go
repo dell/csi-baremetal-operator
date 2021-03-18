@@ -1,19 +1,21 @@
 package pkg
 
 import (
-	"github.com/go-logr/logr"
+	"strconv"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-	"strconv"
+
+	"github.com/go-logr/logr"
 )
 
 const (
 	controller     = "controller"
-	controllerName = csiName + "-" + controller
+	controllerName = CSIName + "-" + controller
 	replicasCount  = 1
 
 	controllerRoleKey            = "csi-do"
@@ -63,27 +65,27 @@ func createControllerDeployment(namespace string) *v1.Deployment {
 					// labels
 					Labels: map[string]string{
 						"app":                    controllerName,
-						"app.kubernetes.io/name": csiName,
+						"app.kubernetes.io/name": CSIName,
 						"role":                   controllerRoleKey,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",
-						"prometheus.io/port":   strconv.Itoa(prometheusPort),
+						"prometheus.io/port":   strconv.Itoa(PrometheusPort),
 						"prometheus.io/path":   "/metrics",
 					},
 				},
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
-						{Name: logsVolume, VolumeSource: corev1.VolumeSource{
+						{Name: LogsVolume, VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						}},
-						{Name: csiSocketDirVolume, VolumeSource: corev1.VolumeSource{
+						{Name: CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						}},
 					},
 					Containers:                    createControllerContainers(),
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(terminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
 					// todo fill in selectors when passed
 					NodeSelector:       map[string]string{},
 					ServiceAccountName: controllerServiceAccountName,
@@ -97,7 +99,7 @@ func createControllerContainers() []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            controller,
-			Image:           controllerName + ":" + csiVersion,
+			Image:           controllerName + ":" + CSIVersion,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args: []string{
 				"--endpoint=$(CSI_ENDPOINT)",
@@ -105,7 +107,7 @@ func createControllerContainers() []corev1.Container {
 				"--extender=true",
 				"--loglevel=info",
 				"--healthport=" + strconv.Itoa(healthPort),
-				"--metrics-address=:" + strconv.Itoa(prometheusPort),
+				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
 			},
 			Env: []corev1.EnvVar{
@@ -122,17 +124,17 @@ func createControllerContainers() []corev1.Container {
 				}},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: logsVolume, MountPath: "/var/log"},
-				{Name: csiSocketDirVolume, MountPath: "/csi"},
+				{Name: LogsVolume, MountPath: "/var/log"},
+				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
 			Ports: []corev1.ContainerPort{
-				{Name: livenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
-				{Name: "metrics", ContainerPort: prometheusPort, Protocol: corev1.ProtocolTCP},
+				{Name: LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
+				{Name: "metrics", ContainerPort: PrometheusPort, Protocol: corev1.ProtocolTCP},
 			},
 			LivenessProbe: &corev1.Probe{
 				Handler: corev1.Handler{HTTPGet: &corev1.HTTPGetAction{
 					Path: "/healthz",
-					Port: intstr.FromString(livenessPort)}},
+					Port: intstr.FromString(LivenessPort)}},
 				InitialDelaySeconds: 300,
 				TimeoutSeconds:      3,
 				PeriodSeconds:       10,
@@ -162,7 +164,7 @@ func createControllerContainers() []corev1.Container {
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: csiSocketDirVolume, MountPath: "/csi"},
+				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
 		},
 		{
@@ -179,7 +181,7 @@ func createControllerContainers() []corev1.Container {
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: csiSocketDirVolume, MountPath: "/csi"},
+				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
 		},
 		{
@@ -188,7 +190,7 @@ func createControllerContainers() []corev1.Container {
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args:            []string{"--csi-address=$(ADDRESS)"},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: csiSocketDirVolume, MountPath: "/csi"},
+				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
 		},
 	}
