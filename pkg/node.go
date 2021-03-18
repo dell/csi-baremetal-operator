@@ -1,14 +1,14 @@
 package pkg
 
 import (
-	"strconv"
-
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
+	"strconv"
 
 	"github.com/go-logr/logr"
 )
@@ -40,10 +40,20 @@ type Node struct {
 	logr.Logger
 }
 
-// todo add rbac
-func (n *Node) Create(namespace string) error {
-	// todo when create resource we need to control it and revert any changes done by user manually
+func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
+	namespace := GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)
+
+	isDeployed, err := isDaemonSetDeployed(dsClient, nodeName)
+	if err != nil {
+		n.Logger.Error(err, "Failed to get daemon set")
+		return err
+	}
+
+	if isDeployed {
+		n.Logger.Info("Daemon set already deployed")
+		return nil
+	}
 
 	// create daemonset
 	ds := createNodeDaemonSet(namespace)

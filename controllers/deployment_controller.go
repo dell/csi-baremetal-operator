@@ -18,16 +18,14 @@ package controllers
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg"
-	"github.com/dell/csi-baremetal-operator/pkg/scheduler"
-	"k8s.io/client-go/kubernetes"
-
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/go-logr/logr"
+
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg"
 )
 
 // DeploymentReconciler reconciles a Deployment object
@@ -35,6 +33,7 @@ type DeploymentReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	pkg.CSIDeployment
 }
 
 // +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
@@ -44,47 +43,16 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	ctx := context.Background()
 	log := r.Log.WithValues("deployment", req.NamespacedName)
 
-	namespace := req.Namespace
-	if namespace == "" {
-		namespace = "default"
-	}
-
 	deployment := new(csibaremetalv1.Deployment)
 	err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
 	if err != nil {
 		log.Error(err, "Unable to read custom resource")
 		return ctrl.Result{Requeue: true}, err
 	}
-
 	log.Info("Custom resource obtained")
 
-	// todo CRDs?
-	// todo SCs?
-	// todo RBACs?
-	config, _ := ctrl.GetConfig()
-	k8sClient, _ := kubernetes.NewForConfig(config)
-	// deploy node
-	node := pkg.Node{Clientset: *k8sClient, Logger: r.Log.WithValues("node", req.NamespacedName)}
-	if err = node.Create(namespace); err != nil {
-		log.Error(err, "Unable to deploy node service")
-		return ctrl.Result{Requeue: true}, err
-	}
-	// deploy controller
-	controller := pkg.Controller{Clientset: *k8sClient, Logger: r.Log.WithValues("controller", req.NamespacedName)}
-	if err = controller.Create(namespace); err != nil {
-		log.Error(err, "Unable to deploy controller service")
-		return ctrl.Result{Requeue: true}, err
-	}
-	// deploy scheduler extender
-	extender := scheduler.Extender{Clientset: *k8sClient, Logger: r.Log.WithValues("extender", req.NamespacedName)}
-	if err = extender.Create(namespace); err != nil {
-		log.Error(err, "Unable to deploy scheduler extender service")
-		return ctrl.Result{Requeue: true}, err
-	}
-	// deploy scheduler patcher
-	patcher := scheduler.Patcher{Clientset: *k8sClient, Logger: r.Log.WithValues("patcher", req.NamespacedName)}
-	if err = patcher.Create(namespace); err != nil {
-		log.Error(err, "Unable to deploy scheduler patcher service")
+	if err = r.CSIDeployment.Update(deployment); err != nil {
+		log.Error(err, "Unable to update deployment")
 		return ctrl.Result{Requeue: true}, err
 	}
 

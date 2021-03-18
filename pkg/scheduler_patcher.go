@@ -1,20 +1,22 @@
-package scheduler
+package pkg
 
 import (
-	"github.com/dell/csi-baremetal-operator/pkg"
-	"github.com/go-logr/logr"
+	"path"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-	"path"
+
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/go-logr/logr"
 )
 
 const (
 	patcherName          = extenderName + "-patcher"
 	patcherContainerName = "schedulerpatcher"
-	patcherImageName     = pkg.CSIName + "-scheduler-patcher"
+	patcherImageName     = CSIName + "-scheduler-patcher"
 
 	// volumes
 	schedulerPatcherConfigVolume = "schedulerpatcher-config"
@@ -29,13 +31,25 @@ const (
 	configPath    = "/conf"
 )
 
-type Patcher struct {
+type SchedulerPatcher struct {
 	kubernetes.Clientset
 	logr.Logger
 }
 
-func (p *Patcher) Create(namespace string) error {
+func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment) error {
+	namespace := GetNamespace(csi)
 	dsClient := p.AppsV1().DaemonSets(namespace)
+
+	isDeployed, err := isDaemonSetDeployed(dsClient, patcherName)
+	if err != nil {
+		p.Logger.Error(err, "Failed to get daemon set")
+		return err
+	}
+
+	if isDeployed {
+		p.Logger.Info("Daemon set already deployed")
+		return nil
+	}
 
 	// create daemonset
 	ds := createPatcherDaemonSet(namespace)
@@ -92,7 +106,7 @@ func createPatcherContainers() []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            patcherContainerName,
-			Image:           patcherImageName + ":" + pkg.CSIVersion,
+			Image:           patcherImageName + ":" + CSIVersion,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command: []string{
 				"python3",

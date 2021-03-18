@@ -1,6 +1,7 @@
-package scheduler
+package pkg
 
 import (
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -8,27 +9,38 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/dell/csi-baremetal-operator/pkg"
 	"github.com/go-logr/logr"
 )
 
 const (
 	extenderContainerName      = "scheduler-extender"
-	extenderImageName          = pkg.CSIName + "-" + extenderContainerName
-	extenderName               = pkg.CSIName + "-se"
-	extenderServiceAccountName = pkg.CSIName + "-extender-sa"
+	extenderImageName          = CSIName + "-" + extenderContainerName
+	extenderName               = CSIName + "-se"
+	extenderServiceAccountName = CSIName + "-extender-sa"
 
 	extenderPort = 8889
 )
 
-type Extender struct {
+type SchedulerExtender struct {
 	kubernetes.Clientset
 	logr.Logger
 }
 
 // todo add rbac
-func (n *Extender) Create(namespace string) error {
+func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment) error {
+	namespace := GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)
+
+	isDeployed, err := isDaemonSetDeployed(dsClient, extenderName)
+	if err != nil {
+		n.Logger.Error(err, "Failed to get daemon set")
+		return err
+	}
+
+	if isDeployed {
+		n.Logger.Info("Daemon set already deployed")
+		return nil
+	}
 
 	// create daemonset
 	ds := createExtenderDaemonSet(namespace)
@@ -56,12 +68,12 @@ func createExtenderDaemonSet(namespace string) *v1.DaemonSet {
 					// labels
 					Labels: map[string]string{
 						"app":                    extenderName,
-						"app.kubernetes.io/name": pkg.CSIName,
+						"app.kubernetes.io/name": CSIName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",
-						"prometheus.io/port":   strconv.Itoa(pkg.PrometheusPort),
+						"prometheus.io/port":   strconv.Itoa(PrometheusPort),
 						"prometheus.io/path":   "/metrics",
 					},
 				},
@@ -91,18 +103,18 @@ func createExtenderContainers() []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            extenderContainerName,
-			Image:           extenderImageName + ":" + pkg.CSIVersion,
+			Image:           extenderImageName + ":" + CSIVersion,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args: []string{
 				"--namespace=$(NAMESPACE)",
-				"--provisioner=" + pkg.CSIName,
+				"--provisioner=" + CSIName,
 				"--port=" + strconv.Itoa(extenderPort),
 				"--loglevel=debug",
 				"--certFile=",
 				"--privateKeyFile=",
-				"--metrics-address=:" + strconv.Itoa(pkg.PrometheusPort),
+				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
-				"--usenodeannotation=" + strconv.FormatBool(pkg.UseNodeAnnotation),
+				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
 			},
 			Env: []corev1.EnvVar{
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{
@@ -112,7 +124,7 @@ func createExtenderContainers() []corev1.Container {
 			},
 			Ports: []corev1.ContainerPort{
 				{ContainerPort: extenderPort},
-				{Name: "metrics", ContainerPort: pkg.PrometheusPort, Protocol: corev1.ProtocolTCP},
+				{Name: "metrics", ContainerPort: PrometheusPort, Protocol: corev1.ProtocolTCP},
 			},
 		},
 	}

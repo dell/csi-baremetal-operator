@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -31,18 +32,29 @@ type Controller struct {
 }
 
 // todo add rbac
-func (n *Controller) Create(namespace string) error {
-	// todo when create resource we need to control it and revert any changes done by user manually
-	dsClient := n.AppsV1().Deployments(namespace)
+func (c *Controller) Update(csi *csibaremetalv1.Deployment) error {
+	namespace := GetNamespace(csi)
+	dsClient := c.AppsV1().Deployments(namespace)
+
+	isDeployed, err := isDeploymentDeployed(dsClient, controllerName)
+	if err != nil {
+		c.Logger.Error(err, "Failed to get daemon set")
+		return err
+	}
+
+	if isDeployed {
+		c.Logger.Info("Deployment already deployed")
+		return nil
+	}
 
 	// create deployment
 	deployment := createControllerDeployment(namespace)
 	if _, err := dsClient.Create(deployment); err != nil {
-		n.Logger.Error(err, "Failed to create deployment")
+		c.Logger.Error(err, "Failed to create deployment")
 		return err
 	}
 
-	n.Logger.Info("Deployment created successfully")
+	c.Logger.Info("Deployment created successfully")
 	return nil
 }
 
