@@ -1,8 +1,7 @@
 package pkg
 
 import (
-	"strings"
-
+	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -99,7 +98,7 @@ func isDeploymentDeployed(dsClient appsv1.DeploymentInterface, name string) (boo
 
 func isFound(err error) (bool, error) {
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if k8sError.IsNotFound(err) {
 			return false, nil
 		}
 		return false, err
