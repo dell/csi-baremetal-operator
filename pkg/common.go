@@ -7,9 +7,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	"github.com/go-logr/logr"
-
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/go-logr/logr"
 )
 
 const (
