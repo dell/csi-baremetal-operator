@@ -18,15 +18,15 @@ test: generate fmt vet manifests
 	go test ./... -coverprofile cover.out
 
 # Build manager binary
-manager: generate fmt vet
+manager: fmt vet
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate fmt vet manifests
+run: fmt vet
 	go run ./main.go
 
 # Install CRDs into a cluster
-install: manifests
+install:
 	kustomize build config/crd | kubectl apply -f -
 
 # Uninstall CRDs from a cluster

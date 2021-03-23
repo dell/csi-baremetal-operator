@@ -18,13 +18,14 @@ package controllers
 
 import (
 	"context"
-
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/go-logr/logr"
+
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg"
 )
 
 // DeploymentReconciler reconciles a Deployment object
@@ -32,16 +33,28 @@ type DeploymentReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	pkg.CSIDeployment
 }
 
 // +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments/status,verbs=get;update;patch
 
 func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("deployment", req.NamespacedName)
+	ctx := context.Background()
+	log := r.Log.WithValues("deployment", req.NamespacedName)
 
-	// your logic here
+	deployment := new(csibaremetalv1.Deployment)
+	err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
+	if err != nil {
+		log.Error(err, "Unable to read custom resource")
+		return ctrl.Result{Requeue: true}, err
+	}
+	log.Info("Custom resource obtained")
+
+	if err = r.CSIDeployment.Update(deployment); err != nil {
+		log.Error(err, "Unable to update deployment")
+		return ctrl.Result{Requeue: true}, err
+	}
 
 	return ctrl.Result{}, nil
 }
