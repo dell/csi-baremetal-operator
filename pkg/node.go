@@ -67,7 +67,6 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 }
 
 func createNodeDaemonSet(namespace string) *v1.DaemonSet {
-	// todo split this definition
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{Name: nodeName, Namespace: namespace},
 		Spec: v1.DaemonSetSpec{
@@ -94,9 +93,7 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 				Spec: corev1.PodSpec{
 					Volumes:    createNodeVolumes(),
 					Containers: createNodeContainers(),
-					// todo what is the hack?
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					// todo fill in selectors when passed
 					NodeSelector:       map[string]string{},
 					ServiceAccountName: nodeServiceAccountName,
 					HostIPC:            true,
@@ -107,7 +104,6 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 }
 
 func createNodeVolumes() []corev1.Volume {
-	// todo how to avoid this?
 	directory := corev1.HostPathDirectory
 	directoryOrCreate := corev1.HostPathDirectoryOrCreate
 
@@ -118,7 +114,6 @@ func createNodeVolumes() []corev1.Volume {
 		{Name: hostDevVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/dev", Type: &directory},
 		}},
-		// todo this if for loopback manager only
 		{Name: hostHomeVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/home", Type: &directory},
 		}},
@@ -149,7 +144,6 @@ func createNodeVolumes() []corev1.Volume {
 		{Name: csiPathVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/kubernetes.io/csi"},
 		}},
-		// todo optional
 		{Name: driveConfigVolume, VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{Name: loopbackManagerConfigName},
@@ -159,8 +153,8 @@ func createNodeVolumes() []corev1.Volume {
 	}
 }
 
+// todo split long methods - https://github.com/dell/csi-baremetal/issues/329
 func createNodeContainers() []corev1.Container {
-	// todo get rid of this hack
 	bidirectional := corev1.MountPropagationBidirectional
 	return []corev1.Container{
 		{

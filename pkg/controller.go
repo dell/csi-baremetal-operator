@@ -31,7 +31,6 @@ type Controller struct {
 	logr.Logger
 }
 
-// todo add rbac
 func (c *Controller) Update(csi *csibaremetalv1.Deployment) error {
 	namespace := GetNamespace(csi)
 	dsClient := c.AppsV1().Deployments(namespace)
@@ -98,7 +97,6 @@ func createControllerDeployment(namespace string) *v1.Deployment {
 					},
 					Containers:                    createControllerContainers(),
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					// todo fill in selectors when passed
 					NodeSelector:       map[string]string{},
 					ServiceAccountName: controllerServiceAccountName,
 				},

@@ -26,7 +26,6 @@ type SchedulerExtender struct {
 	logr.Logger
 }
 
-// todo add rbac
 func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment) error {
 	namespace := GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)

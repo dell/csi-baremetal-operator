@@ -83,7 +83,7 @@ func createPatcherDaemonSet(namespace string) *v1.DaemonSet {
 				Spec: corev1.PodSpec{
 					Containers: createPatcherContainers(),
 					Volumes:    createPatcherVolumes(),
-					// todo get rid of duplicate
+					// todo https://github.com/dell/csi-baremetal/issues/329
 					Tolerations: []corev1.Toleration{
 						{Key: "CriticalAddonsOnly", Operator: corev1.TolerationOpExists},
 						{Key: "node-role.kubernetes.io/master", Effect: corev1.TaintEffectNoSchedule},
