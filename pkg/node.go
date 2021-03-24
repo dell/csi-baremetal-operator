@@ -1,16 +1,18 @@
 package pkg
 
 import (
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"strconv"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-	"strconv"
 
 	"github.com/go-logr/logr"
+
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
 
 const (
@@ -56,7 +58,7 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	// create daemonset
-	ds := createNodeDaemonSet(namespace)
+	ds := createNodeDaemonSet(csi)
 	if _, err := dsClient.Create(ds); err != nil {
 		n.Logger.Error(err, "Failed to create daemon set")
 		return err
@@ -66,9 +68,12 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	return nil
 }
 
-func createNodeDaemonSet(namespace string) *v1.DaemonSet {
+func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	return &v1.DaemonSet{
-		ObjectMeta: metav1.ObjectMeta{Name: nodeName, Namespace: namespace},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nodeName,
+			Namespace: GetNamespace(csi),
+		},
 		Spec: v1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
@@ -91,12 +96,12 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					Volumes:    createNodeVolumes(),
-					Containers: createNodeContainers(),
+					Volumes:                       createNodeVolumes(),
+					Containers:                    createNodeContainers(csi),
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					NodeSelector:       map[string]string{},
-					ServiceAccountName: nodeServiceAccountName,
-					HostIPC:            true,
+					NodeSelector:                  csi.Spec.NodeSelectors,
+					ServiceAccountName:            nodeServiceAccountName,
+					HostIPC:                       true,
 				},
 			},
 		},
@@ -154,7 +159,7 @@ func createNodeVolumes() []corev1.Volume {
 }
 
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
-func createNodeContainers() []corev1.Container {
+func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	bidirectional := corev1.MountPropagationBidirectional
 	return []corev1.Container{
 		{
@@ -188,15 +193,15 @@ func createNodeContainers() []corev1.Container {
 		},
 		{
 			Name:            "node",
-			Image:           "csi-baremetal-node:" + CSIVersion,
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			Image:           constractFullImageName(csi.Spec.Driver.Node.Image, csi.Spec.GlobalRegistry),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Driver.Node.Image.PullPolicy),
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
 				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
-				"--loglevel=info",
+				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Node.Log.Level),
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
 				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
@@ -225,7 +230,7 @@ func createNodeContainers() []corev1.Container {
 			},
 			Env: []corev1.EnvVar{
 				{Name: "CSI_ENDPOINT", Value: "unix:///csi/csi.sock"},
-				{Name: "LOG_FORMAT", Value: "text"},
+				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Driver.Node.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
@@ -252,15 +257,15 @@ func createNodeContainers() []corev1.Container {
 		},
 		{
 			Name:            "drivemgr",
-			Image:           "csi-baremetal-loopbackmgr:" + CSIVersion,
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			Image:           constractFullImageName(csi.Spec.Driver.Node.DriveMgr.Image, csi.Spec.GlobalRegistry),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Driver.Node.DriveMgr.Image.PullPolicy),
 			Args: []string{
-				"--loglevel=info",
+				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Node.Log.Level),
 				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
 				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
 			},
 			Env: []corev1.EnvVar{
-				{Name: "LOG_FORMAT", Value: "text"},
+				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Driver.Node.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},

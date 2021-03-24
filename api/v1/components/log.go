@@ -17,13 +17,13 @@ limitations under the License.
 package components
 
 // LogFormat is format in which log will appear
-type LogFormat string
+type Format string
 
 const (
 	// JSONFormat indicates that log are shown in json format
-	JSONFormat = "json"
+	JSONFormat Format = "json"
 	// TextFormat indicates that log are shown in usual format
-	TextFormat = "text"
+	TextFormat Format = "text"
 )
 
 // Level indicates which types if logging need to be show
@@ -31,15 +31,15 @@ type Level string
 
 const (
 	// InfoLevel includes Info, Error, Fatal, Warn logs
-	InfoLevel = "info"
+	InfoLevel Level = "info"
 	// debug includes InfoLevel and Debug
-	DebugLevel = "debug"
+	DebugLevel Level = "debug"
 	// debug includes InfoLevel, DebugLevel and Trace
-	TraceLevel = "trace"
+	TraceLevel Level = "trace"
 )
 
 // Log is a configuration for logger in components
 type Log struct {
-	Format *LogFormat `json:"format"`
-	Level  *Level     `json:"level"`
+	Format Format `json:"format"`
+	Level  Level  `json:"level"`
 }
