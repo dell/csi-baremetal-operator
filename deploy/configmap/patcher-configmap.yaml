@@ -19,7 +19,7 @@ data:
     apiVersion: v1
     kind: Policy
     extenders:
-      - urlPrefix: "http://127.0.0.1:{{ .Values.port }}"
+      - urlPrefix: "http://127.0.0.1:8889"
         filterVerb: filter
         prioritizeVerb: prioritize
         weight: 1
