@@ -10,7 +10,7 @@ env:
   golangci_version: '1.37.0'
 jobs:
   lint-test:
-    name: Validate code and charts
+    name: Validate code and build it
     runs-on: ubuntu-18.04
     steps:
     - name: Check out code
