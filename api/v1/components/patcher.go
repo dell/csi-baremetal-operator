@@ -19,6 +19,7 @@ package components
 // Patcher represents scheduler patcher container, which tries to patch Kubernetes scheduler
 type Patcher struct {
 	Enable            bool   `json:"enable,omitempty"`
+	Image             *Image `json:"image,omitempty"`
 	Manifest          string `json:"manifest,omitempty"`
 	SrcConfigPath     string `json:"srcConfigPath,omitempty"`
 	SrcPolicyPath     string `json:"srcPolicyPath,omitempty"`
