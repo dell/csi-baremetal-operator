@@ -1,16 +1,18 @@
 package pkg
 
 import (
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"strconv"
+
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-	"strconv"
 
-	"github.com/go-logr/logr"
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
 
 const (
@@ -33,6 +35,9 @@ const (
 	mountPointDirVolume   = "mountpoint-dir"
 	csiPathVolume         = "csi-path"
 	driveConfigVolume     = "drive-config"
+
+	livenessProbeSidecar   = "liveness-probe"
+	driverRegistrarSidecar = "csi-node-driver-registrar"
 )
 
 type Node struct {
@@ -56,7 +61,7 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	// create daemonset
-	ds := createNodeDaemonSet(namespace)
+	ds := createNodeDaemonSet(csi)
 	if _, err := dsClient.Create(ds); err != nil {
 		n.Logger.Error(err, "Failed to create daemon set")
 		return err
@@ -66,7 +71,8 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	return nil
 }
 
-func createNodeDaemonSet(namespace string) *v1.DaemonSet {
+func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
+	namespace := GetNamespace(csi)
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{Name: nodeName, Namespace: namespace},
 		Spec: v1.DaemonSetSpec{
@@ -91,12 +97,12 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					Volumes:    createNodeVolumes(),
-					Containers: createNodeContainers(),
+					Volumes:                       createNodeVolumes(),
+					Containers:                    createNodeContainers(csi),
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					NodeSelector:       map[string]string{},
-					ServiceAccountName: nodeServiceAccountName,
-					HostIPC:            true,
+					NodeSelector:                  map[string]string{},
+					ServiceAccountName:            nodeServiceAccountName,
+					HostIPC:                       true,
 				},
 			},
 		},
@@ -154,13 +160,36 @@ func createNodeVolumes() []corev1.Volume {
 }
 
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
-func createNodeContainers() []corev1.Container {
-	bidirectional := corev1.MountPropagationBidirectional
+func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
+	var (
+		lp            *components.Sidecar
+		dr            *components.Sidecar
+		bidirectional = corev1.MountPropagationBidirectional
+		driveMgr      = csi.Spec.Driver.Node.DriveMgr
+		node          = csi.Spec.Driver.Node
+		testEnv       = csi.Spec.Driver.Node.TestEnv
+	)
+	for _, v := range csi.Spec.Driver.Node.Sidecars {
+		if v.Name == livenessProbeSidecar {
+			lp = v
+			continue
+		}
+		if v.Name == driverRegistrarSidecar {
+			dr = v
+			continue
+		}
+	}
+	if lp == nil {
+		lp = constructSidecar(livenessProbeSidecar, csi.Spec.GlobalRegistry, "v2.1.0", "Always")
+	}
+	if dr == nil {
+		dr = constructSidecar(driverRegistrarSidecar, csi.Spec.GlobalRegistry, "v1.0.1-gke.0", "Always")
+	}
 	return []corev1.Container{
 		{
 			Name:            "liveness-probe",
-			Image:           "livenessprobe:v2.1.0",
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			Image:           constructImage(testEnv, lp.Image),
+			ImagePullPolicy: corev1.PullPolicy(lp.Image.PullPolicy),
 			Args:            []string{"--csi-address=/csi/csi.sock"},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
@@ -168,8 +197,8 @@ func createNodeContainers() []corev1.Container {
 		},
 		{
 			Name:            "csi-node-driver-registrar",
-			Image:           "csi-node-driver-registrar:v1.0.1-gke.0",
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			Image:           constructImage(testEnv, dr.Image),
+			ImagePullPolicy: corev1.PullPolicy(dr.Image.PullPolicy),
 			Args: []string{"--v=5", "--csi-address=$(ADDRESS)",
 				"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"},
 			Lifecycle: &corev1.Lifecycle{PreStop: &corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
@@ -188,8 +217,8 @@ func createNodeContainers() []corev1.Container {
 		},
 		{
 			Name:            "node",
-			Image:           "csi-baremetal-node:" + CSIVersion,
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			Image:           constructImage(testEnv, node.Image),
+			ImagePullPolicy: corev1.PullPolicy(node.Image.PullPolicy),
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
 				"--nodename=$(KUBE_NODE_NAME)",
@@ -252,8 +281,8 @@ func createNodeContainers() []corev1.Container {
 		},
 		{
 			Name:            "drivemgr",
-			Image:           "csi-baremetal-loopbackmgr:" + CSIVersion,
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			Image:           constructImage(testEnv, driveMgr.Image),
+			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
 			Args: []string{
 				"--loglevel=info",
 				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
@@ -271,6 +300,25 @@ func createNodeContainers() []corev1.Container {
 				{Name: hostHomeVolume, MountPath: "/host/home"},
 				{Name: driveConfigVolume, MountPath: "/etc/config"},
 			},
+		},
+	}
+}
+
+func constructImage(isTest bool, image *components.Image) string {
+	if isTest {
+		return image.Name + ":" + image.Tag
+	}
+	return image.Registry + "/" + image.Name + ":" + image.Tag
+}
+
+func constructSidecar(name, registry, tag, pullPolicy string) *components.Sidecar {
+	return &components.Sidecar{
+		Name: name,
+		Image: &components.Image{
+			Name:       name,
+			Registry:   registry,
+			Tag:        tag,
+			PullPolicy: pullPolicy,
 		},
 	}
 }
