@@ -18,7 +18,6 @@ package components
 
 // DriveMgr represents drive manager node component
 type DriveMgr struct {
-	Image        *Image `json:"image,omitempty"`
-	Endpoint     string `json:"string"`
-	DeployConfig bool   `json:"deployConfig"`
+	Image    *Image `json:"image,omitempty"`
+	Endpoint string `json:"string"`
 }

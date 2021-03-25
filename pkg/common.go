@@ -7,7 +7,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
@@ -108,18 +107,6 @@ func isFound(err error) (bool, error) {
 	return true, nil
 }
 
-func constructSidecar(name, registry, tag, pullPolicy string) *components.Sidecar {
-	return &components.Sidecar{
-		Name: name,
-		Image: &components.Image{
-			Name:       name,
-			Registry:   registry,
-			Tag:        tag,
-			PullPolicy: pullPolicy,
-		},
-	}
-}
-
 func matchLogLevel(level components.Level) string {
 	switch level {
 	case components.InfoLevel:
@@ -146,7 +133,7 @@ func matchLogFormat(format components.Format) string {
 	}
 }
 
-func constractFullImageName(image *components.Image, registry string) string {
+func constructFullImageName(image *components.Image, registry string) string {
 	var imageName string
 
 	if registry != "" {

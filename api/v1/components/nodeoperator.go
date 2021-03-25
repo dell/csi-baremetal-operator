@@ -18,8 +18,7 @@ package components
 
 // NodeOperator represent operator for CSI bare-metal nodes
 type NodeOperator struct {
-	Enable  bool   `json:"enable"`
-	Image   *Image `json:"image,omitempty"`
-	Log     *Log   `json:"log,omitempty"`
-	TestEnv bool   `json:"testEnv"`
+	Enable bool   `json:"enable"`
+	Image  *Image `json:"image,omitempty"`
+	Log    *Log   `json:"log,omitempty"`
 }
