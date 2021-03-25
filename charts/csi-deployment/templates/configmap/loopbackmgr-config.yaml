@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: loopback-config
+  labels:
+    app: csi-baremetal-node
+data:
+  config.yaml: |-
+    defaultDrivePerNodeCount: 3
+    defaultDriveSize: 101Mi
+
