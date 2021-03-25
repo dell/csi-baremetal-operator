@@ -22,7 +22,7 @@ manager: fmt vet
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
-run: fmt vet
+run: fmt vet resources
 	go run ./main.go
 
 # Install CRDs into a cluster
@@ -34,9 +34,17 @@ uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests
+deploy:
 	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply -f -
+
+# Deploy CSI resources from ~/deploy
+resources:
+	kubectl apply -f config/crd/bases
+	kubectl apply -f deploy/rbac
+	kubectl apply -f deploy/storageclass
+	kubectl apply -f deploy/configmap
+	kubectl apply -f deploy/csidriver
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen

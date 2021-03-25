@@ -9,14 +9,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/go-logr/logr"
+
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
 
 const (
 	patcherName          = extenderName + "-patcher"
 	patcherContainerName = "schedulerpatcher"
-	patcherImageName     = CSIName + "-scheduler-patcher"
 
 	// volumes
 	schedulerPatcherConfigVolume = "schedulerpatcher-config"
@@ -52,7 +52,7 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	// create daemonset
-	ds := createPatcherDaemonSet(namespace)
+	ds := createPatcherDaemonSet(csi)
 	if _, err := dsClient.Create(ds); err != nil {
 		p.Logger.Error(err, "Failed to create daemon set")
 		return err
@@ -62,11 +62,11 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment) error {
 	return nil
 }
 
-func createPatcherDaemonSet(namespace string) *v1.DaemonSet {
+func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      patcherName,
-			Namespace: namespace,
+			Namespace: GetNamespace(csi),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector
@@ -81,7 +81,7 @@ func createPatcherDaemonSet(namespace string) *v1.DaemonSet {
 					Labels: map[string]string{"app": patcherName},
 				},
 				Spec: corev1.PodSpec{
-					Containers: createPatcherContainers(),
+					Containers: createPatcherContainers(csi),
 					Volumes:    createPatcherVolumes(),
 					// todo https://github.com/dell/csi-baremetal/issues/329
 					Tolerations: []corev1.Toleration{
@@ -102,19 +102,19 @@ func createPatcherDaemonSet(namespace string) *v1.DaemonSet {
 	}
 }
 
-func createPatcherContainers() []corev1.Container {
+func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            patcherContainerName,
-			Image:           patcherImageName + ":" + CSIVersion,
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			Image:           constractFullImageName(csi.Spec.Scheduler.Patcher.Image, csi.Spec.GlobalRegistry),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Scheduler.Patcher.Image.PullPolicy),
 			Command: []string{
 				"python3",
 				"-u",
 				"main.py",
 			},
 			Args: []string{
-				"--loglevel=debug",
+				"--loglevel=" + matchLogLevel(csi.Spec.Scheduler.Log.Level),
 				"--restore",
 				"--interval=60",
 				"--manifest=" + path.Join(manifestsPath, "kube-scheduler.yaml"),

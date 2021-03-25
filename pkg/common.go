@@ -7,6 +7,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
+
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
@@ -107,17 +108,6 @@ func isFound(err error) (bool, error) {
 	return true, nil
 }
 
-func constructImage(isTest bool, globalRegistry string, image *components.Image) string {
-	registry := globalRegistry
-	if image.Registry != "" {
-		registry = image.Registry
-	}
-	if isTest {
-		return image.Name + ":" + image.Tag
-	}
-	return registry + "/" + image.Name + ":" + image.Tag
-}
-
 func constructSidecar(name, registry, tag, pullPolicy string) *components.Sidecar {
 	return &components.Sidecar{
 		Name: name,
@@ -128,4 +118,41 @@ func constructSidecar(name, registry, tag, pullPolicy string) *components.Sideca
 			PullPolicy: pullPolicy,
 		},
 	}
+}
+
+func matchLogLevel(level components.Level) string {
+	switch level {
+	case components.InfoLevel:
+		return string(level)
+	case components.DebugLevel:
+		return string(level)
+	case components.TraceLevel:
+		return string(level)
+
+	default:
+		return string(components.InfoLevel)
+	}
+}
+
+func matchLogFormat(format components.Format) string {
+	switch format {
+	case components.JSONFormat:
+		return string(format)
+	case components.TextFormat:
+		return string(format)
+
+	default:
+		return string(components.TextFormat)
+	}
+}
+
+func constractFullImageName(image *components.Image, registry string) string {
+	var imageName string
+
+	if registry != "" {
+		imageName += registry + "/"
+	}
+
+	imageName += image.Name + ":" + image.Tag
+	return imageName
 }

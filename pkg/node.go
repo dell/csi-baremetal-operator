@@ -3,7 +3,6 @@ package pkg
 import (
 	"strconv"
 
-	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,7 +73,10 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	namespace := GetNamespace(csi)
 	return &v1.DaemonSet{
-		ObjectMeta: metav1.ObjectMeta{Name: nodeName, Namespace: namespace},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nodeName,
+			Namespace: GetNamespace(csi),
+		},
 		Spec: v1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
@@ -97,10 +99,10 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					Volumes:                       createNodeVolumes(csi.Spec.Driver.Node.DriveMgr.DeployConfig),
+					Volumes:                       createNodeVolumes(),
 					Containers:                    createNodeContainers(csi),
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					NodeSelector:                  map[string]string{},
+					NodeSelector:                  csi.Spec.NodeSelectors,
 					ServiceAccountName:            nodeServiceAccountName,
 					HostIPC:                       true,
 				},
@@ -166,6 +168,8 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
 func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
+	bidirectional := corev1.MountPropagationBidirectional
+func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
 		lp            *components.Sidecar
 		dr            *components.Sidecar
@@ -229,15 +233,15 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            "node",
-			Image:           constructImage(testEnv, csi.Spec.GlobalRegistry, node.Image),
-			ImagePullPolicy: corev1.PullPolicy(node.Image.PullPolicy),
+			Image:           constractFullImageName(csi.Spec.Driver.Node.Image, csi.Spec.GlobalRegistry),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Driver.Node.Image.PullPolicy),
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
 				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
-				"--loglevel=info",
+				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Node.Log.Level),
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
 				"--drivemgrendpoint=" + driveMgr.Endpoint,
@@ -266,7 +270,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			},
 			Env: []corev1.EnvVar{
 				{Name: "CSI_ENDPOINT", Value: "unix:///csi/csi.sock"},
-				{Name: "LOG_FORMAT", Value: "text"},
+				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Driver.Node.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
@@ -293,15 +297,15 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            "drivemgr",
-			Image:           constructImage(testEnv, csi.Spec.GlobalRegistry, driveMgr.Image),
-			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
+			Image:           constractFullImageName(csi.Spec.Driver.Node.DriveMgr.Image, csi.Spec.GlobalRegistry),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Driver.Node.DriveMgr.Image.PullPolicy),
 			Args: []string{
-				"--loglevel=info",
-				"--drivemgrendpoint=" + driveMgr.Endpoint,
+				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Node.Log.Level),
+				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
 				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
 			},
 			Env: []corev1.EnvVar{
-				{Name: "LOG_FORMAT", Value: "text"},
+				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Driver.Node.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
