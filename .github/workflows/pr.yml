@@ -53,7 +53,7 @@ jobs:
       
     - name: Build binaries
       run: |
-        go build ./...
+        go build .
 
         
  
