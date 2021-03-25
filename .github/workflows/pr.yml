@@ -1,0 +1,59 @@
+name: PR validation
+
+on:
+  push:
+#     branches: [ master ]
+#   pull_request:
+#     branches: [ master ]
+env:
+  go_version: '1.16.0'
+  golangci_version: '1.37.0'
+jobs:
+  lint-test:
+    name: Validate code and charts
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Prepare Golang 
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{env.go_version}}
+
+    - name: Load dep cache
+      uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: go-dep-${{ env.go_version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: go-dep-${{ env.go_version }}-
+          
+    - name: Load build and linter cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/.cache/golangci-lint
+        key: go-build-${{ env.go_version }}-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/pkg') }}
+        restore-keys: |
+          go-build-${{ env.go_version }}-${{ hashFiles('**/go.sum') }}
+          go-build-${{ env.go_version }}-
+        
+    - name: Get dependencies
+      run:  go mod download
+      
+    - name: Install golangci-lint
+      run: |
+        wget -q -O golangci-lint.deb https://github.com/golangci/golangci-lint/releases/download/v${{ env.golangci_version }}/golangci-lint-${{ env.golangci_version }}-linux-amd64.deb
+        sudo dpkg -i golangci-lint.deb
+        
+    - name: Lint code
+      run: GOGC=300 golangci-lint -v run ./...
+  
+      
+    - name: Build binaries
+      run: |
+        go build ./...
+
+        
+ 
