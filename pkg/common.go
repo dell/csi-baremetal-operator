@@ -7,6 +7,7 @@ import (
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal/pkg/base/featureconfig"
 	"github.com/go-logr/logr"
 )
 
@@ -37,11 +38,12 @@ type CSIDeployment struct {
 	patcher    SchedulerPatcher
 }
 
-func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger, fchecker featureconfig.FeatureChecker) CSIDeployment {
 	return CSIDeployment{
 		node: Node{
-			Clientset: clientSet,
-			Logger:    log.WithValues(CSIName, "node"),
+			Clientset:      clientSet,
+			Logger:         log.WithValues(CSIName, "node"),
+			FeatureChecker: fchecker,
 		},
 		controller: Controller{
 			Clientset: clientSet,

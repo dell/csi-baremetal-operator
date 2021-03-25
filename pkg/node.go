@@ -1,15 +1,17 @@
 package pkg
 
 import (
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"strconv"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-	"strconv"
 
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal/pkg/base/featureconfig"
 	"github.com/go-logr/logr"
 )
 
@@ -38,6 +40,7 @@ const (
 type Node struct {
 	kubernetes.Clientset
 	logr.Logger
+	featureconfig.FeatureChecker
 }
 
 func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
@@ -56,7 +59,7 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	// create daemonset
-	ds := createNodeDaemonSet(namespace)
+	ds := createNodeDaemonSet(namespace, n.IsEnabled(featureconfig.FeatureNodeIDFromAnnotation))
 	if _, err := dsClient.Create(ds); err != nil {
 		n.Logger.Error(err, "Failed to create daemon set")
 		return err
@@ -66,7 +69,7 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	return nil
 }
 
-func createNodeDaemonSet(namespace string) *v1.DaemonSet {
+func createNodeDaemonSet(namespace string, annotationFeature bool) *v1.DaemonSet {
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{Name: nodeName, Namespace: namespace},
 		Spec: v1.DaemonSetSpec{
@@ -91,12 +94,12 @@ func createNodeDaemonSet(namespace string) *v1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					Volumes:    createNodeVolumes(),
-					Containers: createNodeContainers(),
+					Volumes:                       createNodeVolumes(),
+					Containers:                    createNodeContainers(annotationFeature),
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					NodeSelector:       map[string]string{},
-					ServiceAccountName: nodeServiceAccountName,
-					HostIPC:            true,
+					NodeSelector:                  map[string]string{},
+					ServiceAccountName:            nodeServiceAccountName,
+					HostIPC:                       true,
 				},
 			},
 		},
@@ -154,7 +157,7 @@ func createNodeVolumes() []corev1.Volume {
 }
 
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
-func createNodeContainers() []corev1.Container {
+func createNodeContainers(annotationFeature bool) []corev1.Container {
 	bidirectional := corev1.MountPropagationBidirectional
 	return []corev1.Container{
 		{
@@ -195,7 +198,7 @@ func createNodeContainers() []corev1.Container {
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
+				"--usenodeannotation=" + strconv.FormatBool(annotationFeature),
 				"--loglevel=info",
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
