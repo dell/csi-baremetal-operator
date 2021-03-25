@@ -37,12 +37,11 @@ type CSIDeployment struct {
 	patcher    SchedulerPatcher
 }
 
-func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger, fchecker featureconfig.FeatureChecker) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeployment {
 	return CSIDeployment{
 		node: Node{
-			Clientset:      clientSet,
-			Logger:         log.WithValues(CSIName, "node"),
-			FeatureChecker: fchecker,
+			Clientset: clientSet,
+			Logger:    log.WithValues(CSIName, "node"),
 		},
 		controller: Controller{
 			Clientset: clientSet,

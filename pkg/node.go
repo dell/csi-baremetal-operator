@@ -10,8 +10,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	"github.com/dell/csi-baremetal/pkg/base/featureconfig"
 	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
@@ -42,7 +40,6 @@ const (
 type Node struct {
 	kubernetes.Clientset
 	logr.Logger
-	featureconfig.FeatureChecker
 }
 
 func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
@@ -70,7 +67,6 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	n.Logger.Info("Daemon set created successfully")
 	return nil
 }
-
 
 func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	return &v1.DaemonSet{
@@ -204,7 +200,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
+				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
 				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Node.Log.Level),
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",

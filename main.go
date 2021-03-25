@@ -30,7 +30,6 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/controllers"
 	"github.com/dell/csi-baremetal-operator/pkg"
-	"github.com/dell/csi-baremetal/pkg/base/featureconfig"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -47,23 +46,13 @@ func init() {
 }
 
 func main() {
-	var (
-		metricsAddr          string
-		enableLeaderElection bool
-		useNodeAnnotation    bool
-	)
-
+	var metricsAddr string
+	var enableLeaderElection bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&useNodeAnnotation, "usenodeannotation", false,
-		"Whether driver should read id from node annotation and use it as id for all CRs or not")
 	flag.Parse()
-
-	featureConf := featureconfig.NewFeatureConfig()
-
-	featureConf.Update(featureconfig.FeatureNodeIDFromAnnotation, useNodeAnnotation)
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
@@ -90,7 +79,7 @@ func main() {
 		Client:        mgr.GetClient(),
 		Log:           ctrl.Log.WithName("controllers").WithName("Deployment"),
 		Scheme:        mgr.GetScheme(),
-		CSIDeployment: pkg.NewCSIDeployment(*clientSet, ctrl.Log, featureConf),
+		CSIDeployment: pkg.NewCSIDeployment(*clientSet, ctrl.Log),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)
