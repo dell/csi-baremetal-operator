@@ -16,7 +16,7 @@ limitations under the License.
 
 package components
 
-// LogFormat is format in which log will appear
+// Format is format in which log will appear
 type Format string
 
 const (
