@@ -51,9 +51,9 @@ jobs:
       run: GOGC=300 golangci-lint -v run ./...
   
       
-    - name: Build binaries
+    - name: Build binary
       run: |
-        go build .
+        make manager
 
         
  
