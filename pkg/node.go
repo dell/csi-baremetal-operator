@@ -187,8 +187,8 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	}
 	return []corev1.Container{
 		{
-			Name:            "liveness-probe",
-			Image:           constructImage(testEnv, lp.Image),
+			Name:            lp.Name,
+			Image:           constructImage(testEnv, csi.Spec.GlobalRegistry, lp.Image),
 			ImagePullPolicy: corev1.PullPolicy(lp.Image.PullPolicy),
 			Args:            []string{"--csi-address=/csi/csi.sock"},
 			VolumeMounts: []corev1.VolumeMount{
@@ -196,8 +196,8 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			},
 		},
 		{
-			Name:            "csi-node-driver-registrar",
-			Image:           constructImage(testEnv, dr.Image),
+			Name:            dr.Name,
+			Image:           constructImage(testEnv, csi.Spec.GlobalRegistry, dr.Image),
 			ImagePullPolicy: corev1.PullPolicy(dr.Image.PullPolicy),
 			Args: []string{"--v=5", "--csi-address=$(ADDRESS)",
 				"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"},
@@ -217,7 +217,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            "node",
-			Image:           constructImage(testEnv, node.Image),
+			Image:           constructImage(testEnv, csi.Spec.GlobalRegistry, node.Image),
 			ImagePullPolicy: corev1.PullPolicy(node.Image.PullPolicy),
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
@@ -281,7 +281,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            "drivemgr",
-			Image:           constructImage(testEnv, driveMgr.Image),
+			Image:           constructImage(testEnv, csi.Spec.GlobalRegistry, driveMgr.Image),
 			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
 			Args: []string{
 				"--loglevel=info",
@@ -300,25 +300,6 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				{Name: hostHomeVolume, MountPath: "/host/home"},
 				{Name: driveConfigVolume, MountPath: "/etc/config"},
 			},
-		},
-	}
-}
-
-func constructImage(isTest bool, image *components.Image) string {
-	if isTest {
-		return image.Name + ":" + image.Tag
-	}
-	return image.Registry + "/" + image.Name + ":" + image.Tag
-}
-
-func constructSidecar(name, registry, tag, pullPolicy string) *components.Sidecar {
-	return &components.Sidecar{
-		Name: name,
-		Image: &components.Image{
-			Name:       name,
-			Registry:   registry,
-			Tag:        tag,
-			PullPolicy: pullPolicy,
 		},
 	}
 }

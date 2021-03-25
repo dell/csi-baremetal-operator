@@ -1,13 +1,14 @@
 package pkg
 
 import (
+	"github.com/go-logr/logr"
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	"github.com/go-logr/logr"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
 
 const (
@@ -104,4 +105,27 @@ func isFound(err error) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func constructImage(isTest bool, globalRegistry string, image *components.Image) string {
+	registry := globalRegistry
+	if image.Registry != "" {
+		registry = image.Registry
+	}
+	if isTest {
+		return image.Name + ":" + image.Tag
+	}
+	return registry + "/" + image.Name + ":" + image.Tag
+}
+
+func constructSidecar(name, registry, tag, pullPolicy string) *components.Sidecar {
+	return &components.Sidecar{
+		Name: name,
+		Image: &components.Image{
+			Name:       name,
+			Registry:   registry,
+			Tag:        tag,
+			PullPolicy: pullPolicy,
+		},
+	}
 }
