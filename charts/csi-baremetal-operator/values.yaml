@@ -1,0 +1,9 @@
+# Docker registry to pull images
+global:
+  registry:
+
+# Image pull settings
+image:
+  name: controller
+  tag: latest
+  pullPolicy: IfNotPresent

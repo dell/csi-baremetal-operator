@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: csi-node-sa
-  namespace: default
+  namespace: {{ .Release.Namespace }}
 
 
 ---
@@ -36,7 +36,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: csi-node-sa
-    namespace: default
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: driver-registrar-runner
@@ -60,7 +60,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: csi-node-sa
-    namespace: default
+    namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -75,7 +75,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: csi-node-sa
-    namespace: default
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: controller

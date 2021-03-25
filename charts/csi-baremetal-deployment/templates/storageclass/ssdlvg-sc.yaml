@@ -1,10 +1,11 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: csi-baremetal-sc-hdd
+  name: {{ .Values.storageClass.name }}-ssdlvg
 provisioner: csi-baremetal  # CSI driver name
 reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
 parameters:
-  storageType: HDD
+  storageType: SSDLVG
   fsType: xfs

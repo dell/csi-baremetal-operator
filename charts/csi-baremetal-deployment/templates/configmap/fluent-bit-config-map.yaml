@@ -1,8 +1,10 @@
+{{- if .Values.driver.logReceiver.create  }}
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: default
-  name: csi-baremetal-logs-config
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Release.Name }}-logs-config
 #  labels:
 #    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 data:
@@ -42,22 +44,33 @@ data:
         Record node_name ${NODE_NAME}
         Record namespace ${NAMESPACE}
     [OUTPUT]
+    {{- if eq .Values.driver.logReceiver.output "es"}}
         Name            es
         Match           *
+     {{- if eq .Values.driver.logReceiver.protocol "http"}}
         tls             Of
+     {{- else}}
         tls             On
-        HTTP_User
-        HTTP_Passwd
+        HTTP_User       {{ .Values.driver.logReceiver.user }}
+        HTTP_Passwd     {{ .Values.driver.logReceiver.password }}
         tls.verify      Off
+     {{- end}}
         Type            logEvent
-        Host
-        Port
+        Host            {{ .Values.driver.logReceiver.host }}
+        Port            {{ .Values.driver.logReceiver.port }}
         Logstash_Format on
         Retry_Limit     False
         Logstash_Prefix kubernetes_cluster-csi-baremetal
+    {{- end}}
+    {{- if eq .Values.driver.logReceiver.output "stdout"}}
+        Name            stdout
+        Match             *
+        Format          msgpack
+    {{- end}}
   fluent-parsers.conf: |
     [PARSER]
         Name        csi-logs
         Format      json
         Time_Key    time
         Time_Format %Y-%m-%dT%H:%M:%S %z
+  {{- end}}
