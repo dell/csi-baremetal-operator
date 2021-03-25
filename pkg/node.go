@@ -97,7 +97,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					Volumes:                       createNodeVolumes(),
+					Volumes:                       createNodeVolumes(csi.Spec.Driver.Node.DriveMgr.DeployConfig),
 					Containers:                    createNodeContainers(csi),
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
 					NodeSelector:                  map[string]string{},
@@ -109,11 +109,10 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	}
 }
 
-func createNodeVolumes() []corev1.Volume {
+func createNodeVolumes(deployConfig bool) []corev1.Volume {
 	directory := corev1.HostPathDirectory
 	directoryOrCreate := corev1.HostPathDirectoryOrCreate
-
-	return []corev1.Volume{
+	volumes := []corev1.Volume{
 		{Name: LogsVolume, VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}},
@@ -150,13 +149,19 @@ func createNodeVolumes() []corev1.Volume {
 		{Name: csiPathVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/kubernetes.io/csi"},
 		}},
-		{Name: driveConfigVolume, VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: loopbackManagerConfigName},
-				Optional:             pointer.BoolPtr(true),
-			},
-		}},
 	}
+
+	if deployConfig {
+		volumes = append(volumes, corev1.Volume{
+			Name: driveConfigVolume,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: loopbackManagerConfigName},
+					Optional:             pointer.BoolPtr(true),
+				},
+			}})
+	}
+	return volumes
 }
 
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
@@ -184,6 +189,13 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	}
 	if dr == nil {
 		dr = constructSidecar(driverRegistrarSidecar, csi.Spec.GlobalRegistry, "v1.0.1-gke.0", "Always")
+	}
+	mounts := []corev1.VolumeMount{
+		{Name: hostDevVolume, MountPath: "/dev"},
+		{Name: hostHomeVolume, MountPath: "/host/home"},
+	}
+	if driveMgr.DeployConfig {
+		mounts = append(mounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
 	}
 	return []corev1.Container{
 		{
@@ -228,7 +240,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				"--loglevel=info",
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
-				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
+				"--drivemgrendpoint=" + driveMgr.Endpoint,
 			},
 			Ports: []corev1.ContainerPort{
 				{Name: LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
@@ -285,7 +297,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
 			Args: []string{
 				"--loglevel=info",
-				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
+				"--drivemgrendpoint=" + driveMgr.Endpoint,
 				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
 			},
 			Env: []corev1.EnvVar{
@@ -295,11 +307,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				}},
 			},
 			SecurityContext: &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
-			VolumeMounts: []corev1.VolumeMount{
-				{Name: hostDevVolume, MountPath: "/dev"},
-				{Name: hostHomeVolume, MountPath: "/host/home"},
-				{Name: driveConfigVolume, MountPath: "/etc/config"},
-			},
+			VolumeMounts:    mounts,
 		},
 	}
 }

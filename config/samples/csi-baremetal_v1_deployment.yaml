@@ -42,9 +42,6 @@ spec:
           tag: green
         endpoint: tcp://localhost:8888
         deployConfig: false
-        config:
-          amountOfLoopback: 3
-          sizeOfLoopback: 101Mi
       image:
         name: csi-baremetal-node
         pullPolicy: Always
