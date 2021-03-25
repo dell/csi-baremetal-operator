@@ -25,9 +25,6 @@ const (
 	// volumes
 	LogsVolume         = "logs"
 	CSISocketDirVolume = "csi-socket-dir"
-
-	// feature flags
-	UseNodeAnnotation = false
 )
 
 type CSIDeployment struct {
