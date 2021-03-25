@@ -6,15 +6,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	"github.com/dell/csi-baremetal/pkg/base/featureconfig"
 	"github.com/go-logr/logr"
+
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
 
 const (
 	CSIName = "csi-baremetal"
-	// versions
-	CSIVersion = "0.0.13-375.3c20841"
 
 	// ports
 	PrometheusPort = 8787
@@ -106,4 +105,41 @@ func isFound(err error) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func matchLogLevel(level components.Level) string {
+	switch level {
+	case components.InfoLevel:
+		return string(level)
+	case components.DebugLevel:
+		return string(level)
+	case components.TraceLevel:
+		return string(level)
+
+	default:
+		return string(components.InfoLevel)
+	}
+}
+
+func matchLogFormat(format components.Format) string {
+	switch format {
+	case components.JSONFormat:
+		return string(format)
+	case components.TextFormat:
+		return string(format)
+
+	default:
+		return string(components.TextFormat)
+	}
+}
+
+func constractFullImageName(image *components.Image, registry string) string {
+	var imageName string
+
+	if registry != "" {
+		imageName += registry + "/"
+	}
+
+	imageName += image.Name + ":" + image.Tag
+	return imageName
 }
