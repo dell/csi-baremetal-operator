@@ -40,9 +40,11 @@ deploy:
 
 # Deploy CSI resources from ~/deploy
 resources:
+	kubectl apply -f config/crd/bases
 	kubectl apply -f deploy/rbac
 	kubectl apply -f deploy/storageclass
 	kubectl apply -f deploy/configmap
+	kubectl apply -f deploy/csidriver
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
