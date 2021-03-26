@@ -31,17 +31,15 @@ driver:
 
   controller:
     image:
-      name:
       tag:
 
   node:
     image:
-      name:
       tag:
 
   drivemgr:
+    type: basemgr
     image:
-      name:
       tag:
     grpc:
       server:
@@ -105,7 +103,6 @@ scheduler:
   enable: true
 
   image:
-    name:
     tag:
 
   # Logging settings
@@ -123,7 +120,6 @@ scheduler:
     enable: false
 
     image:
-      name:
       tag:
 
     manifest: /etc/kubernetes/manifests/kube-scheduler.yaml
@@ -145,7 +141,6 @@ operator:
   enable: true
 
   image:
-    name:
     tag:
 
   # Logging settings

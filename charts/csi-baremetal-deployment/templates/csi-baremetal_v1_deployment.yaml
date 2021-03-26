@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/version: 1.0.0
 spec:
   globalRegistry: {{ .Values.global.registry }}
+  nodeIDAnnotation: {{ .Values.feature.usenodeannotation }}
   nodeSelectors:
   {{- if or (.Values.nodeSelector.key) (.Values.nodeSelector.value)}}
     {{.Values.nodeSelector.key}}: {{.Values.nodeSelector.value}}
@@ -16,7 +17,7 @@ spec:
   driver:
     controller:
       image:
-        name: {{ .Values.driver.controller.image.name | default "csi-baremetal-controller" }}
+        name: csi-baremetal-controller
         pullPolicy: {{ .Values.image.pullPolicy }}
         tag: {{ .Values.driver.controller.image.tag | default .Values.image.tag }}
       log:
@@ -42,7 +43,7 @@ spec:
     node:
       driveMgr:
         image:
-          name: {{ .Values.driver.drivemgr.image.name | default "csi-baremetal-basemgr" }}
+          name: csi-baremetal-{{ .Values.driver.drivemgr.type }}
           pullPolicy: {{ .Values.image.pullPolicy }}
           tag: {{ .Values.driver.drivemgr.image.tag | default .Values.image.tag }}
         endpoint: {{ .Values.driver.drivemgr.grpc.server.endpoint }}
@@ -50,7 +51,7 @@ spec:
         amountOfLoopback: {{ .Values.driver.drivemgr.amountOfLoopDevices }}
         sizeOfLoopback: {{ .Values.driver.drivemgr.sizeOfLoopDevices }}
       image:
-        name: {{ .Values.driver.node.image.name | default "csi-baremetal-node" }}
+        name: csi-baremetal-node
         pullPolicy: {{ .Values.image.pullPolicy }}
         tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}
       log:
@@ -76,7 +77,7 @@ spec:
   scheduler:
     enable: {{ .Values.scheduler.enable }}
     image:
-      name: {{ .Values.scheduler.image.name | default "csi-baremetal-scheduler-extender" }}
+      name: csi-baremetal-scheduler-extender
       pullPolicy: {{ .Values.image.pullPolicy }}
       tag: {{ .Values.scheduler.image.tag | default .Values.image.tag }}
     log:
@@ -88,7 +89,7 @@ spec:
     patcher:
       enable: {{ .Values.scheduler.patcher.enable }}
       image:
-        name: {{ .Values.scheduler.patcher.image.name | default "csi-baremetal-scheduler-patcher" }}
+        name: csi-baremetal-scheduler-patcher
         pullPolicy: {{ .Values.image.pullPolicy }}
         tag: {{ .Values.scheduler.patcher.image.tag | default .Values.image.tag }}
       manifest: {{ .Values.scheduler.patcher.manifest }}
@@ -104,7 +105,7 @@ spec:
   operator:
     enable: {{ .Values.operator.enable }}
     image:
-      name: {{ .Values.operator.image.name | default "csi-baremetal-operator" }}
+      name: csi-baremetal-operator
       pullPolicy: {{ .Values.image.pullPolicy }}
       tag: {{ .Values.operator.image.tag | default .Values.image.tag }}
     log:

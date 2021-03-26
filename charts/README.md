@@ -8,14 +8,14 @@ Last update: 26.03.2021
 1. Set CSI version
 
 ```
-export csiVersion=0.0.13-375.3c20841
+export csiVersion=...
 ```
 
 2. Build operator image and load to kind
     
 ```
 make docker-build
-make kind load
+make kind-load
 ```
 
 3. Deploy operator
@@ -27,5 +27,5 @@ helm install csi-baremetal-operator ./charts/csi-baremetal-operator/
 4. Deploy csi-baremetal
 
 ```
-helm install csi-baremetal ./charts/csi-baremetal-deployment/ --set image.tag=${csiVersion} --set image.pullPolicy=IfNotPresent --set driver.drivemgr.image.name=csi-baremetal-loopbackmgr --set driver.drivemgr.deployConfig=true --set scheduler.patcher.enable=true
+helm install csi-baremetal ./charts/csi-baremetal-deployment/ --set image.tag=${csiVersion} --set image.pullPolicy=IfNotPresent --set driver.drivemgr.type=loopbackmgr --set driver.drivemgr.deployConfig=true --set scheduler.patcher.enable=true
 ```
