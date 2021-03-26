@@ -56,7 +56,7 @@ spec:
       type: string
       description: Node Id
       JSONPath: .spec.UUID
-    - name: Addresses
+    - name: ADDRESSES
       type: string
       description: Hostname and internal Node ip
       JSONPath: .spec.Addresses

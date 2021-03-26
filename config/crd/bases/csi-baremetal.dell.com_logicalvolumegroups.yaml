@@ -73,7 +73,7 @@ spec:
       JSONPath: .spec.NodeId
     - name: SIZE
       type: string
-      description: size of Logical volume group
+      description: Size of Logical volume group
       JSONPath: .spec.Size
     - name: LOCACTIONS
       type: string
