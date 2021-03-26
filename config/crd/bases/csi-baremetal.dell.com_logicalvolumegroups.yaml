@@ -70,7 +70,7 @@ spec:
     - name: NODE
       type: string
       description: LVG node location
-      JSONPath: .spec.NodeId
+      JSONPath: .spec.Node
     - name: SIZE
       type: string
       description: Size of Logical volume group
