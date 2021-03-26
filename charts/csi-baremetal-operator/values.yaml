@@ -4,6 +4,7 @@ global:
 
 # Image pull settings
 image:
+  # TODO refactor after csi-baremetal-operator renaming https://github.com/dell/csi-baremetal/issues/341
   name: controller
   tag: latest
   pullPolicy: IfNotPresent
