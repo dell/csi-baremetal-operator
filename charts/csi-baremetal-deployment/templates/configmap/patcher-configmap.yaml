@@ -16,7 +16,7 @@ data:
       leaderElect: true
     clientConnection:
       kubeconfig: /etc/kubernetes/scheduler.conf
-    {{ .Values.scheduler.patcher.source_policy_path }}: |
+  {{ .Values.scheduler.patcher.source_policy_path }}: |
     apiVersion: v1
     kind: Policy
     extenders:
