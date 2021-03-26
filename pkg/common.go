@@ -3,6 +3,7 @@ package pkg
 import (
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
@@ -58,8 +59,8 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeploy
 	}
 }
 
-func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment) error {
-	if err := c.node.Update(csi); err != nil {
+func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	if err := c.node.Update(csi, scheme); err != nil {
 		return err
 	}
 

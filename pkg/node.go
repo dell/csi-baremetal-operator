@@ -1,9 +1,13 @@
 package pkg
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	v1 "sigs.k8s.io/controller-runtime/pkg/webhook/conversion/testdata/api/v1"
 	"strconv"
 
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -42,7 +46,13 @@ type Node struct {
 	logr.Logger
 }
 
-func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
+func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	// create daemonset
+	ds := createNodeDaemonSet(csi)
+	if err := controllerutil.SetControllerReference(csi, ds, scheme); err != nil {
+		return err
+	}
+
 	namespace := GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)
 
@@ -57,8 +67,6 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 		return nil
 	}
 
-	// create daemonset
-	ds := createNodeDaemonSet(csi)
 	if _, err := dsClient.Create(ds); err != nil {
 		n.Logger.Error(err, "Failed to create daemon set")
 		return err
@@ -68,13 +76,20 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	return nil
 }
 
-func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
-	return &v1.DaemonSet{
+func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *appsv1.DaemonSet {
+	return &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeName,
 			Namespace: GetNamespace(csi),
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(csi, schema.GroupVersionKind{
+					Group:   v1.GroupVersion.Group,
+					Version: v1.GroupVersion.Version,
+					Kind:    csi.Kind,
+				}),
+			},
 		},
-		Spec: v1.DaemonSetSpec{
+		Spec: appsv1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": nodeName},

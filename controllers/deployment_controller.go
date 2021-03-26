@@ -51,7 +51,7 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	}
 	log.Info("Custom resource obtained")
 
-	if err = r.CSIDeployment.Update(deployment); err != nil {
+	if err = r.CSIDeployment.Update(deployment, r.Scheme); err != nil {
 		log.Error(err, "Unable to update deployment")
 		return ctrl.Result{Requeue: true}, err
 	}
