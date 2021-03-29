@@ -1,0 +1,87 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.2
+  creationTimestamp: null
+  name: logicalvolumegroups.csi-baremetal.dell.com
+spec:
+  group: csi-baremetal.dell.com
+  names:
+    kind: LogicalVolumeGroup
+    listKind: LogicalVolumeGroupList
+    plural: logicalvolumegroups
+    shortNames:
+    - lvg
+    - lvgs
+    singular: logicalvolumegroup
+  scope: Cluster
+  validation:
+    openAPIV3Schema:
+      description: LogicalVolumeGroup is the Schema for the LVGs API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            Health:
+              type: string
+            Locations:
+              items:
+                type: string
+              type: array
+            Name:
+              type: string
+            Node:
+              type: string
+            Size:
+              format: int64
+              type: integer
+            Status:
+              type: string
+            VolumeRefs:
+              items:
+                type: string
+              type: array
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+  additionalPrinterColumns:
+    - name: HEALTH
+      type: string
+      description: LVG health status
+      JSONPath: .spec.Health
+    - name: NODE
+      type: string
+      description: LVG node location
+      JSONPath: .spec.NodeId
+    - name: SIZE
+      type: string
+      description: size of Logical volume group
+      JSONPath: .spec.Size
+    - name: LOCACTIONS
+      type: string
+      description: LVG drives locations list
+      JSONPath: .spec.Locations
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

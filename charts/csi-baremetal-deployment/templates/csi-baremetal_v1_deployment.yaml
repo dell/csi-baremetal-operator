@@ -1,0 +1,114 @@
+apiVersion: csi-baremetal.dell.com/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: csi-baremetal
+    app.kubernetes.io/managed-by: csi-baremetal-operator
+    app.kubernetes.io/version: 1.0.0
+spec:
+  globalRegistry: {{ .Values.global.registry }}
+  nodeIDAnnotation: {{ .Values.feature.usenodeannotation }}
+  nodeSelectors:
+  {{- if or (.Values.nodeSelector.key) (.Values.nodeSelector.value)}}
+    {{.Values.nodeSelector.key}}: {{.Values.nodeSelector.value}}
+  {{- end }}
+  driver:
+    controller:
+      image:
+        name: csi-baremetal-controller
+        pullPolicy: {{ .Values.image.pullPolicy }}
+        tag: {{ .Values.driver.controller.image.tag | default .Values.image.tag }}
+      log:
+        format: {{ .Values.driver.log.format }}
+        level: {{ .Values.driver.log.level }}
+      sidecars:
+        - name: csi-provisioner
+          image:
+            name: csi-provisioner
+            pullPolicy: {{ .Values.image.pullPolicy }}
+            tag: {{ .Values.driver.provisioner.image.tag }}
+        - name: csi-attacher
+          image:
+            name: csi-attacher
+            pullPolicy: {{ .Values.image.pullPolicy }}
+            tag: {{ .Values.driver.attacher.image.tag }}
+        - name: csi-resizer
+          image:
+            name: csi-resizer
+            pullPolicy: {{ .Values.image.pullPolicy }}
+            tag: {{ .Values.driver.resizer.image.tag }}
+      testEnv: {{ .Values.env.test }}
+    node:
+      driveMgr:
+        image:
+          name: csi-baremetal-{{ .Values.driver.drivemgr.type }}
+          pullPolicy: {{ .Values.image.pullPolicy }}
+          tag: {{ .Values.driver.drivemgr.image.tag | default .Values.image.tag }}
+        endpoint: {{ .Values.driver.drivemgr.grpc.server.endpoint }}
+        deployConfig: {{ .Values.driver.drivemgr.deployConfig }}
+        amountOfLoopback: {{ .Values.driver.drivemgr.amountOfLoopDevices }}
+        sizeOfLoopback: {{ .Values.driver.drivemgr.sizeOfLoopDevices }}
+      image:
+        name: csi-baremetal-node
+        pullPolicy: {{ .Values.image.pullPolicy }}
+        tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}
+      log:
+        format: {{ .Values.driver.log.format }}
+        level: {{ .Values.driver.log.level }}
+      sidecars:
+        - name: csi-node-driver-registrar
+          image:
+            name: csi-node-driver-registrar
+            pullPolicy: {{ .Values.image.pullPolicy }}
+            tag: {{ .Values.driver.nodeDriverRegistrar.image.tag }}
+      testEnv: {{ .Values.env.test }}
+    metrics:
+      path: {{ .Values.driver.metrics.path }}
+      port: {{ .Values.driver.metrics.port }}
+    logReceiver:
+      name: fluent-bit
+      image:
+        name: {{ .Values.driver.logReceiver.fluentbitAgent.image.name | default "fluent-bit" }}
+        pullPolicy: {{ .Values.image.pullPolicy }}
+        tag: {{ .Values.driver.logReceiver.fluentbitAgent.image.tag | default "shippable" }}
+    deployAlertsConfig: {{ .Values.driver.alerts.deployConfig }}
+  scheduler:
+    enable: {{ .Values.scheduler.enable }}
+    image:
+      name: csi-baremetal-scheduler-extender
+      pullPolicy: {{ .Values.image.pullPolicy }}
+      tag: {{ .Values.scheduler.image.tag | default .Values.image.tag }}
+    log:
+      format: {{ .Values.scheduler.log.format }}
+      level: {{ .Values.scheduler.log.level }}
+    metrics:
+      path: {{ .Values.scheduler.metrics.path }}
+      port: {{ .Values.scheduler.metrics.port }}
+    patcher:
+      enable: {{ .Values.scheduler.patcher.enable }}
+      image:
+        name: csi-baremetal-scheduler-patcher
+        pullPolicy: {{ .Values.image.pullPolicy }}
+        tag: {{ .Values.scheduler.patcher.image.tag | default .Values.image.tag }}
+      manifest: {{ .Values.scheduler.patcher.manifest }}
+      srcConfigPath: {{ .Values.scheduler.patcher.source_config_path }}
+      srcPolicyPath: {{ .Values.scheduler.patcher.source_policy_path }}
+      targetConfigPath: {{ .Values.scheduler.patcher.target_config_path }}
+      targetPolicyPath: {{ .Values.scheduler.patcher.target_policy_path }}
+      interval: {{ .Values.scheduler.patcher.interval }}
+      restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
+      configMapName: {{ .Values.scheduler.patcher.config_map_name }}
+    storageProvisioner: {{ .Values.scheduler.provisioner }}
+    testEnv: {{ .Values.env.test }}
+  operator:
+    enable: {{ .Values.operator.enable }}
+    image:
+      name: csi-baremetal-operator
+      pullPolicy: {{ .Values.image.pullPolicy }}
+      tag: {{ .Values.operator.image.tag | default .Values.image.tag }}
+    log:
+      format: {{ .Values.operator.log.format }}
+      level: {{ .Values.operator.log.level }}
+    testEnv: {{ .Values.env.test }}
