@@ -90,3 +90,6 @@ CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+lint:
+	${GO_ENV_VARS} golangci-lint -v run ./...

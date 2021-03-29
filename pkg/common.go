@@ -1,12 +1,11 @@
 package pkg
 
 import (
+	"github.com/go-logr/logr"
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-
-	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
@@ -14,6 +13,8 @@ import (
 
 const (
 	CSIName = "csi-baremetal"
+	// versions
+	CSIVersion = "0.0.13-375.3c20841"
 
 	// ports
 	PrometheusPort = 8787
@@ -129,7 +130,7 @@ func matchLogFormat(format components.Format) string {
 	}
 }
 
-func constractFullImageName(image *components.Image, registry string) string {
+func constructFullImageName(image *components.Image, registry string) string {
 	var imageName string
 
 	if registry != "" {

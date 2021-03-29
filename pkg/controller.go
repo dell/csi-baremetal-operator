@@ -3,14 +3,13 @@ package pkg
 import (
 	"strconv"
 
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-
-	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
@@ -25,6 +24,12 @@ const (
 
 	// ports
 	healthPort = 9999
+
+	resizerName     = "csi-resizer"
+	provisionerName = "csi-provisioner"
+
+	provisionerTag = "v1.6.0"
+	resizerTag     = "v1.1.0"
 )
 
 type Controller struct {
@@ -107,10 +112,15 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 }
 
 func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
+	var (
+		provisioner = NewSidecar(provisionerName, provisionerTag, "Always")
+		resizer     = NewSidecar(resizerName, resizerTag, "Always")
+		liveness    = NewSidecar(livenessProbeSidecar, livenessProbeTag, "Always")
+	)
 	return []corev1.Container{
 		{
 			Name:            controller,
-			Image:           constractFullImageName(csi.Spec.Driver.Controller.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(csi.Spec.Driver.Controller.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Driver.Controller.Image.PullPolicy),
 			Args: []string{
 				"--endpoint=$(CSI_ENDPOINT)",
@@ -162,8 +172,8 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 		},
 		{
-			Name:            "csi-provisioner",
-			Image:           "csi-provisioner:v1.6.0",
+			Name:            provisioner.Name,
+			Image:           constructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args: []string{
 				"--csi-address=$(ADDRESS)",
@@ -179,8 +189,8 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 		},
 		{
-			Name:            "csi-resizer",
-			Image:           "csi-resizer:v1.1.0",
+			Name:            resizer.Name,
+			Image:           constructFullImageName(resizer.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/csi-resizer"},
 			Args: []string{
@@ -196,8 +206,8 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 		},
 		{
-			Name:            "liveness-probe",
-			Image:           "livenessprobe:v2.1.0",
+			Name:            liveness.Name,
+			Image:           constructFullImageName(liveness.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args:            []string{"--csi-address=$(ADDRESS)"},
 			VolumeMounts: []corev1.VolumeMount{

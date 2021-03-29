@@ -84,7 +84,7 @@ spec:
       type: string
       description: Volume allocated size
       JSONPath: .spec.Size
-    - name: LOCACTION
+    - name: LOCATION
       type: string
       description: Volume LVG or drive location
       JSONPath: .spec.Location

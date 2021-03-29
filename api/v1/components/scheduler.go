@@ -24,5 +24,4 @@ type Scheduler struct {
 	Metrics            *Metrics `json:"metrics,omitempty"`
 	Patcher            *Patcher `json:"patcher,omitempty"`
 	StorageProvisioner string   `json:"storageProvisioner"`
-	TestEnv            bool     `json:"testEnv"`
 }

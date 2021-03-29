@@ -18,7 +18,6 @@ package components
 
 // Image contain information for components docker images
 type Image struct {
-	Registry   string `json:"registry"`
 	Name       string `json:"name"`
 	Tag        string `json:"tag"`
 	PullPolicy string `json:"pullPolicy"`
