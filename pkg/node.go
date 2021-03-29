@@ -3,13 +3,13 @@ package pkg
 import (
 	"strconv"
 
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
