@@ -18,9 +18,10 @@ package components
 
 // DeploymentSpec represent all CSI components need to be deployed by operator
 type DeploymentSpec struct {
-	Driver         *Driver           `json:"driver,omitempty"`
-	NodeOperator   *NodeOperator     `json:"operator,omitempty"`
-	Scheduler      *Scheduler        `json:"scheduler,omitempty"`
-	GlobalRegistry string            `json:"globalRegistry,omitempty"`
-	NodeSelectors  map[string]string `json:"nodeSelectors,omitempty"`
+	Driver           *Driver           `json:"driver,omitempty"`
+	NodeOperator     *NodeOperator     `json:"operator,omitempty"`
+	Scheduler        *Scheduler        `json:"scheduler,omitempty"`
+	GlobalRegistry   string            `json:"globalRegistry,omitempty"`
+	NodeSelectors    map[string]string `json:"nodeSelectors,omitempty"`
+	NodeIDAnnotation bool              `json:"nodeIDAnnotation,omitempty"`
 }

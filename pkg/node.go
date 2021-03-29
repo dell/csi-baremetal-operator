@@ -215,7 +215,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
+				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
 				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Node.Log.Level),
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
@@ -277,7 +277,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			Args: []string{
 				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Node.Log.Level),
 				"--drivemgrendpoint=tcp://localhost:" + strconv.Itoa(driveManagerPort),
-				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
+				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
 			},
 			Env: []corev1.EnvVar{
 				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Driver.Node.Log.Format)},
