@@ -116,7 +116,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 				"--privateKeyFile=",
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
-				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
+				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
 			},
 			Env: []corev1.EnvVar{
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{

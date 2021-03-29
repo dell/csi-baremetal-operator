@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"github.com/go-logr/logr"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -10,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
+	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
@@ -220,7 +220,6 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
 				"--loglevel=" + matchLogLevel(node.Log.Level),
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
@@ -280,9 +279,9 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			Image:           constructFullImageName(driveMgr.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
 			Args: []string{
+				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
 				"--loglevel=" + matchLogLevel(node.Log.Level),
 				"--drivemgrendpoint=" + driveMgr.Endpoint,
-				"--usenodeannotation=" + strconv.FormatBool(UseNodeAnnotation),
 			},
 			Env: []corev1.EnvVar{
 				{Name: "LOG_FORMAT", Value: matchLogFormat(node.Log.Format)},

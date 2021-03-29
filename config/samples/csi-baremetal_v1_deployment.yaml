@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/version: 1.0.0
 spec:
   globalRegistry: ""
+  nodeIDAnnotation: true
   nodeSelectors:
     #key: value
   driver:
