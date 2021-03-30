@@ -193,12 +193,17 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		lp            = node.Sidecars[livenessProbeSidecar]
 		dr            = node.Sidecars[driverRegistrarSidecar]
 	)
+	args := []string{
+		"--loglevel=" + matchLogLevel(node.Log.Level),
+		"--drivemgrendpoint=" + driveMgr.Endpoint,
+	}
 	mounts := []corev1.VolumeMount{
 		{Name: hostDevVolume, MountPath: "/dev"},
 		{Name: hostHomeVolume, MountPath: "/host/home"},
 	}
 	if testEnv {
 		mounts = append(mounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
+		args = append(args, "--usenodeannotation="+strconv.FormatBool(csi.Spec.NodeIDAnnotation))
 	}
 	return []corev1.Container{
 		{
@@ -297,11 +302,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			Name:            "drivemgr",
 			Image:           constructFullImageName(driveMgr.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
-			Args: []string{
-				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
-				"--loglevel=" + matchLogLevel(node.Log.Level),
-				"--drivemgrendpoint=" + driveMgr.Endpoint,
-			},
+			Args:            args,
 			Env: []corev1.EnvVar{
 				{Name: "LOG_FORMAT", Value: matchLogFormat(node.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
