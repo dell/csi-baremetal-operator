@@ -29,12 +29,12 @@ spec:
             name: csi-provisioner
             pullPolicy: {{ .Values.image.pullPolicy }}
             tag: {{ .Values.driver.provisioner.image.tag }}
-        csi-attacher:
+       csi-attacher:
           image:
             name: csi-attacher
             pullPolicy: {{ .Values.image.pullPolicy }}
             tag: {{ .Values.driver.attacher.image.tag }}
-        csi-resizer:
+       csi-resizer:
           image:
             name: csi-resizer
             pullPolicy: {{ .Values.image.pullPolicy }}
