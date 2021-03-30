@@ -3,6 +3,7 @@ package pkg
 import (
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -24,6 +25,10 @@ const (
 	// volumes
 	LogsVolume         = "logs"
 	CSISocketDirVolume = "csi-socket-dir"
+
+	// termination settings
+	defaultTerminationMessagePath   = "/dev/termination-log"
+	defaultTerminationMessagePolicy = corev1.TerminationMessageReadFile
 )
 
 type CSIDeployment struct {
@@ -91,18 +96,9 @@ func deploymentChanged(expected *v1.Deployment, found *v1.Deployment) bool {
 		return true
 	}
 
-	if !equality.Semantic.DeepEqual(expected.Spec.Template.ObjectMeta, found.Spec.Template.ObjectMeta) {
+	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
 		return true
 	}
-
-	if !equality.Semantic.DeepEqual(expected.Spec.Template.Spec.Volumes, found.Spec.Template.Spec.Volumes) {
-		return true
-	}
-
-	//TODO implement comparison
-	//if !equality.Semantic.DeepEqual(expected.Spec.Template.Spec.Containers, found.Spec.Template.Spec.Containers) {
-	//return true
-	//}
 
 	return false
 }
@@ -112,14 +108,9 @@ func daemonsetChanged(expected *v1.DaemonSet, found *v1.DaemonSet) bool {
 		return true
 	}
 
-	if !equality.Semantic.DeepEqual(expected.Spec.Template.ObjectMeta, found.Spec.Template.ObjectMeta) {
+	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
 		return true
 	}
-
-	//TODO implement comparison
-	//if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
-	//return true
-	//}
 
 	return false
 }

@@ -97,8 +97,13 @@ func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					Labels: map[string]string{"app": patcherName},
 				},
 				Spec: corev1.PodSpec{
-					Containers: createPatcherContainers(csi),
-					Volumes:    createPatcherVolumes(),
+					Containers:                    createPatcherContainers(csi),
+					Volumes:                       createPatcherVolumes(),
+					RestartPolicy:                 corev1.RestartPolicyAlways,
+					DNSPolicy:                     corev1.DNSClusterFirst,
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
+					SecurityContext:               &corev1.PodSecurityContext{},
+					SchedulerName:                 corev1.DefaultSchedulerName,
 					// todo https://github.com/dell/csi-baremetal/issues/329
 					Tolerations: []corev1.Toleration{
 						{Key: "CriticalAddonsOnly", Operator: corev1.TolerationOpExists},
@@ -145,23 +150,30 @@ func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container 
 				{Name: kubernetesSchedulerVolume, MountPath: schedulerPath},
 				{Name: kubernetesManifestsVolume, MountPath: manifestsPath},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 	}
 }
 
 func createPatcherVolumes() []corev1.Volume {
+	var (
+		schedulerPatcherConfigMapMode = corev1.ConfigMapVolumeSourceDefaultMode
+		unset                         = corev1.HostPathUnset
+	)
 	return []corev1.Volume{
 		{Name: schedulerPatcherConfigVolume, VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{Name: schedulerPatcherConfigMapName},
+				DefaultMode:          &schedulerPatcherConfigMapMode,
 				Optional:             pointer.BoolPtr(true),
 			},
 		}},
 		{Name: kubernetesSchedulerVolume, VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{Path: schedulerPath},
+			HostPath: &corev1.HostPathVolumeSource{Path: schedulerPath, Type: &unset},
 		}},
 		{Name: kubernetesManifestsVolume, VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{Path: manifestsPath},
+			HostPath: &corev1.HostPathVolumeSource{Path: manifestsPath, Type: &unset},
 		}},
 	}
 }

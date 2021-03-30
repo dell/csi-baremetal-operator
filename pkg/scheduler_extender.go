@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/go-logr/logr"
@@ -96,9 +97,15 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					Containers:         createExtenderContainers(csi),
-					ServiceAccountName: extenderServiceAccountName,
-					HostNetwork:        true,
+					Containers:                    createExtenderContainers(csi),
+					RestartPolicy:                 corev1.RestartPolicyAlways,
+					DNSPolicy:                     corev1.DNSClusterFirst,
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
+					ServiceAccountName:            extenderServiceAccountName,
+					DeprecatedServiceAccount:      extenderServiceAccountName,
+					SecurityContext:               &corev1.PodSecurityContext{},
+					SchedulerName:                 corev1.DefaultSchedulerName,
+					HostNetwork:                   true,
 					Tolerations: []corev1.Toleration{
 						{Key: "CriticalAddonsOnly", Operator: corev1.TolerationOpExists},
 						{Key: "node-role.kubernetes.io/master", Effect: corev1.TaintEffectNoSchedule},
@@ -141,9 +148,11 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Scheduler.Log.Format)},
 			},
 			Ports: []corev1.ContainerPort{
-				{ContainerPort: extenderPort},
-				{Name: "metrics", ContainerPort: PrometheusPort, Protocol: corev1.ProtocolTCP},
+				{Name: "metrics", HostPort: PrometheusPort, ContainerPort: PrometheusPort, Protocol: corev1.ProtocolTCP},
+				{Name: "extender", HostPort: extenderPort, ContainerPort: extenderPort, Protocol: corev1.ProtocolTCP},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 	}
 }

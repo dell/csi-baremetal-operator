@@ -118,9 +118,14 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 						}},
 					},
 					Containers:                    createControllerContainers(csi),
+					RestartPolicy:                 corev1.RestartPolicyAlways,
+					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
 					NodeSelector:                  csi.Spec.NodeSelectors,
 					ServiceAccountName:            controllerServiceAccountName,
+					DeprecatedServiceAccount:      controllerServiceAccountName,
+					SecurityContext:               &corev1.PodSecurityContext{},
+					SchedulerName:                 corev1.DefaultSchedulerName,
 				},
 			},
 		},
@@ -149,7 +154,10 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			Env: []corev1.EnvVar{
 				{Name: "POD_IP", ValueFrom: &corev1.EnvVarSource{
-					FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
+					FieldRef: &corev1.ObjectFieldSelector{
+						APIVersion: "v1",
+						FieldPath:  "status.podIP",
+					},
 				}},
 				{Name: "CSI_ENDPOINT", Value: "unix:///csi/csi.sock"},
 				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Driver.Controller.Log.Format)},
@@ -170,11 +178,13 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			LivenessProbe: &corev1.Probe{
 				Handler: corev1.Handler{HTTPGet: &corev1.HTTPGetAction{
-					Path: "/healthz",
-					Port: intstr.FromString(LivenessPort)}},
+					Path:   "/healthz",
+					Port:   intstr.FromString(LivenessPort),
+					Scheme: corev1.URISchemeHTTP}},
 				InitialDelaySeconds: 300,
 				TimeoutSeconds:      3,
 				PeriodSeconds:       10,
+				SuccessThreshold:    1,
 				FailureThreshold:    5,
 			},
 			ReadinessProbe: &corev1.Probe{
@@ -182,10 +192,13 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 					"/health_probe",
 					"-addr=:9999"}}},
 				InitialDelaySeconds: 3,
+				TimeoutSeconds:      1,
 				PeriodSeconds:       10,
 				SuccessThreshold:    1,
 				FailureThreshold:    15,
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
 			Name:            provisioner.Name,
@@ -203,6 +216,8 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
 			Name:            resizer.Name,
@@ -220,6 +235,8 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
 			Name:            liveness.Name,
@@ -229,6 +246,8 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 	}
 }
