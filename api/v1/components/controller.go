@@ -18,7 +18,7 @@ package components
 
 // Controller encapsulates logic for CSI controller component
 type Controller struct {
-	Image    *Image              `json:"image,omitempty"`
-	Log      *Log                `json:"log,omitempty"`
-	Sidecars map[string]*Sidecar `json:"sidecars,omitempty"`
+	Image    *Image            `json:"image,omitempty"`
+	Log      *Log              `json:"log,omitempty"`
+	Sidecars map[string]*Image `json:"sidecars,omitempty"`
 }
