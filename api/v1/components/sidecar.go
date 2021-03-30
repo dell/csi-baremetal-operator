@@ -16,10 +16,7 @@ limitations under the License.
 
 package components
 
-// Node encapsulates information for CSI node components
-type Node struct {
-	DriveMgr *DriveMgr           `json:"driveMgr,omitempty"`
-	Image    *Image              `json:"image,omitempty"`
-	Log      *Log                `json:"log,omitempty"`
-	Sidecars map[string]*Sidecar `json:"sidecars,omitempty"`
+// Sidecar represent CSI sidecar containers
+type Sidecar struct {
+	Image *Image `json:"image,omitempty"`
 }
