@@ -73,7 +73,7 @@ func (c *Controller) handleControllerUpgrade(csi *csibaremetalv1.Deployment) err
 		return err
 	}
 	uDeployment := createControllerDeployment(csi)
-	c.Logger.Info("Updated deployment: ", uDeployment)
+	c.Logger.Info("Updated deployment", "deployment", uDeployment)
 	if !reflect.DeepEqual(deployment.Spec, uDeployment.Spec) {
 		deployment.Spec = uDeployment.Spec
 		c.Logger.Info("Updating...")
