@@ -35,7 +35,7 @@ const (
 	csiPathVolume         = "csi-path"
 	driveConfigVolume     = "drive-config"
 
-	livenessProbeSidecar   = "liveness-probe"
+	livenessProbeSidecar   = "livenessprobe"
 	driverRegistrarSidecar = "csi-node-driver-registrar"
 	livenessProbeTag       = "v2.1.0"
 	driverRegistrarTag     = "v1.0.1-gke.0"
@@ -183,8 +183,8 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
 func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
-		lp            = NewSidecar(livenessProbeSidecar, livenessProbeTag, "Always")
-		dr            = NewSidecar(driverRegistrarSidecar, driverRegistrarTag, "Always")
+		lp            = NewSidecar(livenessProbeSidecar, livenessProbeTag, "IfNotPresent")
+		dr            = NewSidecar(driverRegistrarSidecar, driverRegistrarTag, "IfNotPresent")
 		bidirectional = corev1.MountPropagationBidirectional
 		driveMgr      = csi.Spec.Driver.Node.DriveMgr
 		node          = csi.Spec.Driver.Node
