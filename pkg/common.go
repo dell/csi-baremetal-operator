@@ -1,6 +1,8 @@
 package pkg
 
 import (
+	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -61,15 +63,15 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 		return err
 	}
 
-	if err := c.controller.Update(csi); err != nil {
+	if err := c.controller.Update(csi, scheme); err != nil {
 		return err
 	}
 
-	if err := c.extender.Update(csi); err != nil {
+	if err := c.extender.Update(csi, scheme); err != nil {
 		return err
 	}
 
-	if err := c.patcher.Update(csi); err != nil {
+	if err := c.patcher.Update(csi, scheme); err != nil {
 		return err
 	}
 
@@ -102,6 +104,44 @@ func isFound(err error) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func deploymentChanged(expected *v1.Deployment, found *v1.Deployment) bool {
+	if !equality.Semantic.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
+		return true
+	}
+
+	if !equality.Semantic.DeepEqual(expected.Spec.Selector, found.Spec.Selector) {
+		return true
+	}
+
+	if !equality.Semantic.DeepEqual(expected.Spec.Template.ObjectMeta, found.Spec.Template.ObjectMeta) {
+		return true
+	}
+
+	if !equality.Semantic.DeepEqual(expected.Spec.Template.Spec.Volumes, found.Spec.Template.Spec.Volumes) {
+		return true
+	}
+
+	if !equality.Semantic.DeepEqual(expected.Spec.Template.Spec.Containers, found.Spec.Template.Spec.Containers) {
+		//TODO implement comparison
+		//return true
+	}
+
+	return false
+}
+
+func daemonsetChanged(expected *v1.DaemonSet, found *v1.DaemonSet) bool {
+	if !equality.Semantic.DeepEqual(expected.Spec.Selector, found.Spec.Selector) {
+		return true
+	}
+
+	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
+		//TODO implement comparison
+		//return true
+	}
+
+	return false
 }
 
 func matchLogLevel(level components.Level) string {

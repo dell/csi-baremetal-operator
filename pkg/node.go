@@ -1,10 +1,9 @@
 package pkg
 
 import (
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	v1 "sigs.k8s.io/controller-runtime/pkg/webhook/conversion/testdata/api/v1"
 	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -48,31 +47,40 @@ type Node struct {
 
 func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// create daemonset
-	ds := createNodeDaemonSet(csi)
-	if err := controllerutil.SetControllerReference(csi, ds, scheme); err != nil {
+	expected := createNodeDaemonSet(csi)
+	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 		return err
 	}
 
 	namespace := GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)
 
-	isDeployed, err := isDaemonSetDeployed(dsClient, nodeName)
+	found, err := dsClient.Get(nodeName, metav1.GetOptions{})
 	if err != nil {
-		n.Logger.Error(err, "Failed to get daemon set")
+		if errors.IsNotFound(err) {
+			if _, err := dsClient.Create(expected); err != nil {
+				n.Logger.Error(err, "Failed to create daemonset")
+				return err
+			}
+
+			n.Logger.Info("Daemonset created successfully")
+			return nil
+		}
+
+		n.Logger.Error(err, "Failed to get daemonset")
 		return err
 	}
 
-	if isDeployed {
-		n.Logger.Info("Daemon set already deployed")
+	if daemonsetChanged(expected, found) {
+		if _, err := dsClient.Update(expected); err != nil {
+			n.Logger.Error(err, "Failed to update daemonset")
+			return err
+		}
+
+		n.Logger.Info("Daemonset updated successfully")
 		return nil
 	}
 
-	if _, err := dsClient.Create(ds); err != nil {
-		n.Logger.Error(err, "Failed to create daemon set")
-		return err
-	}
-
-	n.Logger.Info("Daemon set created successfully")
 	return nil
 }
 
@@ -81,13 +89,6 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *appsv1.DaemonSet {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeName,
 			Namespace: GetNamespace(csi),
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(csi, schema.GroupVersionKind{
-					Group:   v1.GroupVersion.Group,
-					Version: v1.GroupVersion.Version,
-					Kind:    csi.Kind,
-				}),
-			},
 		},
 		Spec: appsv1.DaemonSetSpec{
 			// selector

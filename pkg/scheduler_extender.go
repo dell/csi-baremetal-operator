@@ -1,6 +1,9 @@
 package pkg
 
 import (
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -26,29 +29,42 @@ type SchedulerExtender struct {
 	logr.Logger
 }
 
-func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment) error {
+func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	// create daemonset
+	expected := createExtenderDaemonSet(csi)
+	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
+		return err
+	}
+
 	namespace := GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)
 
-	isDeployed, err := isDaemonSetDeployed(dsClient, extenderName)
+	found, err := dsClient.Get(extenderName, metav1.GetOptions{})
 	if err != nil {
-		n.Logger.Error(err, "Failed to get daemon set")
+		if errors.IsNotFound(err) {
+			if _, err := dsClient.Create(expected); err != nil {
+				n.Logger.Error(err, "Failed to create daemonset")
+				return err
+			}
+
+			n.Logger.Info("Daemonset created successfully")
+			return nil
+		}
+
+		n.Logger.Error(err, "Failed to get daemonset")
 		return err
 	}
 
-	if isDeployed {
-		n.Logger.Info("Daemon set already deployed")
+	if daemonsetChanged(expected, found) {
+		if _, err := dsClient.Update(expected); err != nil {
+			n.Logger.Error(err, "Failed to update daemonset")
+			return err
+		}
+
+		n.Logger.Info("Daemonset updated successfully")
 		return nil
 	}
 
-	// create daemonset
-	ds := createExtenderDaemonSet(csi)
-	if _, err := dsClient.Create(ds); err != nil {
-		n.Logger.Error(err, "Failed to create daemon set")
-		return err
-	}
-
-	n.Logger.Info("Daemon set created successfully")
 	return nil
 }
 

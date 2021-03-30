@@ -18,9 +18,13 @@ package controllers
 
 import (
 	"context"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/go-logr/logr"
 
@@ -46,6 +50,11 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	deployment := new(csibaremetalv1.Deployment)
 	err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("Custom resource is not found")
+			return ctrl.Result{}, nil
+		}
+
 		log.Error(err, "Unable to read custom resource")
 		return ctrl.Result{Requeue: true}, err
 	}
@@ -61,6 +70,15 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		Watches(&source.Kind{Type: &csibaremetalv1.Deployment{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &csibaremetalv1.Deployment{},
+		}).
+		Watches(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &csibaremetalv1.Deployment{},
+		}).
 		For(&csibaremetalv1.Deployment{}).
 		Complete(r)
 }

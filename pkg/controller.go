@@ -1,16 +1,18 @@
 package pkg
 
 import (
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
 
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-
-	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
@@ -32,29 +34,42 @@ type Controller struct {
 	logr.Logger
 }
 
-func (c *Controller) Update(csi *csibaremetalv1.Deployment) error {
+func (c *Controller) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	// create deployment
+	expected := createControllerDeployment(csi)
+	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
+		return err
+	}
+
 	namespace := GetNamespace(csi)
 	dsClient := c.AppsV1().Deployments(namespace)
 
-	isDeployed, err := isDeploymentDeployed(dsClient, controllerName)
+	found, err := dsClient.Get(controllerName, metav1.GetOptions{})
 	if err != nil {
-		c.Logger.Error(err, "Failed to get daemon set")
+		if errors.IsNotFound(err) {
+			if _, err := dsClient.Create(expected); err != nil {
+				c.Logger.Error(err, "Failed to create deployment")
+				return err
+			}
+
+			c.Logger.Info("Deployment created successfully")
+			return nil
+		}
+
+		c.Logger.Error(err, "Failed to get deployment")
 		return err
 	}
 
-	if isDeployed {
-		c.Logger.Info("Deployment already deployed")
+	if deploymentChanged(expected, found) {
+		if _, err := dsClient.Update(expected); err != nil {
+			c.Logger.Error(err, "Failed to update deployment")
+			return err
+		}
+
+		c.Logger.Info("Deployment updated successfully")
 		return nil
 	}
 
-	// create deployment
-	deployment := createControllerDeployment(csi)
-	if _, err := dsClient.Create(deployment); err != nil {
-		c.Logger.Error(err, "Failed to create deployment")
-		return err
-	}
-
-	c.Logger.Info("Deployment created successfully")
 	return nil
 }
 
