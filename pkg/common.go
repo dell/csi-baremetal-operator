@@ -27,7 +27,7 @@ const (
 	CSISocketDirVolume = "csi-socket-dir"
 
 	// termination settings
-	defaultTerminationMessagePath   = "/dev/termination-log"
+	defaultTerminationMessagePath   = "/var/log/termination-log"
 	defaultTerminationMessagePolicy = corev1.TerminationMessageReadFile
 )
 
