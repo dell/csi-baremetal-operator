@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"reflect"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -49,6 +50,10 @@ func (c *Controller) Update(csi *csibaremetalv1.Deployment) error {
 
 	if isDeployed {
 		c.Logger.Info("Deployment already deployed")
+		if err := c.handleControllerUpgrade(csi); err != nil {
+			c.Logger.Info("Failed to upgrade controller: %v", err)
+			return err
+		}
 		return nil
 	}
 
@@ -60,6 +65,22 @@ func (c *Controller) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	c.Logger.Info("Deployment created successfully")
+	return nil
+}
+
+func (c *Controller) handleControllerUpgrade(csi *csibaremetalv1.Deployment) error {
+	dClient := c.AppsV1().Deployments(GetNamespace(csi))
+	deployment, err := dClient.Get(controllerName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	uDeployment := createControllerDeployment(csi)
+	if !reflect.DeepEqual(deployment.Spec, uDeployment.Spec) {
+		deployment.Spec = uDeployment.Spec
+		if _, err = dClient.Update(deployment); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -116,17 +137,18 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		provisioner = NewSidecar(provisionerName, provisionerTag, "Always")
 		resizer     = NewSidecar(resizerName, resizerTag, "Always")
 		liveness    = NewSidecar(livenessProbeSidecar, livenessProbeTag, "Always")
+		c           = csi.Spec.Driver.Controller
 	)
 	return []corev1.Container{
 		{
 			Name:            controller,
-			Image:           constructFullImageName(csi.Spec.Driver.Controller.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Driver.Controller.Image.PullPolicy),
+			Image:           constructFullImageName(c.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
+			ImagePullPolicy: corev1.PullPolicy(c.Image.PullPolicy),
 			Args: []string{
 				"--endpoint=$(CSI_ENDPOINT)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Controller.Log.Level),
+				"--loglevel=" + matchLogLevel(c.Log.Level),
 				"--healthport=" + strconv.Itoa(healthPort),
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
@@ -136,7 +158,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 					FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
 				}},
 				{Name: "CSI_ENDPOINT", Value: "unix:///csi/csi.sock"},
-				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Driver.Controller.Log.Format)},
+				{Name: "LOG_FORMAT", Value: matchLogFormat(c.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
@@ -173,7 +195,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		},
 		{
 			Name:            provisioner.Name,
-			Image:           constructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args: []string{
 				"--csi-address=$(ADDRESS)",
@@ -190,7 +212,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		},
 		{
 			Name:            resizer.Name,
-			Image:           constructFullImageName(resizer.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(resizer.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/csi-resizer"},
 			Args: []string{
@@ -207,7 +229,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		},
 		{
 			Name:            liveness.Name,
-			Image:           constructFullImageName(liveness.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(liveness.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Args:            []string{"--csi-address=$(ADDRESS)"},
 			VolumeMounts: []corev1.VolumeMount{

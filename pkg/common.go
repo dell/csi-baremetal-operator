@@ -130,13 +130,19 @@ func matchLogFormat(format components.Format) string {
 	}
 }
 
-func constructFullImageName(image *components.Image, registry string) string {
-	var imageName string
+func constructFullImageName(image *components.Image, registry, tag string) string {
+	var (
+		imageName string
+		imageTag  = tag
+	)
 
 	if registry != "" {
 		imageName += registry + "/"
 	}
+	if image.Tag != "" {
+		imageTag = image.Tag
+	}
 
-	imageName += image.Name + ":" + image.Tag
+	imageName += image.Name + ":" + imageTag
 	return imageName
 }

@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"reflect"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -55,6 +56,10 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 
 	if isDeployed {
 		n.Logger.Info("Daemon set already deployed")
+		if err := n.handleNodeUpgrade(csi); err != nil {
+			n.Logger.Info("Failed to upgrade node: %v", err)
+			return err
+		}
 		return nil
 	}
 
@@ -66,6 +71,22 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	n.Logger.Info("Daemon set created successfully")
+	return nil
+}
+
+func (n *Node) handleNodeUpgrade(csi *csibaremetalv1.Deployment) error {
+	dsClient := n.AppsV1().DaemonSets(GetNamespace(csi))
+	daemonSet, err := dsClient.Get(nodeName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	uDaemonSet := createNodeDaemonSet(csi)
+	if !reflect.DeepEqual(daemonSet.Spec, uDaemonSet.Spec) {
+		daemonSet.Spec = uDaemonSet.Spec
+		if _, err = dsClient.Update(daemonSet); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -184,7 +205,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            lp.Name,
-			Image:           constructFullImageName(lp.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(lp.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
 			ImagePullPolicy: corev1.PullPolicy(lp.Image.PullPolicy),
 			Args:            []string{"--csi-address=/csi/csi.sock"},
 			VolumeMounts: []corev1.VolumeMount{
@@ -193,7 +214,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            dr.Name,
-			Image:           constructFullImageName(dr.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(dr.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
 			ImagePullPolicy: corev1.PullPolicy(dr.Image.PullPolicy),
 			Args: []string{"--v=5", "--csi-address=$(ADDRESS)",
 				"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"},
@@ -213,7 +234,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            "node",
-			Image:           constructFullImageName(node.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(node.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
 			ImagePullPolicy: corev1.PullPolicy(node.Image.PullPolicy),
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
@@ -276,7 +297,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            "drivemgr",
-			Image:           constructFullImageName(driveMgr.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(driveMgr.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
 			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
 			Args: []string{
 				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),

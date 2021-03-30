@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"path"
+	"reflect"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -48,6 +49,10 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment) error {
 
 	if isDeployed {
 		p.Logger.Info("Daemon set already deployed")
+		if err := p.handlePatcherUpgrade(csi); err != nil {
+			p.Logger.Info("Failed to upgrade patcher: %v", err)
+			return err
+		}
 		return nil
 	}
 
@@ -60,6 +65,21 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment) error {
 
 	p.Logger.Info("Daemon set created successfully")
 	return nil
+}
+
+func (p *SchedulerPatcher) handlePatcherUpgrade(csi *csibaremetalv1.Deployment) error {
+	dsClient := p.AppsV1().DaemonSets(GetNamespace(csi))
+	daemonSet, err := dsClient.Get(patcherName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	uDaemonSet := createPatcherDaemonSet(csi)
+	if !reflect.DeepEqual(daemonSet.Spec, uDaemonSet.Spec) {
+		daemonSet.Spec = uDaemonSet.Spec
+		if _, err = dsClient.Update(daemonSet); err != nil {
+			return err
+		}
+	}
 }
 
 func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
@@ -106,7 +126,7 @@ func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container 
 	return []corev1.Container{
 		{
 			Name:            patcherContainerName,
-			Image:           constructFullImageName(csi.Spec.Scheduler.Patcher.Image, csi.Spec.GlobalRegistry),
+			Image:           constructFullImageName(csi.Spec.Scheduler.Patcher.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Scheduler.Patcher.Image.PullPolicy),
 			Command: []string{
 				"python3",
