@@ -1,15 +1,11 @@
 package pkg
 
 import (
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	k8sError "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-
-	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
@@ -86,26 +82,6 @@ func GetNamespace(csi *csibaremetalv1.Deployment) string {
 	return csi.Namespace
 }
 
-func isDaemonSetDeployed(dsClient appsv1.DaemonSetInterface, name string) (bool, error) {
-	_, err := dsClient.Get(name, metav1.GetOptions{})
-	return isFound(err)
-}
-
-func isDeploymentDeployed(dsClient appsv1.DeploymentInterface, name string) (bool, error) {
-	_, err := dsClient.Get(name, metav1.GetOptions{})
-	return isFound(err)
-}
-
-func isFound(err error) (bool, error) {
-	if err != nil {
-		if k8sError.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
 func deploymentChanged(expected *v1.Deployment, found *v1.Deployment) bool {
 	if !equality.Semantic.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
 		return true
@@ -170,7 +146,7 @@ func matchLogFormat(format components.Format) string {
 	}
 }
 
-func constractFullImageName(image *components.Image, registry string) string {
+func constructFullImageName(image *components.Image, registry string) string {
 	var imageName string
 
 	if registry != "" {
