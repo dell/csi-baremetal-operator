@@ -24,6 +24,11 @@ spec:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
       sidecars:
+       liveness-probe:
+         image:
+            name: liveness-probe
+            pullPolicy: {{ .Values.image.pullPolicy }}
+            tag: {{ .Values.driver.livenessProbe.image.tag }}
        csi-provisioner:
           image:
             name: csi-provisioner
@@ -63,6 +68,11 @@ spec:
             name: csi-node-driver-registrar
             pullPolicy: {{ .Values.image.pullPolicy }}
             tag: {{ .Values.driver.nodeDriverRegistrar.image.tag }}
+        liveness-probe:
+          image:
+            name: liveness-probe
+            pullPolicy: {{ .Values.image.pullPolicy }}
+            tag: {{ .Values.driver.livenessProbe.image.tag }}
       testEnv: {{ .Values.env.test }}
     metrics:
       path: {{ .Values.driver.metrics.path }}
