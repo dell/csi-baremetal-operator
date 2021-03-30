@@ -26,7 +26,7 @@ spec:
       sidecars:
        liveness-probe:
           image:
-            name: liveness-probe
+            name: livenessprobe
             pullPolicy: {{ .Values.image.pullPolicy }}
             tag: {{ .Values.driver.livenessProbe.image.tag }}
        csi-provisioner:
@@ -68,9 +68,9 @@ spec:
             name: csi-node-driver-registrar
             pullPolicy: {{ .Values.image.pullPolicy }}
             tag: {{ .Values.driver.nodeDriverRegistrar.image.tag }}
-        liveness-probe:
+        livenessprobe:
           image:
-            name: liveness-probe
+            name: livenessprobe
             pullPolicy: {{ .Values.image.pullPolicy }}
             tag: {{ .Values.driver.livenessProbe.image.tag }}
       testEnv: {{ .Values.env.test }}
