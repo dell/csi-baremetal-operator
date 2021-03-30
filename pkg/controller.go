@@ -66,14 +66,17 @@ func (c *Controller) Update(csi *csibaremetalv1.Deployment) error {
 }
 
 func (c *Controller) handleControllerUpgrade(csi *csibaremetalv1.Deployment) error {
+	c.Logger.Info("Handle controller upgrade")
 	dClient := c.AppsV1().Deployments(GetNamespace(csi))
 	deployment, err := dClient.Get(controllerName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	uDeployment := createControllerDeployment(csi)
+	c.Logger.Info("Updated deployment %v", uDeployment)
 	if !reflect.DeepEqual(deployment.Spec, uDeployment.Spec) {
 		deployment.Spec = uDeployment.Spec
+		c.Logger.Info("Updating...")
 		if _, err = dClient.Update(deployment); err != nil {
 			return err
 		}

@@ -18,7 +18,7 @@ const (
 
 	// ports
 	PrometheusPort = 8787
-	LivenessPort   = "livenessprobe"
+	LivenessPort   = "liveness-probe"
 
 	// timeouts
 	TerminationGracePeriodSeconds = 10
