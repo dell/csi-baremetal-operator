@@ -14,24 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pkg
-
-import "github.com/dell/csi-baremetal-operator/api/v1/components"
+package components
 
 // Sidecar represent CSI sidecar containers
 type Sidecar struct {
-	Name  string
-	Image *components.Image
-}
-
-// NewSidecar is a constructor for Sidecar
-func NewSidecar(name, tag, pullPolicy string) *Sidecar {
-	return &Sidecar{
-		Name: name,
-		Image: &components.Image{
-			Name:       name,
-			Tag:        tag,
-			PullPolicy: pullPolicy,
-		},
-	}
+	Image *Image `json:"image,omitempty"`
+	Name  string `json:"name,omitempty"`
 }

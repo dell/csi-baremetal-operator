@@ -24,17 +24,17 @@ spec:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
       sidecars:
-        - name: csi-provisioner
+       csi-provisioner:
           image:
             name: csi-provisioner
             pullPolicy: {{ .Values.image.pullPolicy }}
             tag: {{ .Values.driver.provisioner.image.tag }}
-        - name: csi-attacher
+        csi-attacher:
           image:
             name: csi-attacher
             pullPolicy: {{ .Values.image.pullPolicy }}
             tag: {{ .Values.driver.attacher.image.tag }}
-        - name: csi-resizer
+        csi-resizer:
           image:
             name: csi-resizer
             pullPolicy: {{ .Values.image.pullPolicy }}
@@ -58,7 +58,7 @@ spec:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
       sidecars:
-        - name: csi-node-driver-registrar
+        csi-node-driver-registrar:
           image:
             name: csi-node-driver-registrar
             pullPolicy: {{ .Values.image.pullPolicy }}

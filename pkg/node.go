@@ -188,12 +188,12 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
 func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
-		lp            = NewSidecar(livenessProbeSidecar, livenessProbeTag, "Always")
-		dr            = NewSidecar(driverRegistrarSidecar, driverRegistrarTag, "Always")
 		bidirectional = corev1.MountPropagationBidirectional
 		driveMgr      = csi.Spec.Driver.Node.DriveMgr
 		node          = csi.Spec.Driver.Node
 		testEnv       = csi.Spec.GlobalRegistry == ""
+		lp            = node.Sidecars[livenessProbeSidecar]
+		dr            = node.Sidecars[driverRegistrarSidecar]
 	)
 	mounts := []corev1.VolumeMount{
 		{Name: hostDevVolume, MountPath: "/dev"},

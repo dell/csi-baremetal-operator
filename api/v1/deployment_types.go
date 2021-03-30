@@ -29,7 +29,7 @@ type DeploymentStatus struct {
 }
 
 // +kubebuilder:object:root=true
-
+// +kubebuilder:resource:shortName={csi,csis}
 // Deployment is the Schema for the deployments API
 type Deployment struct {
 	metav1.TypeMeta   `json:",inline"`
