@@ -99,10 +99,10 @@ func deploymentChanged(expected *v1.Deployment, found *v1.Deployment) bool {
 		return true
 	}
 
-	if !equality.Semantic.DeepEqual(expected.Spec.Template.Spec.Containers, found.Spec.Template.Spec.Containers) {
-		//TODO implement comparison
-		//return true
-	}
+	//TODO implement comparison
+	//if !equality.Semantic.DeepEqual(expected.Spec.Template.Spec.Containers, found.Spec.Template.Spec.Containers) {
+	//return true
+	//}
 
 	return false
 }
@@ -112,10 +112,10 @@ func daemonsetChanged(expected *v1.DaemonSet, found *v1.DaemonSet) bool {
 		return true
 	}
 
-	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
-		//TODO implement comparison
-		//return true
-	}
+	//TODO implement comparison
+	//if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
+	//return true
+	//}
 
 	return false
 }
