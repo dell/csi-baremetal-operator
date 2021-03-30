@@ -24,7 +24,7 @@ spec:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
       sidecars:
-       liveness-probe:
+       livenessprobe:
           image:
             name: livenessprobe
             pullPolicy: {{ .Values.image.pullPolicy }}
