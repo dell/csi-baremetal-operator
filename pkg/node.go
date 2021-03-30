@@ -33,7 +33,7 @@ const (
 	csiPathVolume         = "csi-path"
 	driveConfigVolume     = "drive-config"
 
-	livenessProbeSidecar   = "liveness-probe"
+	livenessProbeSidecar   = "livenessprobe"
 	driverRegistrarSidecar = "csi-node-driver-registrar"
 )
 
