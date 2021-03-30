@@ -205,7 +205,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            lp.Name,
-			Image:           constructFullImageName(lp.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
+			Image:           constructFullImageName(lp.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(lp.Image.PullPolicy),
 			Args:            []string{"--csi-address=/csi/csi.sock"},
 			VolumeMounts: []corev1.VolumeMount{
@@ -214,7 +214,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            dr.Name,
-			Image:           constructFullImageName(dr.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
+			Image:           constructFullImageName(dr.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(dr.Image.PullPolicy),
 			Args: []string{"--v=5", "--csi-address=$(ADDRESS)",
 				"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"},
@@ -234,7 +234,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            "node",
-			Image:           constructFullImageName(node.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
+			Image:           constructFullImageName(node.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(node.Image.PullPolicy),
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
@@ -297,7 +297,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		},
 		{
 			Name:            "drivemgr",
-			Image:           constructFullImageName(driveMgr.Image, csi.Spec.GlobalRegistry, csi.Spec.GlobalTag),
+			Image:           constructFullImageName(driveMgr.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
 			Args: []string{
 				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
