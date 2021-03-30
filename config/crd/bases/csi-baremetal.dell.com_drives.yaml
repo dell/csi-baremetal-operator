@@ -97,7 +97,7 @@ spec:
       type: string
       description: Drive node location
       JSONPath: .spec.NodeId
-    - name: Size
+    - name: SIZE
       type: string
       description: Drive capacity
       JSONPath: .spec.Size

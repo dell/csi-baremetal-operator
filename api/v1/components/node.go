@@ -18,9 +18,7 @@ package components
 
 // Node encapsulates information for CSI node components
 type Node struct {
-	DriveMgr *DriveMgr  `json:"driveMgr,omitempty"`
-	Image    *Image     `json:"image,omitempty"`
-	Log      *Log       `json:"log,omitempty"`
-	Sidecars []*Sidecar `json:"sidecars,omitempty"`
-	TestEnv  bool       `json:"testEnv"`
+	DriveMgr *DriveMgr `json:"driveMgr,omitempty"`
+	Image    *Image    `json:"image,omitempty"`
+	Log      *Log      `json:"log,omitempty"`
 }
