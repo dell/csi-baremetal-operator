@@ -2,10 +2,11 @@ package pkg
 
 import (
 	"github.com/go-logr/logr"
-	k8sError "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
@@ -13,8 +14,6 @@ import (
 
 const (
 	CSIName = "csi-baremetal"
-	// versions
-	CSIVersion = "0.0.13-375.3c20841"
 
 	// ports
 	PrometheusPort = 8787
@@ -26,6 +25,10 @@ const (
 	// volumes
 	LogsVolume         = "logs"
 	CSISocketDirVolume = "csi-socket-dir"
+
+	// termination settings
+	defaultTerminationMessagePath   = "/var/log/termination-log"
+	defaultTerminationMessagePolicy = corev1.TerminationMessageReadFile
 )
 
 type CSIDeployment struct {
@@ -56,20 +59,20 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeploy
 	}
 }
 
-func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment) error {
-	if err := c.node.Update(csi); err != nil {
+func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	if err := c.node.Update(csi, scheme); err != nil {
 		return err
 	}
 
-	if err := c.controller.Update(csi); err != nil {
+	if err := c.controller.Update(csi, scheme); err != nil {
 		return err
 	}
 
-	if err := c.extender.Update(csi); err != nil {
+	if err := c.extender.Update(csi, scheme); err != nil {
 		return err
 	}
 
-	if err := c.patcher.Update(csi); err != nil {
+	if err := c.patcher.Update(csi, scheme); err != nil {
 		return err
 	}
 
@@ -84,24 +87,32 @@ func GetNamespace(csi *csibaremetalv1.Deployment) string {
 	return csi.Namespace
 }
 
-func isDaemonSetDeployed(dsClient appsv1.DaemonSetInterface, name string) (bool, error) {
-	_, err := dsClient.Get(name, metav1.GetOptions{})
-	return isFound(err)
-}
-
-func isDeploymentDeployed(dsClient appsv1.DeploymentInterface, name string) (bool, error) {
-	_, err := dsClient.Get(name, metav1.GetOptions{})
-	return isFound(err)
-}
-
-func isFound(err error) (bool, error) {
-	if err != nil {
-		if k8sError.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
+func deploymentChanged(expected *v1.Deployment, found *v1.Deployment) bool {
+	if !equality.Semantic.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
+		return true
 	}
-	return true, nil
+
+	if !equality.Semantic.DeepEqual(expected.Spec.Selector, found.Spec.Selector) {
+		return true
+	}
+
+	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
+		return true
+	}
+
+	return false
+}
+
+func daemonsetChanged(expected *v1.DaemonSet, found *v1.DaemonSet) bool {
+	if !equality.Semantic.DeepEqual(expected.Spec.Selector, found.Spec.Selector) {
+		return true
+	}
+
+	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
+		return true
+	}
+
+	return false
 }
 
 func matchLogLevel(level components.Level) string {

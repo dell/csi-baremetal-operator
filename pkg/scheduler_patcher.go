@@ -5,9 +5,12 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/go-logr/logr"
 
@@ -36,29 +39,43 @@ type SchedulerPatcher struct {
 	logr.Logger
 }
 
-func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment) error {
+func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	// create daemonset
+	expected := createPatcherDaemonSet(csi)
+	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
+		return err
+	}
+
 	namespace := GetNamespace(csi)
 	dsClient := p.AppsV1().DaemonSets(namespace)
 
-	isDeployed, err := isDaemonSetDeployed(dsClient, patcherName)
+	found, err := dsClient.Get(patcherName, metav1.GetOptions{})
 	if err != nil {
-		p.Logger.Error(err, "Failed to get daemon set")
+		if errors.IsNotFound(err) {
+			if _, err := dsClient.Create(expected); err != nil {
+				p.Logger.Error(err, "Failed to create daemonset")
+				return err
+			}
+
+			p.Logger.Info("Daemonset created successfully")
+			return nil
+		}
+
+		p.Logger.Error(err, "Failed to get daemonset")
 		return err
 	}
 
-	if isDeployed {
-		p.Logger.Info("Daemon set already deployed")
+	if daemonsetChanged(expected, found) {
+		found.Spec = expected.Spec
+		if _, err := dsClient.Update(found); err != nil {
+			p.Logger.Error(err, "Failed to update daemonset")
+			return err
+		}
+
+		p.Logger.Info("Daemonset updated successfully")
 		return nil
 	}
 
-	// create daemonset
-	ds := createPatcherDaemonSet(csi)
-	if _, err := dsClient.Create(ds); err != nil {
-		p.Logger.Error(err, "Failed to create daemon set")
-		return err
-	}
-
-	p.Logger.Info("Daemon set created successfully")
 	return nil
 }
 
@@ -81,8 +98,13 @@ func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					Labels: map[string]string{"app": patcherName},
 				},
 				Spec: corev1.PodSpec{
-					Containers: createPatcherContainers(csi),
-					Volumes:    createPatcherVolumes(),
+					Containers:                    createPatcherContainers(csi),
+					Volumes:                       createPatcherVolumes(),
+					RestartPolicy:                 corev1.RestartPolicyAlways,
+					DNSPolicy:                     corev1.DNSClusterFirst,
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
+					SecurityContext:               &corev1.PodSecurityContext{},
+					SchedulerName:                 corev1.DefaultSchedulerName,
 					// todo https://github.com/dell/csi-baremetal/issues/329
 					Tolerations: []corev1.Toleration{
 						{Key: "CriticalAddonsOnly", Operator: corev1.TolerationOpExists},
@@ -129,23 +151,30 @@ func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container 
 				{Name: kubernetesSchedulerVolume, MountPath: schedulerPath},
 				{Name: kubernetesManifestsVolume, MountPath: manifestsPath},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 	}
 }
 
 func createPatcherVolumes() []corev1.Volume {
+	var (
+		schedulerPatcherConfigMapMode = corev1.ConfigMapVolumeSourceDefaultMode
+		unset                         = corev1.HostPathUnset
+	)
 	return []corev1.Volume{
 		{Name: schedulerPatcherConfigVolume, VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{Name: schedulerPatcherConfigMapName},
+				DefaultMode:          &schedulerPatcherConfigMapMode,
 				Optional:             pointer.BoolPtr(true),
 			},
 		}},
 		{Name: kubernetesSchedulerVolume, VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{Path: schedulerPath},
+			HostPath: &corev1.HostPathVolumeSource{Path: schedulerPath, Type: &unset},
 		}},
 		{Name: kubernetesManifestsVolume, VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{Path: manifestsPath},
+			HostPath: &corev1.HostPathVolumeSource{Path: manifestsPath, Type: &unset},
 		}},
 	}
 }
