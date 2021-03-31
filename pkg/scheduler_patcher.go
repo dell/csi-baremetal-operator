@@ -66,7 +66,8 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 	}
 
 	if daemonsetChanged(expected, found) {
-		if _, err := dsClient.Update(expected); err != nil {
+		found.Spec = expected.Spec
+		if _, err := dsClient.Update(found); err != nil {
 			p.Logger.Error(err, "Failed to update daemonset")
 			return err
 		}

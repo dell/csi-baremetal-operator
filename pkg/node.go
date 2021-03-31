@@ -73,7 +73,8 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) er
 	}
 
 	if daemonsetChanged(expected, found) {
-		if _, err := dsClient.Update(expected); err != nil {
+		found.Spec = expected.Spec
+		if _, err := dsClient.Update(found); err != nil {
 			n.Logger.Error(err, "Failed to update daemonset")
 			return err
 		}

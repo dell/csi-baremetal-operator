@@ -67,7 +67,8 @@ func (c *Controller) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Sche
 	}
 
 	if deploymentChanged(expected, found) {
-		if _, err := dsClient.Update(expected); err != nil {
+		found.Spec = expected.Spec
+		if _, err := dsClient.Update(found); err != nil {
 			c.Logger.Error(err, "Failed to update deployment")
 			return err
 		}
