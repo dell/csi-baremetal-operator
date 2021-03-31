@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	// TODO change log library - https://github.com/dell/csi-baremetal/issues/351
 	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
@@ -52,6 +53,8 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			// TODO set logLevel as Warn after changing log library
+			// https://github.com/dell/csi-baremetal/issues/351
 			log.Info("Custom resource is not found")
 			return ctrl.Result{}, nil
 		}
