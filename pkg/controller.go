@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"reflect"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -47,10 +46,6 @@ func (c *Controller) Update(csi *csibaremetalv1.Deployment) error {
 
 	if isDeployed {
 		c.Logger.Info("Deployment already deployed")
-		if err := c.handleControllerUpgrade(csi); err != nil {
-			c.Logger.Info("Failed to upgrade controller: %v", err)
-			return err
-		}
 		return nil
 	}
 
@@ -62,22 +57,6 @@ func (c *Controller) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	c.Logger.Info("Deployment created successfully")
-	return nil
-}
-
-func (c *Controller) handleControllerUpgrade(csi *csibaremetalv1.Deployment) error {
-	dClient := c.AppsV1().Deployments(GetNamespace(csi))
-	deployment, err := dClient.Get(controllerName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	uDeployment := createControllerDeployment(csi)
-	if !reflect.DeepEqual(deployment.Spec, uDeployment.Spec) {
-		deployment.Spec = uDeployment.Spec
-		if _, err = dClient.Update(deployment); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

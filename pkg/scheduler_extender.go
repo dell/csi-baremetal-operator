@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"reflect"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -39,10 +38,6 @@ func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment) error {
 
 	if isDeployed {
 		n.Logger.Info("Daemon set already deployed")
-		if err := n.handleSchedulerUpgrade(csi); err != nil {
-			n.Logger.Info("Failed to upgrade scheduler extender: %v", err)
-			return err
-		}
 		return nil
 	}
 
@@ -54,22 +49,6 @@ func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	n.Logger.Info("Daemon set created successfully")
-	return nil
-}
-
-func (n *SchedulerExtender) handleSchedulerUpgrade(csi *csibaremetalv1.Deployment) error {
-	dsClient := n.AppsV1().DaemonSets(GetNamespace(csi))
-	daemonSet, err := dsClient.Get(extenderName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	uDaemonSet := createExtenderDaemonSet(csi)
-	if !reflect.DeepEqual(daemonSet.Spec, uDaemonSet.Spec) {
-		daemonSet.Spec = uDaemonSet.Spec
-		if _, err = dsClient.Update(daemonSet); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

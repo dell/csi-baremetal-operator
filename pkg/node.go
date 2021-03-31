@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"reflect"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -54,10 +53,6 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 
 	if isDeployed {
 		n.Logger.Info("Daemon set already deployed")
-		if err := n.handleNodeUpgrade(csi); err != nil {
-			n.Logger.Info("Failed to upgrade node: %v", err)
-			return err
-		}
 		return nil
 	}
 
@@ -69,22 +64,6 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
 	}
 
 	n.Logger.Info("Daemon set created successfully")
-	return nil
-}
-
-func (n *Node) handleNodeUpgrade(csi *csibaremetalv1.Deployment) error {
-	dsClient := n.AppsV1().DaemonSets(GetNamespace(csi))
-	daemonSet, err := dsClient.Get(nodeName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	uDaemonSet := createNodeDaemonSet(csi)
-	if !reflect.DeepEqual(daemonSet.Spec, uDaemonSet.Spec) {
-		daemonSet.Spec = uDaemonSet.Spec
-		if _, err = dsClient.Update(daemonSet); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
