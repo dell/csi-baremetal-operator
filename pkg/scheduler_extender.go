@@ -106,7 +106,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 		{
 			Name:            extenderContainerName,
 			Image:           constructFullImageName(csi.Spec.Scheduler.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Scheduler.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--namespace=$(NAMESPACE)",
 				"--provisioner=" + CSIName,

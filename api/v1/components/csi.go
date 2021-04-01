@@ -22,6 +22,7 @@ type DeploymentSpec struct {
 	NodeOperator     *NodeOperator     `json:"operator,omitempty"`
 	Scheduler        *Scheduler        `json:"scheduler,omitempty"`
 	GlobalRegistry   string            `json:"globalRegistry,omitempty"`
+	PullPolicy       string            `json:"pullPolicy,omitempty"`
 	NodeSelectors    map[string]string `json:"nodeSelectors,omitempty"`
 	NodeIDAnnotation bool              `json:"nodeIDAnnotation,omitempty"`
 }

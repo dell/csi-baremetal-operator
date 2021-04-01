@@ -119,7 +119,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		{
 			Name:            controller,
 			Image:           constructFullImageName(c.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(c.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--endpoint=$(CSI_ENDPOINT)",
 				"--namespace=$(NAMESPACE)",
@@ -172,7 +172,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		{
 			Name:            provisionerName,
 			Image:           constructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(provisioner.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--csi-address=$(ADDRESS)",
 				"--v=5",
@@ -189,7 +189,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		{
 			Name:            resizerName,
 			Image:           constructFullImageName(resizer.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(resizer.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Command:         []string{"/csi-resizer"},
 			Args: []string{
 				"--csi-address=$(ADDRESS)",
@@ -206,7 +206,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		{
 			Name:            livenessProbeSidecar,
 			Image:           constructFullImageName(liveness.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(liveness.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args:            []string{"--csi-address=$(ADDRESS)"},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
