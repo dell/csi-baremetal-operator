@@ -40,7 +40,6 @@ spec:
           image:
             name: csi-resizer
             tag: {{ .Values.driver.resizer.image.tag }}
-      testEnv: {{ .Values.env.test }}
     node:
       driveMgr:
         image:
@@ -62,7 +61,6 @@ spec:
           image:
             name: livenessprobe
             tag: {{ .Values.driver.livenessProbe.image.tag }}
-      testEnv: {{ .Values.env.test }}
     metrics:
       path: {{ .Values.driver.metrics.path }}
       port: {{ .Values.driver.metrics.port }}
@@ -97,7 +95,6 @@ spec:
       restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
     storageProvisioner: {{ .Values.scheduler.provisioner }}
-    testEnv: {{ .Values.env.test }}
   operator:
     enable: {{ .Values.operator.enable }}
     image:
@@ -106,4 +103,3 @@ spec:
     log:
       format: {{ .Values.operator.log.format }}
       level: {{ .Values.operator.log.level }}
-    testEnv: {{ .Values.env.test }}

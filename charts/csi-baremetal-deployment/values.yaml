@@ -7,9 +7,6 @@ image:
   tag: green
   pullPolicy: Always
 
-env:
-  test: false
-
 # Storage Class name that provisions PVs dynamically
 storageClass:
   name: csi-baremetal-sc
