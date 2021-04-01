@@ -47,9 +47,6 @@ spec:
           name: csi-baremetal-{{ .Values.driver.drivemgr.type }}
           tag: {{ .Values.driver.drivemgr.image.tag | default .Values.image.tag }}
         endpoint: {{ .Values.driver.drivemgr.grpc.server.endpoint }}
-        deployConfig: {{ .Values.driver.drivemgr.deployConfig }}
-        amountOfLoopback: {{ .Values.driver.drivemgr.amountOfLoopDevices }}
-        sizeOfLoopback: {{ .Values.driver.drivemgr.sizeOfLoopDevices }}
       image:
         name: csi-baremetal-node
         tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}

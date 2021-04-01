@@ -6,10 +6,13 @@ import (
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
@@ -41,29 +44,43 @@ type Node struct {
 	logr.Logger
 }
 
-func (n *Node) Update(csi *csibaremetalv1.Deployment) error {
+func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	// create daemonset
+	expected := createNodeDaemonSet(csi)
+	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
+		return err
+	}
+
 	namespace := GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)
 
-	isDeployed, err := isDaemonSetDeployed(dsClient, nodeName)
+	found, err := dsClient.Get(nodeName, metav1.GetOptions{})
 	if err != nil {
-		n.Logger.Error(err, "Failed to get daemon set")
+		if errors.IsNotFound(err) {
+			if _, err := dsClient.Create(expected); err != nil {
+				n.Logger.Error(err, "Failed to create daemonset")
+				return err
+			}
+
+			n.Logger.Info("Daemonset created successfully")
+			return nil
+		}
+
+		n.Logger.Error(err, "Failed to get daemonset")
 		return err
 	}
 
-	if isDeployed {
-		n.Logger.Info("Daemon set already deployed")
+	if daemonsetChanged(expected, found) {
+		found.Spec = expected.Spec
+		if _, err := dsClient.Update(found); err != nil {
+			n.Logger.Error(err, "Failed to update daemonset")
+			return err
+		}
+
+		n.Logger.Info("Daemonset updated successfully")
 		return nil
 	}
 
-	// create daemonset
-	ds := createNodeDaemonSet(csi)
-	if _, err := dsClient.Create(ds); err != nil {
-		n.Logger.Error(err, "Failed to create daemon set")
-		return err
-	}
-
-	n.Logger.Info("Daemon set created successfully")
 	return nil
 }
 
@@ -97,9 +114,14 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 				Spec: corev1.PodSpec{
 					Volumes:                       createNodeVolumes(csi.Spec.GlobalRegistry == ""),
 					Containers:                    createNodeContainers(csi),
+					RestartPolicy:                 corev1.RestartPolicyAlways,
+					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
 					NodeSelector:                  csi.Spec.NodeSelectors,
 					ServiceAccountName:            nodeServiceAccountName,
+					DeprecatedServiceAccount:      nodeServiceAccountName,
+					SecurityContext:               &corev1.PodSecurityContext{},
+					SchedulerName:                 corev1.DefaultSchedulerName,
 					HostIPC:                       true,
 				},
 			},
@@ -110,51 +132,55 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 func createNodeVolumes(deployConfig bool) []corev1.Volume {
 	directory := corev1.HostPathDirectory
 	directoryOrCreate := corev1.HostPathDirectoryOrCreate
-	volumes := []corev1.Volume{
-		{Name: LogsVolume, VolumeSource: corev1.VolumeSource{
+	unset := corev1.HostPathUnset
+	volumes := make([]corev1.Volume, 0, 13)
+	volumes = append(volumes,
+		corev1.Volume{Name: LogsVolume, VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}},
-		{Name: hostDevVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: hostDevVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/dev", Type: &directory},
 		}},
-		{Name: hostHomeVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: hostHomeVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/home", Type: &directory},
 		}},
-		{Name: hostSysVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: hostSysVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/sys", Type: &directory},
 		}},
-		{Name: hostRootVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: hostRootVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/", Type: &directory},
 		}},
-		{Name: hostRunUdevVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: hostRunUdevVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/run/udev", Type: &directory},
 		}},
-		{Name: hostRunLVMVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: hostRunLVMVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/run/lvm", Type: &directory},
 		}},
-		{Name: hostRunLock, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: hostRunLock, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/run/lock", Type: &directory},
 		}},
-		{Name: CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/csi-baremetal", Type: &directoryOrCreate},
 		}},
-		{Name: registrationDirVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: registrationDirVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins_registry/", Type: &directoryOrCreate},
 		}},
-		{Name: mountPointDirVolume, VolumeSource: corev1.VolumeSource{
+		corev1.Volume{Name: mountPointDirVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/pods", Type: &directory},
 		}},
-		{Name: csiPathVolume, VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/kubernetes.io/csi"},
+		corev1.Volume{Name: csiPathVolume, VolumeSource: corev1.VolumeSource{
+			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/kubernetes.io/csi", Type: &unset},
 		}},
-	}
+	)
 
 	if deployConfig {
+		configMapMode := corev1.ConfigMapVolumeSourceDefaultMode
 		volumes = append(volumes, corev1.Volume{
 			Name: driveConfigVolume,
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{Name: loopbackManagerConfigName},
+					DefaultMode:          &configMapMode,
 					Optional:             pointer.BoolPtr(true),
 				},
 			}})
@@ -193,6 +219,8 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
 			Name:            driverRegistrarSidecar,
@@ -213,6 +241,8 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 				{Name: registrationDirVolume, MountPath: "/registration"},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
 			Name:            "node",
@@ -234,11 +264,13 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			},
 			LivenessProbe: &corev1.Probe{
 				Handler: corev1.Handler{HTTPGet: &corev1.HTTPGetAction{
-					Path: "/healthz",
-					Port: intstr.FromString(LivenessPort)}},
+					Path:   "/healthz",
+					Port:   intstr.FromString(LivenessPort),
+					Scheme: corev1.URISchemeHTTP}},
 				InitialDelaySeconds: 300,
 				TimeoutSeconds:      3,
 				PeriodSeconds:       10,
+				SuccessThreshold:    1,
 				FailureThreshold:    5,
 			},
 			ReadinessProbe: &corev1.Probe{
@@ -246,6 +278,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 					"/health_probe",
 					"-addr=:9999"}}},
 				InitialDelaySeconds: 3,
+				TimeoutSeconds:      1,
 				PeriodSeconds:       3,
 				SuccessThreshold:    3,
 				FailureThreshold:    100,
@@ -257,7 +290,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
 				{Name: "MY_POD_IP", ValueFrom: &corev1.EnvVarSource{
-					FieldRef: &corev1.ObjectFieldSelector{FieldPath: "status.podIP"},
+					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"},
 				}},
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
@@ -276,6 +309,8 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
 				{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
 			Name:            "drivemgr",
@@ -288,8 +323,10 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
 			},
-			SecurityContext: &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
-			VolumeMounts:    mounts,
+			SecurityContext:          &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
+			VolumeMounts:             mounts,
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 	}
 }
