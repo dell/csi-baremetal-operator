@@ -16,9 +16,8 @@ limitations under the License.
 
 package components
 
-// NodeController represent operator for CSI bare-metal nodes
-type NodeController struct {
-	Enable bool   `json:"enable"`
-	Image  *Image `json:"image,omitempty"`
-	Log    *Log   `json:"log,omitempty"`
+// NodeSelector contains key-value pair to deploy node components on specific k8sNodes
+type NodeSelector struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
 }

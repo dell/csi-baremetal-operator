@@ -104,7 +104,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 	var (
 		image = csi.Spec.NodeController.Image
 		log   = csi.Spec.NodeController.Log
-		ns    = csi.Spec.NodeSelectors
+		ns    = csi.Spec.NodeSelector
 	)
 
 	args := []string{
@@ -112,10 +112,8 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 		"--loglevel=" + matchLogLevel(log.Level),
 		"--logformat=" + matchLogFormat(log.Format),
 	}
-	// TODO remove after implementing other way to pass nodeSelectors
-	for k, v := range ns {
-		args = append(args, "--nodeselector="+k+":"+v)
-		break
+	if ns != nil {
+		args = append(args, "--nodeselector="+ns.Key+":"+ns.Value)
 	}
 
 	return []corev1.Container{
@@ -129,6 +127,8 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
 				}},
 			},
+			TerminationMessagePath:   defaultTerminationMessagePath,
+			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 	}
 }

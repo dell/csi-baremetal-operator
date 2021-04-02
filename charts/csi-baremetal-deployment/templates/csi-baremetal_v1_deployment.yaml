@@ -10,9 +10,10 @@ metadata:
 spec:
   globalRegistry: {{ .Values.global.registry }}
   nodeIDAnnotation: {{ .Values.feature.usenodeannotation }}
-  nodeSelectors:
-  {{- if or (.Values.nodeSelector.key) (.Values.nodeSelector.value)}}
-    {{.Values.nodeSelector.key}}: {{.Values.nodeSelector.value}}
+  {{- if and (.Values.nodeSelector.key) (.Values.nodeSelector.value)}}
+  nodeSelector:
+    key: {{.Values.nodeSelector.key}}
+    value: {{.Values.nodeSelector.value}}
   {{- end }}
   driver:
     controller:
