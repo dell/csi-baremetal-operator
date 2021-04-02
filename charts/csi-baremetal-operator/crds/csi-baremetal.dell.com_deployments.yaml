@@ -12,6 +12,9 @@ spec:
     kind: Deployment
     listKind: DeploymentList
     plural: deployments
+    shortNames:
+      - csi
+      - csis
     singular: deployment
   scope: Cluster
   version: v1
