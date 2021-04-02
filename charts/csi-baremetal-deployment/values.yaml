@@ -136,7 +136,7 @@ scheduler:
   provisioner: csi-baremetal
 
 # CSI Operator parameters
-operator:
+nodeController:
 
   enable: true
 

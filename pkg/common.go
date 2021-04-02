@@ -32,10 +32,11 @@ const (
 )
 
 type CSIDeployment struct {
-	node       Node
-	controller Controller
-	extender   SchedulerExtender
-	patcher    SchedulerPatcher
+	node           Node
+	controller     Controller
+	extender       SchedulerExtender
+	patcher        SchedulerPatcher
+	nodeController NodeController
 }
 
 func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeployment {
@@ -56,6 +57,10 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeploy
 			Clientset: clientSet,
 			Logger:    log.WithValues(CSIName, "patcher"),
 		},
+		nodeController: NodeController{
+			Clientset: clientSet,
+			Logger:    log.WithValues(CSIName, "nodeController"),
+		},
 	}
 }
 
@@ -73,6 +78,10 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 	}
 
 	if err := c.patcher.Update(csi, scheme); err != nil {
+		return err
+	}
+
+	if err := c.nodeController.Update(csi, scheme); err != nil {
 		return err
 	}
 

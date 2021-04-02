@@ -99,13 +99,13 @@ spec:
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
     storageProvisioner: {{ .Values.scheduler.provisioner }}
     testEnv: {{ .Values.env.test }}
-  operator:
-    enable: {{ .Values.operator.enable }}
+  nodeController:
+    enable: {{ .Values.nodeController.enable }}
     image:
       name: csi-baremetal-operator
       pullPolicy: {{ .Values.image.pullPolicy }}
-      tag: {{ .Values.operator.image.tag | default .Values.image.tag }}
+      tag: {{ .Values.nodeController.image.tag | default .Values.image.tag }}
     log:
-      format: {{ .Values.operator.log.format }}
-      level: {{ .Values.operator.log.level }}
+      format: {{ .Values.nodeController.log.format }}
+      level: {{ .Values.nodeController.log.level }}
     testEnv: {{ .Values.env.test }}
