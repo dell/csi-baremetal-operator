@@ -166,5 +166,5 @@ func makeNodeSelectorMap(ns *components.NodeSelector) map[string]string {
 		return map[string]string{ns.Key: ns.Value}
 	}
 
-	return nil
+	return map[string]string{}
 }
