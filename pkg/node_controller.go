@@ -112,12 +112,10 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 		"--loglevel=" + matchLogLevel(log.Level),
 		"--logformat=" + matchLogFormat(log.Format),
 	}
-	if ns != nil {
-		// TODO remove after implementing other way to pass nodeSelectors
-		for k, v := range ns {
-			args = append(args, "--nodeselector="+k+":"+v)
-			break
-		}
+	// TODO remove after implementing other way to pass nodeSelectors
+	for k, v := range ns {
+		args = append(args, "--nodeselector="+k+":"+v)
+		break
 	}
 
 	return []corev1.Container{
