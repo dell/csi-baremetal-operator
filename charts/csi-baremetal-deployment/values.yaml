@@ -7,9 +7,6 @@ image:
   tag: green
   pullPolicy: Always
 
-env:
-  test: false
-
 # Storage Class name that provisions PVs dynamically
 storageClass:
   name: csi-baremetal-sc
@@ -65,6 +62,10 @@ driver:
   nodeDriverRegistrar:
     image:
       tag: v1.0.1-gke.0
+
+  livenessProbe:
+    image:
+      tag: v2.1.0
 
   # Metrics endpoint
   metrics:

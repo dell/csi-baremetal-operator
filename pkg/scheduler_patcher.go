@@ -133,7 +133,7 @@ func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container 
 		{
 			Name:            patcherContainerName,
 			Image:           constructFullImageName(csi.Spec.Scheduler.Patcher.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Scheduler.Patcher.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Command: []string{
 				"python3",
 				"-u",
