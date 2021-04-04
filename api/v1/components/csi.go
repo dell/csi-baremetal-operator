@@ -24,4 +24,5 @@ type DeploymentSpec struct {
 	GlobalRegistry   string            `json:"globalRegistry,omitempty"`
 	NodeSelectors    map[string]string `json:"nodeSelectors,omitempty"`
 	NodeIDAnnotation bool              `json:"nodeIDAnnotation,omitempty"`
+	Platform         string            `json:"plaform,omitempty"`
 }

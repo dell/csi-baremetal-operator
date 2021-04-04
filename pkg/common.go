@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
@@ -38,7 +39,7 @@ type CSIDeployment struct {
 	patcher    SchedulerPatcher
 }
 
-func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
 	return CSIDeployment{
 		node: Node{
 			Clientset: clientSet,
@@ -54,6 +55,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeploy
 		},
 		patcher: SchedulerPatcher{
 			Clientset: clientSet,
+			Client:    client,
 			Logger:    log.WithValues(CSIName, "patcher"),
 		},
 	}
@@ -72,11 +74,14 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 		return err
 	}
 
-	if err := c.patcher.Update(csi, scheme); err != nil {
-		return err
-	}
+	// Patching method for the scheduler depends on the platform
+	switch csi.Spec.Platform {
+	case platformOpenshift:
+		return c.patcher.UpdateOpenShift(csi, scheme)
+	default:
+		return c.patcher.Update(csi, scheme)
 
-	return nil
+	}
 }
 
 func GetNamespace(csi *csibaremetalv1.Deployment) string {
