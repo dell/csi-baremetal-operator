@@ -20,6 +20,7 @@ import (
 	"flag"
 	"os"
 
+	uberzap "go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -54,7 +55,8 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	stackTraceLevel := uberzap.NewAtomicLevelAt(uberzap.ErrorLevel)
+	ctrl.SetLogger(zap.New(zap.UseDevMode(true), zap.StacktraceLevel(&stackTraceLevel)))
 
 	config := ctrl.GetConfigOrDie()
 	clientSet, err := kubernetes.NewForConfig(config)
