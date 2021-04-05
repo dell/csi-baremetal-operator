@@ -83,6 +83,10 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		}
 	} else {
 		if containsFinalizer(deployment) {
+			if err = r.UninstallPatcher(*deployment); err != nil {
+				log.Error(err, "Error uninstalling patcher")
+				return ctrl.Result{Requeue: true}, err
+			}
 			deployment.ObjectMeta.Finalizers = deleteFinalizer(deployment)
 			if err = r.Client.Update(ctx, deployment); err != nil {
 				log.Error(err, "Error removing finalizer")

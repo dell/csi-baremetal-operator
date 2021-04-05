@@ -84,6 +84,14 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 	}
 }
 
+func (c *CSIDeployment) UninstallPatcher(csi csibaremetalv1.Deployment) error {
+	switch csi.Spec.Platform { 
+	case platformOpenshift:
+		return c.patcher.UnPatchOpenShift()
+	default:
+		return nil
+	}
+}
 func GetNamespace(csi *csibaremetalv1.Deployment) string {
 	if csi.Namespace == "" {
 		return "default"
