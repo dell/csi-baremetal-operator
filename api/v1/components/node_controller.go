@@ -16,8 +16,8 @@ limitations under the License.
 
 package components
 
-// NodeOperator represent operator for CSI bare-metal nodes
-type NodeOperator struct {
+// NodeController represent operator for CSI bare-metal nodes
+type NodeController struct {
 	Enable bool   `json:"enable"`
 	Image  *Image `json:"image,omitempty"`
 	Log    *Log   `json:"log,omitempty"`
