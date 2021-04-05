@@ -120,7 +120,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 		{
 			Name:            nodeController,
 			Image:           constructFullImageName(image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args:            args,
 			Env: []corev1.EnvVar{
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{
