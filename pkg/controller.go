@@ -30,9 +30,6 @@ const (
 
 	resizerName     = "csi-resizer"
 	provisionerName = "csi-provisioner"
-
-	provisionerTag = "v1.6.0"
-	resizerTag     = "v1.1.0"
 )
 
 type Controller struct {
@@ -135,20 +132,21 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 
 func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
-		provisioner = NewSidecar(provisionerName, provisionerTag, "Always")
-		resizer     = NewSidecar(resizerName, resizerTag, "Always")
-		liveness    = NewSidecar(livenessProbeSidecar, livenessProbeTag, "Always")
+		provisioner = csi.Spec.Driver.Controller.Sidecars[provisionerName]
+		resizer     = csi.Spec.Driver.Controller.Sidecars[resizerName]
+		liveness    = csi.Spec.Driver.Controller.Sidecars[livenessProbeSidecar]
+		c           = csi.Spec.Driver.Controller
 	)
 	return []corev1.Container{
 		{
 			Name:            controller,
-			Image:           constructFullImageName(csi.Spec.Driver.Controller.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(csi.Spec.Driver.Controller.Image.PullPolicy),
+			Image:           constructFullImageName(c.Image, csi.Spec.GlobalRegistry),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--endpoint=$(CSI_ENDPOINT)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--loglevel=" + matchLogLevel(csi.Spec.Driver.Controller.Log.Level),
+				"--loglevel=" + matchLogLevel(c.Log.Level),
 				"--healthport=" + strconv.Itoa(healthPort),
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
@@ -161,7 +159,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 					},
 				}},
 				{Name: "CSI_ENDPOINT", Value: "unix:///csi/csi.sock"},
-				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Driver.Controller.Log.Format)},
+				{Name: "LOG_FORMAT", Value: matchLogFormat(c.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
@@ -202,9 +200,9 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
-			Name:            provisioner.Name,
+			Name:            provisionerName,
 			Image:           constructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--csi-address=$(ADDRESS)",
 				"--v=5",
@@ -221,9 +219,9 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
-			Name:            resizer.Name,
+			Name:            resizerName,
 			Image:           constructFullImageName(resizer.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Command:         []string{"/csi-resizer"},
 			Args: []string{
 				"--csi-address=$(ADDRESS)",
@@ -240,9 +238,9 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
-			Name:            liveness.Name,
+			Name:            livenessProbeSidecar,
 			Image:           constructFullImageName(liveness.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullIfNotPresent,
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args:            []string{"--csi-address=$(ADDRESS)"},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},

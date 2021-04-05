@@ -37,8 +37,6 @@ const (
 
 	livenessProbeSidecar   = "livenessprobe"
 	driverRegistrarSidecar = "csi-node-driver-registrar"
-	livenessProbeTag       = "v2.1.0"
-	driverRegistrarTag     = "v1.0.1-gke.0"
 )
 
 type Node struct {
@@ -193,25 +191,30 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
 func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
-		lp            = NewSidecar(livenessProbeSidecar, livenessProbeTag, "IfNotPresent")
-		dr            = NewSidecar(driverRegistrarSidecar, driverRegistrarTag, "IfNotPresent")
 		bidirectional = corev1.MountPropagationBidirectional
 		driveMgr      = csi.Spec.Driver.Node.DriveMgr
 		node          = csi.Spec.Driver.Node
 		testEnv       = csi.Spec.GlobalRegistry == ""
+		lp            = node.Sidecars[livenessProbeSidecar]
+		dr            = node.Sidecars[driverRegistrarSidecar]
 	)
+	args := []string{
+		"--loglevel=" + matchLogLevel(node.Log.Level),
+		"--drivemgrendpoint=" + driveMgr.Endpoint,
+	}
 	mounts := []corev1.VolumeMount{
 		{Name: hostDevVolume, MountPath: "/dev"},
 		{Name: hostHomeVolume, MountPath: "/host/home"},
 	}
 	if testEnv {
 		mounts = append(mounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
+		args = append(args, "--usenodeannotation="+strconv.FormatBool(csi.Spec.NodeIDAnnotation))
 	}
 	return []corev1.Container{
 		{
-			Name:            lp.Name,
+			Name:            livenessProbeSidecar,
 			Image:           constructFullImageName(lp.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(lp.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args:            []string{"--csi-address=/csi/csi.sock"},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
@@ -220,9 +223,9 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
 		},
 		{
-			Name:            dr.Name,
+			Name:            driverRegistrarSidecar,
 			Image:           constructFullImageName(dr.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(dr.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{"--v=5", "--csi-address=$(ADDRESS)",
 				"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"},
 			Lifecycle: &corev1.Lifecycle{PreStop: &corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
@@ -244,7 +247,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		{
 			Name:            "node",
 			Image:           constructFullImageName(node.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(node.Image.PullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
 				"--nodename=$(KUBE_NODE_NAME)",
@@ -312,12 +315,8 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 		{
 			Name:            "drivemgr",
 			Image:           constructFullImageName(driveMgr.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(driveMgr.Image.PullPolicy),
-			Args: []string{
-				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
-				"--loglevel=" + matchLogLevel(node.Log.Level),
-				"--drivemgrendpoint=" + driveMgr.Endpoint,
-			},
+			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
+			Args:            args,
 			Env: []corev1.EnvVar{
 				{Name: "LOG_FORMAT", Value: matchLogFormat(node.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
