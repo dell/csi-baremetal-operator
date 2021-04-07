@@ -215,7 +215,10 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			Name:            livenessProbeSidecar,
 			Image:           constructFullImageName(lp.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
-			Args:            []string{"--csi-address=/csi/csi.sock"},
+			Args:            []string{"--csi-address=$(ADDRESS)"},
+			Env: []corev1.EnvVar{
+				{Name: "ADDRESS", Value: "/csi/csi.sock"},
+			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
