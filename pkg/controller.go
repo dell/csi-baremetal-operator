@@ -119,7 +119,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					NodeSelector:                  csi.Spec.NodeSelectors,
+					NodeSelector:                  makeNodeSelectorMap(csi.Spec.NodeSelector),
 					ServiceAccountName:            controllerServiceAccountName,
 					DeprecatedServiceAccount:      controllerServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
@@ -242,6 +242,9 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			Image:           constructFullImageName(liveness.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args:            []string{"--csi-address=$(ADDRESS)"},
+			Env: []corev1.EnvVar{
+				{Name: "ADDRESS", Value: "/csi/csi.sock"},
+			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},

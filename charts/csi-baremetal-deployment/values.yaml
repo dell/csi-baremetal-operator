@@ -19,6 +19,7 @@ feature:
   nodeIDAnnotation:
 
 # to deploy on specific nodes kubeclt get nodes -l <key>=<value>
+# more then one key-value pair is not supported
 nodeSelector:
   key:
   value:
@@ -137,7 +138,7 @@ scheduler:
   provisioner: csi-baremetal
 
 # CSI Operator parameters
-operator:
+nodeController:
 
   enable: true
 

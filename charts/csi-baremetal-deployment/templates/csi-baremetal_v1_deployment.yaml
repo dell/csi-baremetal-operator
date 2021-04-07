@@ -12,9 +12,10 @@ spec:
   globalRegistry: {{ .Values.global.registry }}
   pullPolicy: {{ .Values.image.pullPolicy }}
   nodeIDAnnotation: {{ .Values.feature.usenodeannotation }}
-  nodeSelectors:
-  {{- if or (.Values.nodeSelector.key) (.Values.nodeSelector.value)}}
-    {{.Values.nodeSelector.key}}: {{.Values.nodeSelector.value}}
+  {{- if and (.Values.nodeSelector.key) (.Values.nodeSelector.value)}}
+  nodeSelector:
+    key: {{.Values.nodeSelector.key}}
+    value: {{.Values.nodeSelector.value}}
   {{- end }}
   driver:
     controller:
@@ -96,11 +97,11 @@ spec:
       restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
     storageProvisioner: {{ .Values.scheduler.provisioner }}
-  operator:
-    enable: {{ .Values.operator.enable }}
+  nodeController:
+    enable: {{ .Values.nodeController.enable }}
     image:
       name: csi-baremetal-operator
-      tag: {{ .Values.operator.image.tag | default .Values.image.tag }}
+      tag: {{ .Values.nodeController.image.tag | default .Values.image.tag }}
     log:
-      format: {{ .Values.operator.log.format }}
-      level: {{ .Values.operator.log.level }}
+      format: {{ .Values.nodeController.log.format }}
+      level: {{ .Values.nodeController.log.level }}

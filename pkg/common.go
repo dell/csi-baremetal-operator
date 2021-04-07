@@ -33,10 +33,11 @@ const (
 )
 
 type CSIDeployment struct {
-	node       Node
-	controller Controller
-	extender   SchedulerExtender
-	patcher    SchedulerPatcher
+	node           Node
+	controller     Controller
+	extender       SchedulerExtender
+	patcher        SchedulerPatcher
+	nodeController NodeController
 }
 
 func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
@@ -58,6 +59,10 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			Client:    client,
 			Logger:    log.WithValues(CSIName, "patcher"),
 		},
+		nodeController: NodeController{
+			Clientset: clientSet,
+			Logger:    log.WithValues(CSIName, "nodeController"),
+		},
 	}
 }
 
@@ -74,6 +79,10 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 		return err
 	}
 
+	if err := c.nodeController.Update(csi, scheme); err != nil {
+		return err
+	}
+
 	// Patching method for the scheduler depends on the platform
 	switch csi.Spec.Platform {
 	case platformOpenshift:
@@ -85,7 +94,7 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 }
 
 func (c *CSIDeployment) UninstallPatcher(csi csibaremetalv1.Deployment) error {
-	switch csi.Spec.Platform { 
+	switch csi.Spec.Platform {
 	case platformOpenshift:
 		return c.patcher.UnPatchOpenShift()
 	default:
@@ -163,4 +172,12 @@ func constructFullImageName(image *components.Image, registry string) string {
 
 	imageName += image.Name + ":" + image.Tag
 	return imageName
+}
+
+func makeNodeSelectorMap(ns *components.NodeSelector) map[string]string {
+	if ns != nil {
+		return map[string]string{ns.Key: ns.Value}
+	}
+
+	return map[string]string{}
 }

@@ -117,7 +117,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					NodeSelector:                  csi.Spec.NodeSelectors,
+					NodeSelector:                  makeNodeSelectorMap(csi.Spec.NodeSelector),
 					ServiceAccountName:            nodeServiceAccountName,
 					DeprecatedServiceAccount:      nodeServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
@@ -215,7 +215,10 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			Name:            livenessProbeSidecar,
 			Image:           constructFullImageName(lp.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
-			Args:            []string{"--csi-address=/csi/csi.sock"},
+			Args:            []string{"--csi-address=$(ADDRESS)"},
+			Env: []corev1.EnvVar{
+				{Name: "ADDRESS", Value: "/csi/csi.sock"},
+			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 			},
