@@ -153,3 +153,5 @@ operator:
   metrics:
     path: /metrics
     port: 8787
+
+platform: ""
