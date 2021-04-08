@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	opeshiftNS      = "openshift-config"
+	openshiftNS      = "openshift-config"
 	openshiftConfig = "scheduler-policy"
 
 	oshiftpolicyFile = "policy.cfg"
@@ -33,7 +33,7 @@ const (
 )
 
 func (p *SchedulerPatcher) UpdateOpenShift(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	cfClient := p.CoreV1().ConfigMaps(opeshiftNS)
+	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	oscf, err := cfClient.Get(openshiftConfig, metav1.GetOptions{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
@@ -71,7 +71,7 @@ func (p *SchedulerPatcher) UpdateOpenShift(csi *csibaremetalv1.Deployment, schem
 }
 
 func (p *SchedulerPatcher) UnPatchOpenShift() error {
-	cfClient := p.CoreV1().ConfigMaps(opeshiftNS)
+	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	err := cfClient.Delete(openshiftConfig, metav1.NewDeleteOptions(0))
 	if err != nil {
 		p.Logger.Error(err, "Failed to delete configmap")
@@ -85,7 +85,7 @@ func createOpenshiftConfig() *corev1.ConfigMap {
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      openshiftConfig,
-			Namespace: opeshiftNS,
+			Namespace: openshiftNS,
 		},
 		Data: map[string]string{oshiftpolicyFile: oshiftpolicy},
 	}
