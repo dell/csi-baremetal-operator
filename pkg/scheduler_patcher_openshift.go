@@ -34,7 +34,6 @@ const (
 
 func (p *SchedulerPatcher) UpdateOpenShift(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	cfClient := p.CoreV1().ConfigMaps(opeshiftNS)
-
 	oscf, err := cfClient.Get(openshiftConfig, metav1.GetOptions{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
@@ -58,7 +57,7 @@ func (p *SchedulerPatcher) UpdateOpenShift(csi *csibaremetalv1.Deployment, schem
 
 	_, err = cfClient.Create(createOpenshiftConfig())
 	if err != nil {
-		p.Logger.Error(err, "Failed to get create configmap")
+		p.Logger.Error(err, "Failed to create configmap")
 		return err
 	}
 
@@ -83,9 +82,12 @@ func (p *SchedulerPatcher) UnPatchOpenShift() error {
 
 func createOpenshiftConfig() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
-		TypeMeta:   metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{},
-		Data:       map[string]string{oshiftpolicyFile: oshiftpolicy},
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      openshiftConfig,
+			Namespace: opeshiftNS,
+		},
+		Data: map[string]string{oshiftpolicyFile: oshiftpolicy},
 	}
 }
 

@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: csi-baremetal-operator
     app.kubernetes.io/version: 1.0.0
 spec:
-  platform: ""
+  platform: "openshift"
   globalRegistry: ""
   nodeIDAnnotation: true
   nodeSelectors:
