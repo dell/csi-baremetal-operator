@@ -31,7 +31,7 @@ const (
 }`
 )
 
-func (p *SchedulerPatcher) UpdateOpenShift(scheme *runtime.Scheme) error {
+func (p *SchedulerPatcher) PatchOpenShift(scheme *runtime.Scheme) error {
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	oscf, err := cfClient.Get(openshiftConfig, metav1.GetOptions{})
 	if err != nil {
