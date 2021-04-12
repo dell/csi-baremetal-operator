@@ -3,7 +3,6 @@ package pkg
 import (
 	"context"
 
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	openshiftv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -13,7 +12,7 @@ import (
 )
 
 const (
-	openshiftNS      = "openshift-config"
+	openshiftNS     = "openshift-config"
 	openshiftConfig = "scheduler-policy"
 
 	oshiftpolicyFile = "policy.cfg"
@@ -32,7 +31,7 @@ const (
 }`
 )
 
-func (p *SchedulerPatcher) UpdateOpenShift(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (p *SchedulerPatcher) UpdateOpenShift(scheme *runtime.Scheme) error {
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	oscf, err := cfClient.Get(openshiftConfig, metav1.GetOptions{})
 	if err != nil {
