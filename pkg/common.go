@@ -1,6 +1,8 @@
 package pkg
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -66,7 +68,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 	}
 }
 
-func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	if err := c.node.Update(csi, scheme); err != nil {
 		return err
 	}
@@ -86,17 +88,17 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 	// Patching method for the scheduler depends on the platform
 	switch csi.Spec.Platform {
 	case platformOpenshift:
-		return c.patcher.PatchOpenShift(scheme)
+		return c.patcher.PatchOpenShift(ctx, scheme)
 	default:
 		return c.patcher.Update(csi, scheme)
 
 	}
 }
 
-func (c *CSIDeployment) UninstallPatcher(csi csibaremetalv1.Deployment) error {
+func (c *CSIDeployment) UninstallPatcher(ctx context.Context,csi csibaremetalv1.Deployment) error {
 	switch csi.Spec.Platform {
 	case platformOpenshift:
-		return c.patcher.UnPatchOpenShift()
+		return c.patcher.UnPatchOpenShift(ctx)
 	default:
 		return nil
 	}

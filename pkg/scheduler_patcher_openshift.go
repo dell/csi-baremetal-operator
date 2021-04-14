@@ -31,7 +31,7 @@ const (
 }`
 )
 
-func (p *SchedulerPatcher) PatchOpenShift(scheme *runtime.Scheme) error {
+func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, scheme *runtime.Scheme) error {
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	oscf, err := cfClient.Get(openshiftConfig, metav1.GetOptions{})
 	if err != nil {
@@ -60,7 +60,7 @@ func (p *SchedulerPatcher) PatchOpenShift(scheme *runtime.Scheme) error {
 		return err
 	}
 
-	err = p.patchSheduler(openshiftConfig)
+	err = p.patchSheduler(ctx, openshiftConfig)
 	if err != nil {
 		p.Logger.Error(err, "Failed to patch Scheduler")
 		return err
@@ -69,14 +69,14 @@ func (p *SchedulerPatcher) PatchOpenShift(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (p *SchedulerPatcher) UnPatchOpenShift() error {
+func (p *SchedulerPatcher) UnPatchOpenShift(ctx context.Context) error {
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	err := cfClient.Delete(openshiftConfig, metav1.NewDeleteOptions(0))
 	if err != nil {
 		p.Logger.Error(err, "Failed to delete configmap")
 		return err
 	}
-	return p.unpatchSheduler()
+	return p.unpatchSheduler(ctx)
 }
 
 func createOpenshiftConfig() *corev1.ConfigMap {
@@ -90,17 +90,17 @@ func createOpenshiftConfig() *corev1.ConfigMap {
 	}
 }
 
-func (p *SchedulerPatcher) patchSheduler(config string) error {
+func (p *SchedulerPatcher) patchSheduler(ctx context.Context, config string) error {
 	sc := &openshiftv1.Scheduler{}
 
-	err := p.Client.Get(context.TODO(), client.ObjectKey{Name: "cluster"}, sc)
+	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster"}, sc)
 	if err != nil {
 		return err
 	}
 
 	sc.Spec.Policy.Name = config
 
-	err = p.Client.Update(context.TODO(), sc)
+	err = p.Client.Update(ctx, sc)
 	if err != nil {
 		return err
 	}
@@ -108,6 +108,6 @@ func (p *SchedulerPatcher) patchSheduler(config string) error {
 	return nil
 }
 
-func (p *SchedulerPatcher) unpatchSheduler() error {
-	return p.patchSheduler("")
+func (p *SchedulerPatcher) unpatchSheduler(ctx context.Context) error {
+	return p.patchSheduler(ctx, "")
 }
