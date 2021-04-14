@@ -25,4 +25,5 @@ type DeploymentSpec struct {
 	PullPolicy       string          `json:"pullPolicy,omitempty"`
 	NodeSelector     *NodeSelector   `json:"nodeSelector,omitempty"`
 	NodeIDAnnotation bool            `json:"nodeIDAnnotation,omitempty"`
+	Platform         string          `json:"platform,omitempty"`
 }

@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: csi-baremetal-operator
     app.kubernetes.io/version: 1.0.0
 spec:
-  platform: ""
+  platform: "openshift"
   globalRegistry: ""
   nodeIDAnnotation: true
   nodeSelectors:
@@ -58,6 +58,20 @@ spec:
     metrics:
       path: /metrics
       port: 8787
+    patcher:
+      enable: false
+      image:
+        name: csi-baremetal-scheduler-patcher
+        pullPolicy: Always
+        tag: green
+      manifest: /etc/kubernetes/manifests/kube-scheduler.yaml
+      srcConfigPath: config.yaml
+      srcPolicyPath: policy.yaml
+      targetConfigPath: /etc/kubernetes/scheduler/config.yaml
+      targetPolicyPath: /etc/kubernetes/scheduler/policy.yaml
+      interval: 60
+      restoreOnShutdown: false
+      configMapName: schedulerpatcher-config
     storageProvisioner: csi-baremetal
   operator:
     enable: true

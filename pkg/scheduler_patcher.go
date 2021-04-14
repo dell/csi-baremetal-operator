@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/go-logr/logr"
@@ -32,11 +33,14 @@ const (
 	schedulerPath = "/etc/kubernetes/scheduler"
 	manifestsPath = "/etc/kubernetes/manifests"
 	configPath    = "/conf"
+
+	platformOpenshift = "openshift"
 )
 
 type SchedulerPatcher struct {
 	kubernetes.Clientset
 	logr.Logger
+	Client client.Client
 }
 
 func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
