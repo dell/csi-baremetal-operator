@@ -6,19 +6,15 @@ require (
 	github.com/go-logr/logr v0.2.0
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
-	helm.sh/helm/v3 v3.5.3
-	k8s.io/api v0.20.2
-	k8s.io/apimachinery v0.20.2
-	k8s.io/client-go v0.20.2
+	k8s.io/api v0.17.2
+	k8s.io/apimachinery v0.17.2
+	k8s.io/client-go v0.17.2
 	k8s.io/kubernetes v1.17.2
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 	sigs.k8s.io/controller-runtime v0.5.0
 )
 
 replace (
-	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
-	github.com/docker/docker => github.com/moby/moby v20.10.5+incompatible
-
 	k8s.io/api => k8s.io/api v0.17.2
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.2
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.2

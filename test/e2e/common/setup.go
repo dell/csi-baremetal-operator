@@ -17,7 +17,6 @@ limitations under the License.
 package common
 
 import (
-	clientset "k8s.io/client-go/kubernetes"
 	"path"
 )
 
