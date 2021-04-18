@@ -1,5 +1,5 @@
 /*
-Copyright © 2020 Dell Inc. or its subsidiaries. All Rights Reserved.
+Copyright © 2021 Dell Inc. or its subsidiaries. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package main
 
 import (
 	"flag"
-	"github.com/dell/csi-baremetal-operator/test/e2e/common"
 	"os"
 	"testing"
 
@@ -27,7 +26,7 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/kubernetes/test/e2e/framework"
 
-	_ "github.com/dell/csi-baremetal-operator/test/e2e/common"
+	"github.com/dell/csi-baremetal-operator/test/e2e/common"
 	_ "github.com/dell/csi-baremetal-operator/test/e2e/scenarios"
 )
 
@@ -44,7 +43,7 @@ func registerCustomFlags(flags *flag.FlagSet) {
 	flags.StringVar(&common.OperatorTestContext.OperatorVersion, "operatorVersion",
 		"latest", "Version of csi-baremetal-operator image")
 	flags.StringVar(&common.OperatorTestContext.ChartsFolder, "chartsFolder",
-		"./charts", "Path to folder with helm charts")
+		"/tmp/charts", "Path to folder with helm charts")
 	flags.BoolVar(&common.OperatorTestContext.CompleteUninstall, "completeUninstall",
 		true, "Uninstall pvc, volumes, lvgs, csibmnodes")
 }
