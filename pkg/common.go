@@ -1,12 +1,15 @@
 package pkg
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
@@ -39,7 +42,7 @@ type CSIDeployment struct {
 	nodeController NodeController
 }
 
-func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
 	return CSIDeployment{
 		node: Node{
 			Clientset: clientSet,
@@ -55,6 +58,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeploy
 		},
 		patcher: SchedulerPatcher{
 			Clientset: clientSet,
+			Client:    client,
 			Logger:    log.WithValues(CSIName, "patcher"),
 		},
 		nodeController: NodeController{
@@ -64,7 +68,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, log logr.Logger) CSIDeploy
 	}
 }
 
-func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	if err := c.node.Update(csi, scheme); err != nil {
 		return err
 	}
@@ -77,17 +81,28 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 		return err
 	}
 
-	if err := c.patcher.Update(csi, scheme); err != nil {
-		return err
-	}
-
 	if err := c.nodeController.Update(csi, scheme); err != nil {
 		return err
 	}
 
-	return nil
+	// Patching method for the scheduler depends on the platform
+	switch csi.Spec.Platform {
+	case platformOpenshift:
+		return c.patcher.PatchOpenShift(ctx, scheme)
+	default:
+		return c.patcher.Update(csi, scheme)
+
+	}
 }
 
+func (c *CSIDeployment) UninstallPatcher(ctx context.Context,csi csibaremetalv1.Deployment) error {
+	switch csi.Spec.Platform {
+	case platformOpenshift:
+		return c.patcher.UnPatchOpenShift(ctx)
+	default:
+		return nil
+	}
+}
 func GetNamespace(csi *csibaremetalv1.Deployment) string {
 	if csi.Spec.Namespace == "" {
 		return "default"
