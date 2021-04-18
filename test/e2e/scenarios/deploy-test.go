@@ -17,32 +17,28 @@ limitations under the License.
 package scenarios
 
 import (
-	"time"
-
 	"github.com/onsi/ginkgo"
 	"k8s.io/kubernetes/test/e2e/framework"
-	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 
 	"github.com/dell/csi-baremetal-operator/test/e2e/common"
 )
 
-// DefineLabeledDeployTestSuite defines label tests
-func CSIDeployTestSuite(f *framework.Framework) {
-	ginkgo.Context("Deploy csi-baremetal with operator", func() {
-		csiDeployTestSuite(f)
+// CSIDeployTestSuite checks CSI Deployment installing with operator
+func CSIDeployTestSuite() {
+	ginkgo.Context("Install csi-baremetal-deployment with operator", func() {
+		csiDeployTestSuite()
 	})
 }
 
-func csiDeployTestSuite(f *framework.Framework) {
-	ginkgo.It("", func() {
-		driverCleanup, err := common.DeployCSIDeployment(f.ClientSet)
-		if err != nil {
-		}
-		defer driverCleanup()
+func csiDeployTestSuite() {
+	var (
+		f = framework.NewDefaultFramework("csi-deployment")
+	)
 
-		err = e2epod.WaitForPodsRunningReady(f.ClientSet, f.Namespace.Name, 0, 0, 1*time.Minute, nil)
-		if err != nil {
-			framework.Failf("Pods not ready, error: %s", err.Error())
-		}
+	ginkgo.It("All pods are ready", func() {
+		driverCleanup, err := common.DeployCSI(f)
+		framework.ExpectNoError(err)
+
+		driverCleanup()
 	})
 }

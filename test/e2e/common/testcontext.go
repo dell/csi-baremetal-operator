@@ -16,34 +16,12 @@ limitations under the License.
 
 package common
 
-import (
-	"path"
-)
-
-var (
-	chartsFolder = "./charts"
-	operatorNS   = "test-operator"
-)
-
-func DeployOperator(c clientset.Interface) (func(), error) {
-	var (
-		operatorChart = path.Join(chartsFolder, "csi-baremetal-operator")
-	)
-
-	if err := InstallRelease(operatorChart, operatorNS); err != nil {
-		return nil, err
-	}
-
-	cleanup := func() {
-	}
-
-	return cleanup, nil
+// OperatorTestContextType stores custom testing context
+type OperatorTestContextType struct {
+	CsiVersion        string
+	OperatorVersion   string
+	ChartsFolder      string
+	CompleteUninstall bool
 }
 
-func DeployCSIDeployment(c clientset.Interface) (func(), error) {
-
-	cleunup := func() {
-	}
-
-	return cleunup, nil
-}
+var OperatorTestContext OperatorTestContextType

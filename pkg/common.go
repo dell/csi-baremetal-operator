@@ -89,11 +89,11 @@ func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.S
 }
 
 func GetNamespace(csi *csibaremetalv1.Deployment) string {
-	if csi.Namespace == "" {
+	if csi.Spec.Namespace == "" {
 		return "default"
 	}
 
-	return csi.Namespace
+	return csi.Spec.Namespace
 }
 
 func deploymentChanged(expected *v1.Deployment, found *v1.Deployment) bool {

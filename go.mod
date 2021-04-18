@@ -3,7 +3,7 @@ module github.com/dell/csi-baremetal-operator
 go 1.13
 
 require (
-	github.com/go-logr/logr v0.2.0
+	github.com/go-logr/logr v0.1.0
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	k8s.io/api v0.17.2
@@ -35,8 +35,5 @@ replace (
 	k8s.io/kubelet => k8s.io/kubelet v0.17.2
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.17.2
 	k8s.io/metrics => k8s.io/metrics v0.17.2
-	k8s.io/node-api => k8s.io/node-api v0.17.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.17.2
-	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.17.2
-	k8s.io/sample-controller => k8s.io/sample-controller v0.17.2
 )

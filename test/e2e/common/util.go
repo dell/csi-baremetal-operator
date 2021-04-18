@@ -14,34 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scenarios
+package common
 
 import (
-	"github.com/onsi/ginkgo"
-
-	"github.com/dell/csi-baremetal-operator/test/e2e/common"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/kubernetes/test/e2e/framework"
 )
 
-var _ = ginkgo.Describe("CSI Operator", func() {
-	operatorCleanup := func() {}
-
-	ginkgo.BeforeSuite(func() {
-		clientset, err := common.GetGlobalClientSet()
-		if err != nil {
-			ginkgo.Fail(err.Error())
-		}
-
-		operatorCleanup, err = common.DeployOperator(clientset)
-		if err != nil {
-			ginkgo.Fail(err.Error())
-		}
-	})
-
-	ginkgo.AfterSuite(func() {
-		operatorCleanup()
-	})
-
-	ginkgo.Context("CSI Operator test suites", func() {
-		CSIDeployTestSuite()
-	})
-})
+// GetGlobalClientSet creates default ClientSet
+func GetGlobalClientSet() (clientset.Interface, error) {
+	conf, err := framework.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+	return clientset.NewForConfig(conf)
+}

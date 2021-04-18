@@ -17,30 +17,65 @@ limitations under the License.
 package common
 
 import (
-	"os"
+	"bytes"
+	"fmt"
+	"os/exec"
+	"strings"
 
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 )
 
-func InstallRelease(path, ns string) error {
+type HelmExecutor interface {
+	InstallRelease(path, ns string) error
+	DeleteRelease(path, ns string) error
+}
 
-	ch, err := loader.Load(path)
-	if err != nil && ch == nil {
-		return err
-	}
+type CmdHelmExecutor struct {
+	kubeconfig string
+}
 
-	settings := cli.New()
+type HelmChart struct {
+	name      string
+	path      string
+	namespace string
+}
 
-	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), os.Getenv("HELM_DRIVER"), e2elog.Logf); err != nil {
-		return err
-	}
-	client := action.NewInstall(actionConfig)
+func (c *CmdHelmExecutor) InstallRelease(ch *HelmChart, args string) error {
+	cmdStr := fmt.Sprintf("helm install "+
+		"--kubeconfig %s "+
+		"-n %s --create-namespace "+
+		"%s "+"%s "+args,
+		c.kubeconfig, ch.namespace, ch.name, ch.path)
 
-	client.Run(ch, nil)
+	return execCmdStr(cmdStr)
+}
 
-	return nil
+func (c *CmdHelmExecutor) DeleteRelease(ch *HelmChart) error {
+	cmdStr := fmt.Sprintf("helm delete "+
+		"--kubeconfig %s "+
+		"-n %s "+"%s",
+		c.kubeconfig, ch.namespace, ch.name)
+
+	return execCmdStr(cmdStr)
+}
+
+func execCmdStr(cmdStr string) error {
+	cmdStrSplit := strings.Split(cmdStr, " ")
+	return execCmdObj(exec.Command(cmdStrSplit[0], cmdStrSplit[1:]...))
+}
+
+func execCmdObj(cmd *exec.Cmd) error {
+	var stdout, stderr bytes.Buffer
+
+	e2elog.Logf("Exec: %s", cmd.Args)
+
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	e2elog.Logf("Stdout: %s", stdout.String())
+	e2elog.Logf("Stderr: %s", stderr.String())
+
+	return err
 }

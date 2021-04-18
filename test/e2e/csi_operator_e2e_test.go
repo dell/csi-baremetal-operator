@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/dell/csi-baremetal-operator/test/e2e/common"
 	"os"
 	"testing"
 
@@ -37,9 +38,21 @@ func skipIfNotCI(t *testing.T) {
 	}
 }
 
+func registerCustomFlags(flags *flag.FlagSet) {
+	flags.StringVar(&common.OperatorTestContext.CsiVersion, "csiVersion",
+		"latest", "Version of csi-baremetal-deployment images")
+	flags.StringVar(&common.OperatorTestContext.OperatorVersion, "operatorVersion",
+		"latest", "Version of csi-baremetal-operator image")
+	flags.StringVar(&common.OperatorTestContext.ChartsFolder, "chartsFolder",
+		"./charts", "Path to folder with helm charts")
+	flags.BoolVar(&common.OperatorTestContext.CompleteUninstall, "completeUninstall",
+		true, "Uninstall pvc, volumes, lvgs, csibmnodes")
+}
+
 func init() {
 	framework.RegisterCommonFlags(flag.CommandLine)
 	framework.RegisterClusterFlags(flag.CommandLine)
+	registerCustomFlags(flag.CommandLine)
 }
 
 func Test(t *testing.T) {
@@ -48,7 +61,7 @@ func Test(t *testing.T) {
 	framework.AfterReadingAllFlags(&framework.TestContext)
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	junitReporter := reporters.NewJUnitReporter("report.xml")
-	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "CSI Suite", []ginkgo.Reporter{junitReporter})
+	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "CSI Operator Suite", []ginkgo.Reporter{junitReporter})
 }
 
 func main() {
