@@ -83,21 +83,7 @@ func DeployCSI(f *framework.Framework) (func(), error) {
 
 	cleanup := func() {
 		if OperatorTestContext.CompleteUninstall {
-			if err := execCmdObj(framework.KubectlCmd("delete", "pvc", "--all")); err != nil {
-				e2elog.Logf("PVC deletion failed")
-			}
-
-			if err := execCmdObj(framework.KubectlCmd("delete", "volumes", "--all")); err != nil {
-				e2elog.Logf("Volumes deletion failed")
-			}
-
-			if err := execCmdObj(framework.KubectlCmd("delete", "lvgs", "--all")); err != nil {
-				e2elog.Logf("Lvgs deletion failed")
-			}
-
-			if err := execCmdObj(framework.KubectlCmd("delete", "csibmnodes", "--all")); err != nil {
-				e2elog.Logf("Csibmnodes deletion failed")
-			}
+			deleteCSIResources()
 		}
 
 		if err := executor.DeleteRelease(&chart); err != nil {
@@ -117,4 +103,14 @@ func DeployCSI(f *framework.Framework) (func(), error) {
 	}
 
 	return cleanup, nil
+}
+
+func deleteCSIResources() {
+	resources := []string{"pvc", "volumes", "lvgs", "csibmnodes", "acr", "ac", "drives"}
+
+	for _, name := range resources {
+		if err := execCmdObj(framework.KubectlCmd("delete", name, "--all")); err != nil {
+			e2elog.Logf("%s deletion failed", name)
+		}
+	}
 }
