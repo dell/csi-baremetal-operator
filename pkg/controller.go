@@ -30,6 +30,8 @@ const (
 
 	resizerName     = "csi-resizer"
 	provisionerName = "csi-provisioner"
+	
+	provisionerTimeout = "30s"
 )
 
 type Controller struct {
@@ -208,6 +210,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				"--v=5",
 				"--feature-gates=Topology=true",
 				"--extra-create-metadata",
+				"--timeout=" + provisionerTimeout,
 			},
 			Env: []corev1.EnvVar{
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
