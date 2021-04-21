@@ -95,7 +95,7 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 	}
 }
 
-func (c *CSIDeployment) UninstallPatcher(ctx context.Context,csi csibaremetalv1.Deployment) error {
+func (c *CSIDeployment) UninstallPatcher(ctx context.Context, csi csibaremetalv1.Deployment) error {
 	switch csi.Spec.Platform {
 	case platformOpenshift:
 		return c.patcher.UnPatchOpenShift(ctx)
@@ -104,11 +104,11 @@ func (c *CSIDeployment) UninstallPatcher(ctx context.Context,csi csibaremetalv1.
 	}
 }
 func GetNamespace(csi *csibaremetalv1.Deployment) string {
-	if csi.Spec.Namespace == "" {
+	if csi.Namespace == "" {
 		return "default"
 	}
 
-	return csi.Spec.Namespace
+	return csi.Namespace
 }
 
 func deploymentChanged(expected *v1.Deployment, found *v1.Deployment) bool {

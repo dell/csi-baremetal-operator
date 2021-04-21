@@ -17,6 +17,7 @@ limitations under the License.
 package common
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"time"
@@ -49,6 +50,11 @@ func DeployOperator(c clientset.Interface) (func(), error) {
 
 		if err := c.CoreV1().Namespaces().Delete(chart.namespace, nil); err != nil {
 			e2elog.Logf("Namespace deletion failed. Namespace: %s", chart.namespace)
+		}
+
+		crdPath := path.Join(chart.path, "crds")
+		if err := execCmdObj(framework.KubectlCmd("delete", "-f", crdPath)); err != nil {
+			e2elog.Logf("CRD deletion failed")
 		}
 	}
 
@@ -113,7 +119,12 @@ func DeployCSI(f *framework.Framework) (func(), error) {
 		if isRestarted, err := schedulerRC.WaitForRestart(); err != nil {
 			e2elog.Logf("SchedulerRestartChecker has been failed while waiting. Err: %s", err)
 		} else {
-			e2elog.Logf("Scheduler is restarted: %t", isRestarted)
+			if isRestarted {
+				e2elog.Logf("Scheduler is restarted: %t", isRestarted)
+			} else {
+				cleanup()
+				return nil, errors.New("scheduler is not restarted")
+			}
 		}
 	}
 

@@ -2,13 +2,13 @@ apiVersion: csi-baremetal.dell.com/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: csi-baremetal
     app.kubernetes.io/managed-by: csi-baremetal-operator
     app.kubernetes.io/version: 1.0.0
 spec:
   platform: {{ .Values.platform }}
-  namespace: {{ .Release.Namespace }}
   globalRegistry: {{ .Values.global.registry }}
   pullPolicy: {{ .Values.image.pullPolicy }}
   nodeIDAnnotation: {{ .Values.feature.usenodeannotation }}
