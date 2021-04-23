@@ -30,16 +30,20 @@ type HelmExecutor interface {
 	DeleteRelease(path, ns string) error
 }
 
+// CmdHelmExecutor is HelmExecutor implementation using os/exec.Cmd
 type CmdHelmExecutor struct {
 	kubeconfig string
 }
 
+// HelmChart stores info about chart in filesystem
 type HelmChart struct {
 	name      string
 	path      string
 	namespace string
 }
 
+// InstallRelease calls "helm install" for chart with set args
+// and creates namespace if not created
 func (c *CmdHelmExecutor) InstallRelease(ch *HelmChart, args string) error {
 	cmdStr := fmt.Sprintf("helm install "+
 		"--kubeconfig %s "+
@@ -50,6 +54,7 @@ func (c *CmdHelmExecutor) InstallRelease(ch *HelmChart, args string) error {
 	return execCmdStr(cmdStr)
 }
 
+// DeleteRelease call "helm delete" for chart
 func (c *CmdHelmExecutor) DeleteRelease(ch *HelmChart) error {
 	cmdStr := fmt.Sprintf("helm delete "+
 		"--kubeconfig %s "+

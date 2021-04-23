@@ -19,6 +19,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"time"
 
@@ -30,26 +31,35 @@ import (
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
-func DeployOperator(c clientset.Interface) (func(), error) {
+const (
+	operatorVersionEnv = "OPERATOR_VERSION"
+	csiVersionEnv      = "CSI_VERSION"
+)
+
+// DeployOperator calls DeployOperatorWithClient with f.ClientSet
+func DeployOperator(f *framework.Framework) (func(), error) {
+	return DeployOperatorWithClient(f.ClientSet, f.Namespace.Name)
+}
+
+// DeployOperatorWithClient deploys csi-baremetal-operator with CmdHelmExecutor
+// After install - waiting before all pods ready
+// Cleanup - deleting operator-chart and csi crds
+func DeployOperatorWithClient(c clientset.Interface, ns string) (func(), error) {
 	var (
-		executor = CmdHelmExecutor{framework.TestContext.KubeConfig}
-		chart    = HelmChart{
+		executor        = CmdHelmExecutor{framework.TestContext.KubeConfig}
+		operatorVersion = os.Getenv(operatorVersionEnv)
+		chart           = HelmChart{
 			name:      "csi-baremetal-operator",
 			path:      path.Join(OperatorTestContext.ChartsFolder, "csi-baremetal-operator"),
-			namespace: "test-csi-operator",
+			namespace: ns,
 		}
-		installArgs     = fmt.Sprintf("--set image.tag=%s", OperatorTestContext.OperatorVersion)
-		waitTime        = 1 * time.Minute
-		sleepBeforeWait = 10 * time.Second
+		installArgs = fmt.Sprintf("--set image.tag=%s", operatorVersion)
+		waitTime    = 1 * time.Minute
 	)
 
 	cleanup := func() {
 		if err := executor.DeleteRelease(&chart); err != nil {
 			e2elog.Logf("CSI Operator helm chart deletion failed. Name: %s, namespace: %s", chart.name, chart.namespace)
-		}
-
-		if err := c.CoreV1().Namespaces().Delete(chart.namespace, nil); err != nil {
-			e2elog.Logf("Namespace deletion failed. Namespace: %s", chart.namespace)
 		}
 
 		crdPath := path.Join(chart.path, "crds")
@@ -62,8 +72,6 @@ func DeployOperator(c clientset.Interface) (func(), error) {
 		return nil, err
 	}
 
-	time.Sleep(sleepBeforeWait)
-
 	if err := e2epod.WaitForPodsRunningReady(c, chart.namespace, 0, 0, waitTime, nil); err != nil {
 		cleanup()
 		return nil, err
@@ -72,10 +80,14 @@ func DeployOperator(c clientset.Interface) (func(), error) {
 	return cleanup, nil
 }
 
+// DeployCSI deploys csi-baremetal-deployment with CmdHelmExecutor
+// After install - waiting all pods ready, checking kubernetes-scheduler restart
+// Cleanup - deleting csi-chart, cleaning all csi custom resources
 func DeployCSI(f *framework.Framework) (func(), error) {
 	var (
-		executor = CmdHelmExecutor{framework.TestContext.KubeConfig}
-		chart    = HelmChart{
+		executor   = CmdHelmExecutor{framework.TestContext.KubeConfig}
+		csiVersion = os.Getenv(csiVersionEnv)
+		chart      = HelmChart{
 			name:      "csi-baremetal",
 			path:      path.Join(OperatorTestContext.ChartsFolder, "csi-baremetal-deployment"),
 			namespace: f.Namespace.Name,
@@ -84,19 +96,25 @@ func DeployCSI(f *framework.Framework) (func(), error) {
 			"--set image.pullPolicy=IfNotPresent "+
 			"--set driver.drivemgr.type=loopbackmgr "+
 			"--set driver.drivemgr.deployConfig=true "+
-			"--set scheduler.patcher.enable=true", OperatorTestContext.CsiVersion)
+			"--set scheduler.patcher.enable=true", csiVersion)
 		podWait         = 3 * time.Minute
 		sleepBeforeWait = 10 * time.Second
 		schedulerRC     = newSchedulerRestartChecker(f.ClientSet)
 	)
 
 	cleanup := func() {
+		// delete resources with finalizers
 		if OperatorTestContext.CompleteUninstall {
-			deleteCSIResources()
+			deleteCSIResources([]string{"pvc", "volumes", "lvgs", "csibmnodes"})
 		}
 
 		if err := executor.DeleteRelease(&chart); err != nil {
 			e2elog.Logf("CSI Deployment helm chart deletion failed. Name: %s, namespace: %s", chart.name, chart.namespace)
+		}
+
+		// delete resources without finalizers
+		if OperatorTestContext.CompleteUninstall {
+			deleteCSIResources([]string{"acr", "ac", "drives"})
 		}
 	}
 
@@ -108,6 +126,7 @@ func DeployCSI(f *framework.Framework) (func(), error) {
 		return nil, err
 	}
 
+	// wait until operator reconciling CR
 	time.Sleep(sleepBeforeWait)
 
 	if err := e2epod.WaitForPodsRunningReady(f.ClientSet, chart.namespace, 0, 0, podWait, nil); err != nil {
@@ -120,7 +139,7 @@ func DeployCSI(f *framework.Framework) (func(), error) {
 			e2elog.Logf("SchedulerRestartChecker has been failed while waiting. Err: %s", err)
 		} else {
 			if isRestarted {
-				e2elog.Logf("Scheduler is restarted: %t", isRestarted)
+				e2elog.Logf("Scheduler is restarted")
 			} else {
 				cleanup()
 				return nil, errors.New("scheduler is not restarted")
@@ -128,12 +147,21 @@ func DeployCSI(f *framework.Framework) (func(), error) {
 		}
 	}
 
+	// print info about all custom resources into log messages
+	getCSIResources()
+
 	return cleanup, nil
 }
 
-func deleteCSIResources() {
+func getCSIResources() {
 	resources := []string{"pvc", "volumes", "lvgs", "csibmnodes", "acr", "ac", "drives"}
 
+	for _, name := range resources {
+		execCmdObj(framework.KubectlCmd("get", name))
+	}
+}
+
+func deleteCSIResources(resources []string) {
 	for _, name := range resources {
 		if err := execCmdObj(framework.KubectlCmd("delete", name, "--all")); err != nil {
 			e2elog.Logf("%s deletion failed", name)

@@ -32,8 +32,21 @@ func CSIDeployTestSuite() {
 
 func csiDeployTestSuite() {
 	var (
-		f = framework.NewDefaultFramework("csi-deployment")
+		f               = framework.NewDefaultFramework("csi-deployment")
+		operatorCleanup = func() {}
 	)
+
+	ginkgo.BeforeEach(func() {
+		var err error
+		operatorCleanup, err = common.DeployOperator(f)
+		if err != nil {
+			ginkgo.Fail(err.Error())
+		}
+	})
+
+	ginkgo.AfterEach(func() {
+		operatorCleanup()
+	})
 
 	ginkgo.It("All pods are ready", func() {
 		driverCleanup, err := common.DeployCSI(f)

@@ -38,10 +38,6 @@ func skipIfNotCI(t *testing.T) {
 }
 
 func registerCustomFlags(flags *flag.FlagSet) {
-	flags.StringVar(&common.OperatorTestContext.CsiVersion, "csiVersion",
-		"latest", "Version of csi-baremetal-deployment images")
-	flags.StringVar(&common.OperatorTestContext.OperatorVersion, "operatorVersion",
-		"latest", "Version of csi-baremetal-operator image")
 	flags.StringVar(&common.OperatorTestContext.ChartsFolder, "chartsFolder",
 		"/tmp/charts", "Path to folder with helm charts")
 	flags.BoolVar(&common.OperatorTestContext.CompleteUninstall, "completeUninstall",

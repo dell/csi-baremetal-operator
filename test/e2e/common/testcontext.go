@@ -18,8 +18,6 @@ package common
 
 // OperatorTestContextType stores custom testing context
 type OperatorTestContextType struct {
-	CsiVersion        string
-	OperatorVersion   string
 	ChartsFolder      string
 	CompleteUninstall bool
 }

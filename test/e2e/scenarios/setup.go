@@ -18,29 +18,9 @@ package scenarios
 
 import (
 	"github.com/onsi/ginkgo"
-
-	"github.com/dell/csi-baremetal-operator/test/e2e/common"
 )
 
 var _ = ginkgo.Describe("CSI Operator", func() {
-	operatorCleanup := func() {}
-
-	ginkgo.BeforeSuite(func() {
-		clientset, err := common.GetGlobalClientSet()
-		if err != nil {
-			ginkgo.Fail(err.Error())
-		}
-
-		operatorCleanup, err = common.DeployOperator(clientset)
-		if err != nil {
-			ginkgo.Fail(err.Error())
-		}
-	})
-
-	ginkgo.AfterSuite(func() {
-		operatorCleanup()
-	})
-
 	ginkgo.Context("CSI Operator test suites", func() {
 		CSIDeployTestSuite()
 	})
