@@ -157,7 +157,9 @@ func getCSIResources() {
 	resources := []string{"pvc", "volumes", "lvgs", "csibmnodes", "acr", "ac", "drives"}
 
 	for _, name := range resources {
-		execCmdObj(framework.KubectlCmd("get", name))
+		if err := execCmdObj(framework.KubectlCmd("get", name)); err != nil {
+			e2elog.Logf("Failed to get %s with kubectl", name)
+		}
 	}
 }
 
