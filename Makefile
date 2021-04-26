@@ -1,6 +1,9 @@
+include variables.mk
+
 # Image URL to use all building/pushing image targets
 # TODO refactor after csi-baremetal-operator renaming https://github.com/dell/csi-baremetal/issues/341
-IMG ?= controller:latest
+IMG ?= ${REGISTRY}/csi-barmetal-operator:${TAG}
+
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -10,6 +13,10 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+
+# Print version
+version:
+	@printf $(TAG)
 
 all: manager
 
