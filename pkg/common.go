@@ -95,7 +95,7 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 	}
 }
 
-func (c *CSIDeployment) UninstallPatcher(ctx context.Context,csi csibaremetalv1.Deployment) error {
+func (c *CSIDeployment) UninstallPatcher(ctx context.Context, csi csibaremetalv1.Deployment) error {
 	switch csi.Spec.Platform {
 	case platformOpenshift:
 		return c.patcher.UnPatchOpenShift(ctx)

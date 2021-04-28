@@ -30,7 +30,7 @@ const (
 
 	resizerName     = "csi-resizer"
 	provisionerName = "csi-provisioner"
-	
+
 	provisionerTimeout = "30s"
 )
 

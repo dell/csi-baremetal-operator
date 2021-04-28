@@ -15,12 +15,12 @@ data:
     leaderElection:
       leaderElect: true
     clientConnection:
-      kubeconfig: /etc/kubernetes/scheduler.conf
+      kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
   {{ .Values.scheduler.patcher.source_policy_path }}: |
     apiVersion: v1
     kind: Policy
     extenders:
-      - urlPrefix: "http://127.0.0.1:{{ .Values.port }}"
+      - urlPrefix: "http://127.0.0.1:8889"
         filterVerb: filter
         prioritizeVerb: prioritize
         weight: 1
@@ -30,4 +30,22 @@ data:
         ignorable: true
         # 15 seconds
         httpTimeout: 15000000000
-  {{ end }}
+  {{ .Values.scheduler.patcher.source_config_19_path }}: |
+    apiVersion: kubescheduler.config.k8s.io/v1beta1
+    kind: KubeSchedulerConfiguration
+    extenders:
+      - urlPrefix: "http://127.0.0.1:8889"
+        filterVerb: filter
+        prioritizeVerb: prioritize
+        weight: 1
+        #bindVerb: bind
+        enableHTTPS: false
+        nodeCacheCapable: false
+        ignorable: true
+        # 15 seconds
+        httpTimeout: 15s
+    leaderElection:
+      leaderElect: true
+    clientConnection:
+      kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
+{{ end }}

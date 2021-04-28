@@ -16,7 +16,7 @@ spec:
       - csi
       - csis
     singular: deployment
-  scope: Cluster
+  scope: Namespaced
   version: v1
   versions:
     - name: v1
