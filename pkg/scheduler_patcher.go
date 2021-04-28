@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"path"
+	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +33,7 @@ const (
 	// paths
 	schedulerPath = "/etc/kubernetes/scheduler"
 	manifestsPath = "/etc/kubernetes/manifests"
-	configPath    = "/conf"
+	configPath    = "/config"
 
 	platformOpenshift = "openshift"
 )
@@ -129,6 +130,9 @@ func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 }
 
 func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
+	var (
+		patcher = csi.Spec.Scheduler.Patcher
+	)
 	return []corev1.Container{
 		{
 			Name:            patcherContainerName,
@@ -142,13 +146,15 @@ func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container 
 			Args: []string{
 				"--loglevel=" + matchLogLevel(csi.Spec.Scheduler.Log.Level),
 				"--restore",
-				"--interval=60",
+				"--interval=" + strconv.Itoa(patcher.Interval),
 				"--manifest=" + path.Join(manifestsPath, "kube-scheduler.yaml"),
 				"--target-config-path=" + path.Join(schedulerPath, "config.yaml"),
 				"--target-policy-path=" + path.Join(schedulerPath, "policy.yaml"),
 				"--source-config-path=" + path.Join(configPath, "config.yaml"),
 				"--source-policy-path=" + path.Join(configPath, "policy.yaml"),
-				"--backup-path=" + schedulerPath,
+				"--source_config_19_path=" + path.Join(configPath, "config-19.yaml"),
+				"--target_config_19_path=" + path.Join(schedulerPath, "config-19.yaml"),
+				"--backup-path=" + patcher.BackupPath,
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: schedulerPatcherConfigVolume, MountPath: configPath, ReadOnly: true},

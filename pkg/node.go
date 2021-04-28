@@ -260,6 +260,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
 				"--metrics-path=/metrics",
 				"--drivemgrendpoint=" + driveMgr.Endpoint,
+				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
 			},
 			Ports: []corev1.ContainerPort{
 				{Name: LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
