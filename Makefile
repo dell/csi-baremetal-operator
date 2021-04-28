@@ -17,15 +17,6 @@ all: manager
 test: generate fmt vet manifests
 	go test ./... -coverprofile cover.out
 
-# Execute e2e tests from test/e2e
-test-ci:
-    # Clean charts dir
-	rm -rf /tmp/charts
-	# Copy actual charts
-	cp -r ./charts /tmp/charts
-	# Run tests
-	CI=true go test -v test/e2e/csi_operator_e2e_test.go -ginkgo.v -ginkgo.progress -kubeconfig=${HOME}/.kube/config
-
 # Build manager binary
 manager: fmt vet
 	go build -o bin/manager main.go

@@ -90,9 +90,12 @@ spec:
         tag: {{ .Values.scheduler.patcher.image.tag | default .Values.image.tag }}
       manifest: {{ .Values.scheduler.patcher.manifest }}
       srcConfigPath: {{ .Values.scheduler.patcher.source_config_path }}
+      srcConfig19Path: {{ .Values.scheduler.patcher.source_config_19_path }}
       srcPolicyPath: {{ .Values.scheduler.patcher.source_policy_path }}
       targetConfigPath: {{ .Values.scheduler.patcher.target_config_path }}
+      targetConfig19Path: {{ .Values.scheduler.patcher.target_config_19_path }}
       targetPolicyPath: {{ .Values.scheduler.patcher.target_policy_path }}
+      backupPath: {{ .Values.scheduler.patcher.backup_path }}
       interval: {{ .Values.scheduler.patcher.interval }}
       restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
