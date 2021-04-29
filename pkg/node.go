@@ -117,7 +117,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					NodeSelector:                  map[string]string{},
+					NodeSelector:                  makeNodeSelectorMap(csi.Spec.NodeSelector),
 					ServiceAccountName:            nodeServiceAccountName,
 					DeprecatedServiceAccount:      nodeServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
