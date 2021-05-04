@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         control-plane: controller-manager
+        # release label used by fluentbit to make "release" folder
         release: {{ .Release.Name }}
     spec:
       containers:
