@@ -100,7 +100,10 @@ func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{"app": patcherName},
+					Labels: map[string]string{
+						"app":     patcherName,
+						"release": patcherName,
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers:                    createPatcherContainers(csi),

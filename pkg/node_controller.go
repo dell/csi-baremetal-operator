@@ -83,7 +83,10 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{"app": nodeControllerName},
+					Labels: map[string]string{
+						"app":     nodeControllerName,
+						"release": nodeControllerName,
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers:                    createNodeControllerContainers(csi),

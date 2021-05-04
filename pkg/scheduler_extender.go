@@ -89,6 +89,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					Labels: map[string]string{
 						"app":                    extenderName,
 						"app.kubernetes.io/name": CSIName,
+						"release":                extenderName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
