@@ -174,6 +174,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: LogsVolume, MountPath: "/var/log"},
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			Ports: []corev1.ContainerPort{
 				{Name: LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
@@ -219,6 +220,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
@@ -238,6 +240,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
@@ -252,6 +255,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,

@@ -163,6 +163,7 @@ func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container 
 				{Name: schedulerPatcherConfigVolume, MountPath: configPath, ReadOnly: true},
 				{Name: kubernetesSchedulerVolume, MountPath: schedulerPath},
 				{Name: kubernetesManifestsVolume, MountPath: manifestsPath},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,

@@ -156,6 +156,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
+			VolumeMounts:             []corev1.VolumeMount{crashMountVolume},
 		},
 	}
 }
