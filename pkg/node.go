@@ -134,7 +134,7 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 	directory := corev1.HostPathDirectory
 	directoryOrCreate := corev1.HostPathDirectoryOrCreate
 	unset := corev1.HostPathUnset
-	volumes := make([]corev1.Volume, 0, 13)
+	volumes := make([]corev1.Volume, 0, 14)
 	volumes = append(volumes,
 		corev1.Volume{Name: LogsVolume, VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
@@ -172,6 +172,7 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 		corev1.Volume{Name: csiPathVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/kubernetes.io/csi", Type: &unset},
 		}},
+		crashVolume,
 	)
 
 	if deployConfig {

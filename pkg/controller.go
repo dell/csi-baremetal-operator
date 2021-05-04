@@ -117,6 +117,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 						{Name: CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						}},
+						crashVolume,
 					},
 					Containers:                    createControllerContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,

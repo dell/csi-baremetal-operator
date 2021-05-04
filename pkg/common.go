@@ -33,6 +33,11 @@ const (
 	defaultTerminationMessagePath   = "/var/log/termination-log"
 	defaultTerminationMessagePolicy = corev1.TerminationMessageReadFile
 )
+var (
+	crashVolume = corev1.Volume{ Name: "crash-dump", VolumeSource: corev1.VolumeSource{
+		EmptyDir: &corev1.EmptyDirVolumeSource{},
+	}}
+)
 
 type CSIDeployment struct {
 	node           Node
@@ -183,3 +188,5 @@ func makeNodeSelectorMap(ns *components.NodeSelector) map[string]string {
 
 	return map[string]string{}
 }
+
+

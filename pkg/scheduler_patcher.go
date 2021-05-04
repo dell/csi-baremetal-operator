@@ -189,5 +189,6 @@ func createPatcherVolumes() []corev1.Volume {
 		{Name: kubernetesManifestsVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: manifestsPath, Type: &unset},
 		}},
+		crashVolume,
 	}
 }

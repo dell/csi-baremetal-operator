@@ -120,6 +120,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 								}},
 							}},
 					}},
+					Volumes: []corev1.Volume{crashVolume},
 				},
 			},
 		},
