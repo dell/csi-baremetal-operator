@@ -102,6 +102,7 @@ func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					// labels
 					Labels: map[string]string{
 						"app":     patcherName,
+						// release label used by fluentbit to make "release" folder
 						"release": patcherName,
 					},
 				},

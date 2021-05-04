@@ -103,6 +103,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					Labels: map[string]string{
 						"app":                    nodeName,
 						"app.kubernetes.io/name": CSIName,
+						// release label used by fluentbit to make "release" folder
 						"release":                nodeName,
 					},
 					// integration with monitoring

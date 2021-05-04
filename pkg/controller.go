@@ -100,6 +100,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 						"app":                    controllerName,
 						"app.kubernetes.io/name": CSIName,
 						"role":                   controllerRoleKey,
+						// release label used by fluentbit to make "release" folder
 						"release":                controllerName,
 					},
 					// integration with monitoring
