@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"path"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -20,22 +19,18 @@ import (
 )
 
 const (
+	platformVanilla   = "vanilla"
+	platformRKE       = "rke"
+	platformOpenshift = "openshift"
+)
+
+const (
 	patcherName          = extenderName + "-patcher"
 	patcherContainerName = "schedulerpatcher"
 
-	// volumes
-	schedulerPatcherConfigVolume = "schedulerpatcher-config"
-	kubernetesManifestsVolume    = "kubernetes-manifests"
-	kubernetesSchedulerVolume    = "kubernetes-scheduler"
-	// config maps
-	schedulerPatcherConfigMapName = schedulerPatcherConfigVolume
-
-	// paths
-	schedulerPath = "/etc/kubernetes/scheduler"
-	manifestsPath = "/etc/kubernetes/manifests"
-	configPath    = "/config"
-
-	platformOpenshift = "openshift"
+	kubernetesManifestsVolume = "kubernetes-manifests"
+	kubernetesSchedulerVolume = "kubernetes-scheduler"
+	configurationPath         = "/config"
 )
 
 type SchedulerPatcher struct {
@@ -45,8 +40,9 @@ type SchedulerPatcher struct {
 }
 
 func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	// create daemonset
-	expected := createPatcherDaemonSet(csi)
+
+	cfg := NewPatcherConfiguration(csi)
+	expected := cfg.createPatcherDaemonSet()
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 		return err
 	}
@@ -84,11 +80,11 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 	return nil
 }
 
-func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
+func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      patcherName,
-			Namespace: GetNamespace(csi),
+			Namespace: p.ns,
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector
@@ -101,14 +97,14 @@ func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
 					Labels: map[string]string{
-						"app":     patcherName,
+						"app": patcherName,
 						// release label used by fluentbit to make "release" folder
 						"release": patcherName,
 					},
 				},
 				Spec: corev1.PodSpec{
-					Containers:                    createPatcherContainers(csi),
-					Volumes:                       createPatcherVolumes(),
+					Containers:                    p.createPatcherContainers(),
+					Volumes:                       p.createPatcherVolumes(),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
@@ -133,37 +129,34 @@ func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	}
 }
 
-func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
-	var (
-		patcher = csi.Spec.Scheduler.Patcher
-	)
+func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
+
 	return []corev1.Container{
 		{
 			Name:            patcherContainerName,
-			Image:           constructFullImageName(csi.Spec.Scheduler.Patcher.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
+			Image:           constructFullImageName(p.image, p.globalRegistry),
+			ImagePullPolicy: corev1.PullPolicy(p.pullPolicy),
 			Command: []string{
 				"python3",
 				"-u",
 				"main.py",
 			},
 			Args: []string{
-				"--loglevel=" + matchLogLevel(csi.Spec.Scheduler.Log.Level),
+				"--loglevel=" + matchLogLevel(p.loglevel),
 				"--restore",
-				"--interval=" + strconv.Itoa(patcher.Interval),
-				"--manifest=" + path.Join(manifestsPath, "kube-scheduler.yaml"),
-				"--target-config-path=" + path.Join(schedulerPath, "config.yaml"),
-				"--target-policy-path=" + path.Join(schedulerPath, "policy.yaml"),
-				"--source-config-path=" + path.Join(configPath, "config.yaml"),
-				"--source-policy-path=" + path.Join(configPath, "policy.yaml"),
-				"--source_config_19_path=" + path.Join(configPath, "config-19.yaml"),
-				"--target_config_19_path=" + path.Join(schedulerPath, "config-19.yaml"),
-				"--backup-path=" + patcher.BackupPath,
+				"--interval=" + strconv.Itoa(p.interval),
+				"--target-config-path=" + p.targetConfig,
+				"--target-policy-path=" + p.targetPolicy,
+				"--source-config-path=" + configFile,
+				"--source-policy-path=" + policyFile,
+				"--source_config_19_path=" + config19File,
+				"--target_config_19_path=" + p.targetConfig19,
+				"--backup-path=" + p.schedulerFolder,
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: schedulerPatcherConfigVolume, MountPath: configPath, ReadOnly: true},
-				{Name: kubernetesSchedulerVolume, MountPath: schedulerPath},
-				{Name: kubernetesManifestsVolume, MountPath: manifestsPath},
+				{Name: p.configMapName, MountPath: configurationPath, ReadOnly: true},
+				{Name: kubernetesSchedulerVolume, MountPath: p.schedulerFolder},
+				{Name: kubernetesManifestsVolume, MountPath: p.manifestsFolder},
 				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
@@ -172,24 +165,24 @@ func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container 
 	}
 }
 
-func createPatcherVolumes() []corev1.Volume {
+func (p patcherConfiguration) createPatcherVolumes() []corev1.Volume {
 	var (
 		schedulerPatcherConfigMapMode = corev1.ConfigMapVolumeSourceDefaultMode
 		unset                         = corev1.HostPathUnset
 	)
 	return []corev1.Volume{
-		{Name: schedulerPatcherConfigVolume, VolumeSource: corev1.VolumeSource{
+		{Name: p.configMapName, VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: schedulerPatcherConfigMapName},
+				LocalObjectReference: corev1.LocalObjectReference{Name: p.configMapName},
 				DefaultMode:          &schedulerPatcherConfigMapMode,
 				Optional:             pointer.BoolPtr(true),
 			},
 		}},
 		{Name: kubernetesSchedulerVolume, VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{Path: schedulerPath, Type: &unset},
+			HostPath: &corev1.HostPathVolumeSource{Path: p.schedulerFolder, Type: &unset},
 		}},
 		{Name: kubernetesManifestsVolume, VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{Path: manifestsPath, Type: &unset},
+			HostPath: &corev1.HostPathVolumeSource{Path: p.manifestsFolder, Type: &unset},
 		}},
 		crashVolume,
 	}
