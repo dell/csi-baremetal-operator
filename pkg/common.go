@@ -42,7 +42,7 @@ var (
 		}}
 		
 	crashMountVolume = corev1.VolumeMount{
-		Name: "crash-dump", MountPath: "/csi",
+		Name: "crash-dump", MountPath: "/crash-dump",
 	}
 )
 
