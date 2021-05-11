@@ -2,7 +2,7 @@ package node
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -12,11 +12,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
 const (
-	masterNodeLabel = "node-role.kubernetes.io/master"
-	label           = "nodes.csi-baremetal.dell.com/platform"
+	label = "nodes.csi-baremetal.dell.com/platform"
 )
 
 type Node struct {
@@ -35,6 +35,8 @@ func NewNode(ctx context.Context, clientset kubernetes.Clientset, logger logr.Lo
 
 func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	var (
+		// need to trying deploy each daemonset
+		// return err != nil to request reconcile again if one ore more daemonsets failed
 		resultErr error
 		namespace = common.GetNamespace(csi)
 	)
@@ -62,8 +64,12 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) er
 	return resultErr
 }
 
-func (n *Node) updateDaemonset(expected *v1.DaemonSet, namespace string) error {
+// CleanLabels deletes platform-label on each node in cluster
+func (n *Node) CleanLabels() error {
+	return n.cleanNodeLabels()
+}
 
+func (n *Node) updateDaemonset(expected *v1.DaemonSet, namespace string) error {
 	dsClient := n.clientset.AppsV1().DaemonSets(namespace)
 
 	found, err := dsClient.Get(n.ctx, expected.Name, metav1.GetOptions{})
@@ -96,8 +102,40 @@ func (n *Node) updateDaemonset(expected *v1.DaemonSet, namespace string) error {
 	return nil
 }
 
-func (n *Node) CleanLabels() error {
-	return n.cleanNodeLabels()
+// updateNodeLabels gets list of all nodes in cluster,
+// selects fit platform for each one and add/update node platform-label
+// returns a Set of platforms, which will be deployed
+func (n *Node) updateNodeLabels() (Set, error) {
+	// need to trying getKernelVersion and update label on each node
+	// return err != nil to request reconcile again if one ore more nodes failed
+	var resultErr error
+
+	needToDeploy := createNeedToDeploySet()
+
+	nodes, err := n.clientset.CoreV1().Nodes().List(n.ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, node := range nodes.Items {
+		kernelVersion, err := GetNodeKernelVersion(node)
+		if err != nil {
+			n.log.Error(err, "Failed to get kernel version for "+node.Name)
+			resultErr = err
+			continue
+		}
+
+		platformName := findPlatform(kernelVersion)
+		needToDeploy[platformName] = true
+
+		node.Labels[label] = platforms[platformName].labeltag
+		if _, err := n.clientset.CoreV1().Nodes().Update(n.ctx, &node, metav1.UpdateOptions{}); err != nil {
+			n.log.Error(err, "Failed to update label on "+node.Name)
+			resultErr = err
+		}
+	}
+
+	return needToDeploy, resultErr
 }
 
 func (n *Node) cleanNodeLabels() error {
@@ -118,35 +156,8 @@ func (n *Node) cleanNodeLabels() error {
 	return nil
 }
 
-type Set map[string]bool
-
-func (n *Node) updateNodeLabels() (Set, error) {
-	needToDeploy := createNeedToDeploySet()
-
-	nodes, err := n.clientset.CoreV1().Nodes().List(n.ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, node := range nodes.Items {
-		kernelVersion, err := GetNodeKernelVersion(node)
-		if err != nil {
-			n.log.Error(err, "Failed to get kernel version for "+node.Name)
-			continue
-		}
-
-		platformName := findPlatform(kernelVersion)
-		needToDeploy[platformName] = true
-
-		node.Labels[label] = platforms[platformName].labeltag
-		if _, err := n.clientset.CoreV1().Nodes().Update(n.ctx, &node, metav1.UpdateOptions{}); err != nil {
-			n.log.Error(err, "Failed to update label on "+node.Name)
-		}
-	}
-
-	return needToDeploy, nil
-}
-
+// findPlatform calls checkVersion for all platforms in list,
+// returns first found platform-name or "default" if no one passed
 func findPlatform(kernelVersion string) string {
 	for key, value := range platforms {
 		if value.checkVersion(kernelVersion) {
@@ -157,6 +168,10 @@ func findPlatform(kernelVersion string) string {
 	return "default"
 }
 
+// Set is needed to check if one type of platform is exists in current cluster
+type Set map[string]bool
+
+// createNeedToDeploySet returns set of platform-names
 func createNeedToDeploySet() Set {
 	var result = Set{}
 

@@ -102,7 +102,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 						"app.kubernetes.io/name": constant.CSIName,
 						"role":                   controllerRoleKey,
 						// release label used by fluentbit to make "release" folder
-						"release":                controllerName,
+						"release": controllerName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
@@ -119,7 +119,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 						{Name: constant.CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						}},
-						crashVolume,
+						constant.CrashVolume,
 					},
 					Containers:                    createControllerContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
@@ -176,7 +176,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.LogsVolume, MountPath: "/var/log"},
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				crashMountVolume,
+				constant.CrashMountVolume,
 			},
 			Ports: []corev1.ContainerPort{
 				{Name: constant.LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
@@ -222,7 +222,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				crashMountVolume,
+				constant.CrashMountVolume,
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -242,7 +242,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				crashMountVolume,
+				constant.CrashMountVolume,
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -256,8 +256,8 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: CSISocketDirVolume, MountPath: "/csi"},
-				crashMountVolume,
+				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
+				constant.CrashMountVolume,
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,

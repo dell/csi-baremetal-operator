@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	//errTypes "github.com/dell/csi-baremetal/pkg/base/error"
 )
 
 // GetOSNameAndVersion receives string with the OS information in th following format:
@@ -37,13 +36,13 @@ func GetOSNameAndVersion(osInfo string) (name, version string, err error) {
 	// extract OS name
 	name = regexp.MustCompile(`^[A-Za-z]+`).FindString(osInfo)
 	if len(name) == 0 {
-		return "", "", errors.New("ErrorEmptyParameter") //errTypes.ErrorEmptyParameter
+		return "", "", errors.New("ErrorEmptyParameter")
 	}
 
 	// extract OS version
 	version = regexp.MustCompile(`[0-9]+\.[0-9]+`).FindString(osInfo)
 	if len(version) == 0 {
-		return "", "", errors.New("ErrorEmptyParameter") //errTypes.ErrorEmptyParameter
+		return "", "", errors.New("ErrorEmptyParameter")
 	}
 
 	return strings.ToLower(name), version, nil
@@ -55,13 +54,13 @@ func GetOSNameAndVersion(osInfo string) (name, version string, err error) {
 func GetKernelVersion(kernelVersion string) (version string, err error) {
 	// check input parameter
 	if len(kernelVersion) == 0 {
-		return "", errors.New("ErrorEmptyParameter") //errTypes.ErrorEmptyParameter
+		return "", errors.New("ErrorEmptyParameter")
 	}
 
 	// extract kernel version - x.y.z
 	version = regexp.MustCompile(`^[0-9]+\.[0-9]+`).FindString(kernelVersion)
 	if len(version) == 0 {
-		return "", errors.New("ErrorEmptyParameter") //errTypes.ErrorEmptyParameter
+		return "", errors.New("ErrorEmptyParameter")
 	}
 
 	return version, nil

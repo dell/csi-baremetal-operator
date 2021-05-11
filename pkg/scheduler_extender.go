@@ -94,7 +94,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 						"app":                    extenderName,
 						"app.kubernetes.io/name": constant.CSIName,
 						// release label used by fluentbit to make "release" folder
-						"release":                extenderName,
+						"release": extenderName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
@@ -125,7 +125,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 								}},
 							}},
 					}},
-					Volumes: []corev1.Volume{crashVolume},
+					Volumes: []corev1.Volume{constant.CrashVolume},
 				},
 			},
 		},
@@ -161,7 +161,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			VolumeMounts:             []corev1.VolumeMount{crashMountVolume},
+			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
 		},
 	}
 }

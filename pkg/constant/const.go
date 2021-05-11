@@ -44,3 +44,15 @@ const (
 	DriverRegistrarName = "csi-node-driver-registrar"
 	LivenessProbeName   = "livenessprobe"
 )
+
+var (
+	CrashVolume = corev1.Volume{
+		Name: "crash-dump",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		}}
+
+	CrashMountVolume = corev1.VolumeMount{
+		Name: "crash-dump", MountPath: "/crash-dump",
+	}
+)

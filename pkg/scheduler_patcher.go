@@ -105,7 +105,7 @@ func createPatcherDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
 					Labels: map[string]string{
-						"app":     patcherName,
+						"app": patcherName,
 						// release label used by fluentbit to make "release" folder
 						"release": patcherName,
 					},
@@ -168,7 +168,7 @@ func createPatcherContainers(csi *csibaremetalv1.Deployment) []corev1.Container 
 				{Name: schedulerPatcherConfigVolume, MountPath: configPath, ReadOnly: true},
 				{Name: kubernetesSchedulerVolume, MountPath: schedulerPath},
 				{Name: kubernetesManifestsVolume, MountPath: manifestsPath},
-				crashMountVolume,
+				constant.CrashMountVolume,
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -195,6 +195,6 @@ func createPatcherVolumes() []corev1.Volume {
 		{Name: kubernetesManifestsVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: manifestsPath, Type: &unset},
 		}},
-		crashVolume,
+		constant.CrashVolume,
 	}
 }
