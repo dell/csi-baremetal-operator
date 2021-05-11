@@ -152,6 +152,7 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				"--source_config_19_path=" + config19File,
 				"--target_config_19_path=" + p.targetConfig19,
 				"--backup-path=" + p.schedulerFolder,
+				"--platform=" + p.platform,
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: p.configMapName, MountPath: configurationPath, ReadOnly: true},
