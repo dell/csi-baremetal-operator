@@ -100,6 +100,8 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 						"app":                    controllerName,
 						"app.kubernetes.io/name": CSIName,
 						"role":                   controllerRoleKey,
+						// release label used by fluentbit to make "release" folder
+						"release":                controllerName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
@@ -116,6 +118,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 						{Name: CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						}},
+						crashVolume,
 					},
 					Containers:                    createControllerContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
@@ -172,6 +175,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: LogsVolume, MountPath: "/var/log"},
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			Ports: []corev1.ContainerPort{
 				{Name: LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
@@ -217,6 +221,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
@@ -236,6 +241,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
@@ -250,6 +256,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,

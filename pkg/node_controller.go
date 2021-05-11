@@ -83,7 +83,11 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{"app": nodeControllerName},
+					Labels: map[string]string{
+						"app":     nodeControllerName,
+						// release label used by fluentbit to make "release" folder
+						"release": nodeControllerName,
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers:                    createNodeControllerContainers(csi),
@@ -94,6 +98,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 					DeprecatedServiceAccount:      nodeControllerServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
 					SchedulerName:                 corev1.DefaultSchedulerName,
+					Volumes:                       []corev1.Volume{crashVolume},
 				},
 			},
 		},
@@ -129,6 +134,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
+			VolumeMounts:             []corev1.VolumeMount{crashMountVolume},
 		},
 	}
 }

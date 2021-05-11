@@ -34,6 +34,18 @@ const (
 	defaultTerminationMessagePolicy = corev1.TerminationMessageReadFile
 )
 
+var (
+	crashVolume = corev1.Volume{
+		Name: "crash-dump",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		}}
+		
+	crashMountVolume = corev1.VolumeMount{
+		Name: "crash-dump", MountPath: "/crash-dump",
+	}
+)
+
 type CSIDeployment struct {
 	node           Node
 	controller     Controller

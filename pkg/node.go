@@ -103,6 +103,8 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					Labels: map[string]string{
 						"app":                    nodeName,
 						"app.kubernetes.io/name": CSIName,
+						// release label used by fluentbit to make "release" folder
+						"release":                nodeName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
@@ -133,7 +135,7 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 	directory := corev1.HostPathDirectory
 	directoryOrCreate := corev1.HostPathDirectoryOrCreate
 	unset := corev1.HostPathUnset
-	volumes := make([]corev1.Volume, 0, 13)
+	volumes := make([]corev1.Volume, 0, 14)
 	volumes = append(volumes,
 		corev1.Volume{Name: LogsVolume, VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
@@ -171,6 +173,7 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 		corev1.Volume{Name: csiPathVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/kubernetes.io/csi", Type: &unset},
 		}},
+		crashVolume,
 	)
 
 	if deployConfig {
@@ -205,6 +208,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	mounts := []corev1.VolumeMount{
 		{Name: hostDevVolume, MountPath: "/dev"},
 		{Name: hostHomeVolume, MountPath: "/host/home"},
+		crashMountVolume,
 	}
 	if testEnv {
 		mounts = append(mounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
@@ -221,6 +225,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
@@ -243,6 +248,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: CSISocketDirVolume, MountPath: "/csi"},
 				{Name: registrationDirVolume, MountPath: "/registration"},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
@@ -312,6 +318,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 				{Name: mountPointDirVolume, MountPath: "/var/lib/kubelet/pods", MountPropagation: &bidirectional},
 				{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
 				{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
+				crashMountVolume,
 			},
 			TerminationMessagePath:   defaultTerminationMessagePath,
 			TerminationMessagePolicy: defaultTerminationMessagePolicy,
