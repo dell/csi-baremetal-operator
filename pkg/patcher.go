@@ -16,7 +16,7 @@ const (
 
 	policyFile   = "policy.yaml"
 	configFile   = "config.yaml"
-	config19File = "config19.yaml"
+	config19File = "config-19.yaml"
 
 	policyPath   = schedulerFolder + "/" + policyFile
 	configPath   = schedulerFolder + "/" + configFile
