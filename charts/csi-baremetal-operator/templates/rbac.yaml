@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: csi-operator-leader-election-role
+  name: csi-baremetal-leader-election-role
 rules:
 - apiGroups:
   - ""
@@ -34,7 +34,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: csi-operator-manager-role
+  name: csi-baremetal-manager-role
 rules:
 - apiGroups:
   - "apps"
@@ -99,7 +99,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: csi-operator-proxy-role
+  name: csi-baremetal-proxy-role
 rules:
 - apiGroups:
   - authentication.k8s.io
@@ -117,7 +117,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: csi-operator-metrics-reader
+  name: metrics-reader
 rules:
 - nonResourceURLs:
   - /metrics
@@ -127,11 +127,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: csi-operator-leader-election-rolebinding
+  name: csi-baremetal-leader-election-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: csi-operator-leader-election-role
+  name: csi-baremetal-leader-election-role
 subjects:
 - kind: ServiceAccount
   name: default
@@ -140,11 +140,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: csi-operator-manager-rolebinding
+  name: csi-baremetal-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: csi-operator-manager-role
+  name: csi-baremetal-manager-role
 subjects:
 - kind: ServiceAccount
   name: default
@@ -153,11 +153,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: csi-operator-proxy-rolebinding
+  name: csi-baremetal-proxy-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: csi-operator-proxy-role
+  name: csi-baremetal-roxy-role
 subjects:
 - kind: ServiceAccount
   name: default
@@ -168,7 +168,7 @@ kind: Service
 metadata:
   labels:
     control-plane: controller-manager
-  name: csi-operator-controller-manager-metrics-service
+  name: controller-manager-metrics-service
   namespace: {{ .Release.Namespace }}
 spec:
   ports:
