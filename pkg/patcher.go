@@ -56,7 +56,7 @@ func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) patcherConfiguratio
 	config.globalRegistry = csi.Spec.GlobalRegistry
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level
-	config.configFolder = configFolder
+	config.configFolder = configurationPath
 	return config
 }
 
