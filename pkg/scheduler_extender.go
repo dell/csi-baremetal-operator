@@ -1,6 +1,8 @@
 package pkg
 
 import (
+	"context"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -15,17 +17,19 @@ import (
 	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 const (
 	extenderContainerName      = "scheduler-extender"
-	extenderName               = CSIName + "-se"
-	extenderServiceAccountName = CSIName + "-extender-sa"
+	extenderName               = constant.CSIName + "-se"
+	extenderServiceAccountName = constant.CSIName + "-extender-sa"
 
 	extenderPort = 8889
 )
 
 type SchedulerExtender struct {
+	ctx context.Context
 	kubernetes.Clientset
 	logr.Logger
 }
@@ -37,13 +41,13 @@ func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment, scheme *runti
 		return err
 	}
 
-	namespace := GetNamespace(csi)
+	namespace := common.GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)
 
-	found, err := dsClient.Get(extenderName, metav1.GetOptions{})
+	found, err := dsClient.Get(n.ctx, extenderName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(expected); err != nil {
+			if _, err := dsClient.Create(n.ctx, expected, metav1.CreateOptions{}); err != nil {
 				n.Logger.Error(err, "Failed to create daemonset")
 				return err
 			}
@@ -56,9 +60,9 @@ func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment, scheme *runti
 		return err
 	}
 
-	if daemonsetChanged(expected, found) {
+	if common.DaemonsetChanged(expected, found) {
 		found.Spec = expected.Spec
-		if _, err := dsClient.Update(found); err != nil {
+		if _, err := dsClient.Update(n.ctx, found, metav1.UpdateOptions{}); err != nil {
 			n.Logger.Error(err, "Failed to update daemonset")
 			return err
 		}
@@ -74,7 +78,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      extenderName,
-			Namespace: GetNamespace(csi),
+			Namespace: common.GetNamespace(csi),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector
@@ -88,12 +92,12 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					// labels
 					Labels: map[string]string{
 						"app":                    extenderName,
-						"app.kubernetes.io/name": CSIName,
+						"app.kubernetes.io/name": constant.CSIName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",
-						"prometheus.io/port":   strconv.Itoa(PrometheusPort),
+						"prometheus.io/port":   strconv.Itoa(constant.PrometheusPort),
 						"prometheus.io/path":   "/metrics",
 					},
 				},
@@ -101,7 +105,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					Containers:                    createExtenderContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					ServiceAccountName:            extenderServiceAccountName,
 					DeprecatedServiceAccount:      extenderServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
@@ -129,16 +133,16 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 	return []corev1.Container{
 		{
 			Name:            extenderContainerName,
-			Image:           constructFullImageName(csi.Spec.Scheduler.Image, csi.Spec.GlobalRegistry),
+			Image:           common.ConstructFullImageName(csi.Spec.Scheduler.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--namespace=$(NAMESPACE)",
-				"--provisioner=" + CSIName,
+				"--provisioner=" + constant.CSIName,
 				"--port=" + strconv.Itoa(extenderPort),
-				"--loglevel=" + matchLogLevel(csi.Spec.Scheduler.Log.Level),
+				"--loglevel=" + common.MatchLogLevel(csi.Spec.Scheduler.Log.Level),
 				"--certFile=",
 				"--privateKeyFile=",
-				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
+				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
 				"--metrics-path=/metrics",
 				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
 			},
@@ -146,14 +150,14 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
 				}},
-				{Name: "LOG_FORMAT", Value: matchLogFormat(csi.Spec.Scheduler.Log.Format)},
+				{Name: "LOG_FORMAT", Value: common.MatchLogFormat(csi.Spec.Scheduler.Log.Format)},
 			},
 			Ports: []corev1.ContainerPort{
-				{Name: "metrics", HostPort: PrometheusPort, ContainerPort: PrometheusPort, Protocol: corev1.ProtocolTCP},
+				{Name: "metrics", HostPort: constant.PrometheusPort, ContainerPort: constant.PrometheusPort, Protocol: corev1.ProtocolTCP},
 				{Name: "extender", HostPort: extenderPort, ContainerPort: extenderPort, Protocol: corev1.ProtocolTCP},
 			},
-			TerminationMessagePath:   defaultTerminationMessagePath,
-			TerminationMessagePolicy: defaultTerminationMessagePolicy,
+			TerminationMessagePath:   constant.TerminationMessagePath,
+			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
 	}
 }
