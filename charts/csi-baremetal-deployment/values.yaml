@@ -151,4 +151,4 @@ nodeController:
     path: /metrics
     port: 8787
 
-platform: ""
+platform: "vanilla"

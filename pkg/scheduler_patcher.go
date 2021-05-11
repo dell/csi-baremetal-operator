@@ -40,7 +40,10 @@ type SchedulerPatcher struct {
 }
 
 func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-
+	if !csi.Spec.Scheduler.Patcher.Enable {
+		p.Logger.Info("Patcher disabled - skipping patcher pod creation")
+		return nil
+	}
 	cfg := NewPatcherConfiguration(csi)
 	expected := cfg.createPatcherDaemonSet()
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {

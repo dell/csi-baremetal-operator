@@ -15,7 +15,7 @@ data:
     leaderElection:
       leaderElect: true
     clientConnection:
-    {{- if eq .Values.scheduler.platform "rke" }}
+    {{- if eq .Values.platform "rke" }}
       kubeconfig: {{ .Values.scheduler.patcher.rke.kubeconfig }}
     {{- else }}
       kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
@@ -51,7 +51,7 @@ data:
     leaderElection:
       leaderElect: true
     clientConnection:
-    {{- if eq .Values.scheduler.platform "rke" }}
+    {{- if eq .Values.platform "rke" }}
       kubeconfig: {{ .Values.scheduler.patcher.rke.kubeconfig }}
     {{- else }}
       kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
