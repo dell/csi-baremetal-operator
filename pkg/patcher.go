@@ -13,7 +13,6 @@ const (
 	vanillaManifestsFolder = "/etc/kubernetes/manifests"
 
 	schedulerFolder = "scheduler"
-	configFolder    = "config"
 
 	policyFile   = "policy.yaml"
 	configFile   = "config.yaml"
