@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -17,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 

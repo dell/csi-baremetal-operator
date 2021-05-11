@@ -18,7 +18,7 @@ package controllers
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg"
+	"reflect"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -39,6 +39,7 @@ import (
 	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg"
 )
 
 // DeploymentReconciler reconciles a Deployment object
@@ -145,6 +146,7 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	// reconcile CSI Deployment if node was creates, node kernel-version or label were changed
 	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(func(a client.Object) []reconcile.Request {
 		ctx := context.Background()
 		deployments := &csibaremetalv1.DeploymentList{}
@@ -169,7 +171,8 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return true
 			},
 			UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-				return isKernelVersionChanged(updateEvent.ObjectOld, updateEvent.ObjectNew)
+				return isKernelVersionChanged(updateEvent.ObjectOld, updateEvent.ObjectNew) ||
+					isLabelsChanged(updateEvent.ObjectOld, updateEvent.ObjectNew)
 			},
 		})
 	if err != nil {
@@ -195,7 +198,24 @@ func isKernelVersionChanged(old runtime.Object, new runtime.Object) bool {
 		return true
 	}
 	return false
+}
 
+func isLabelsChanged(old runtime.Object, new runtime.Object) bool {
+	var (
+		oldNode *corev1.Node
+		newNode *corev1.Node
+		ok      bool
+	)
+	if oldNode, ok = old.(*corev1.Node); !ok {
+		return false
+	}
+	if newNode, ok = new.(*corev1.Node); !ok {
+		return false
+	}
+	if reflect.DeepEqual(oldNode.Labels, newNode.Labels) {
+		return true
+	}
+	return false
 }
 
 func containsFinalizer(csiDep *csibaremetalv1.Deployment) bool {
