@@ -50,12 +50,12 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) er
 		if isDeploying {
 			expected := createNodeDaemonSet(csi, platforms[platformName])
 			if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
-				n.log.Error(err, "Failed to set controller reference")
+				n.log.Error(err, "Failed to set controller reference "+expected.Name)
 				continue
 			}
 
 			if err = n.updateDaemonset(expected, namespace); err != nil {
-				n.log.Error(err, "Failed to update daemonset")
+				n.log.Error(err, "Failed to update daemonset "+expected.Name)
 				resultErr = err
 			}
 		}
@@ -76,26 +76,26 @@ func (n *Node) updateDaemonset(expected *v1.DaemonSet, namespace string) error {
 	if err != nil {
 		if errors.IsNotFound(err) {
 			if _, err := dsClient.Create(n.ctx, expected, metav1.CreateOptions{}); err != nil {
-				n.log.Error(err, "Failed to create daemonset")
+				n.log.Error(err, "Failed to create daemonset "+expected.Name)
 				return err
 			}
 
-			n.log.Info("Daemonset created successfully")
+			n.log.Info("Daemonset created successfully: " + expected.Name)
 			return nil
 		}
 
-		n.log.Error(err, "Failed to get daemonset")
+		n.log.Error(err, "Failed to get daemonset "+expected.Name)
 		return err
 	}
 
 	if common.DaemonsetChanged(expected, found) {
 		found.Spec = expected.Spec
 		if _, err := dsClient.Update(n.ctx, found, metav1.UpdateOptions{}); err != nil {
-			n.log.Error(err, "Failed to update daemonset")
+			n.log.Error(err, "Failed to update daemonset "+expected.Name)
 			return err
 		}
 
-		n.log.Info("Daemonset updated successfully")
+		n.log.Info("Daemonset updated successfully: " + expected.Name)
 		return nil
 	}
 
@@ -175,7 +175,7 @@ type Set map[string]bool
 func createNeedToDeploySet() Set {
 	var result = Set{}
 
-	for key, _ := range platforms {
+	for key := range platforms {
 		result[key] = false
 	}
 	return result
