@@ -13,9 +13,11 @@ const (
 	vanillaManifestsFolder = "/etc/kubernetes/manifests"
 
 	schedulerFolder = "scheduler"
-	policyFile      = "policy.yaml"
-	configFile      = "config.yaml"
-	config19File    = "config19.yaml"
+	configFolder    = "config"
+
+	policyFile   = "policy.yaml"
+	configFile   = "config.yaml"
+	config19File = "config19.yaml"
 
 	policyPath   = schedulerFolder + "/" + policyFile
 	configPath   = schedulerFolder + "/" + configFile
@@ -55,7 +57,7 @@ func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) patcherConfiguratio
 	config.globalRegistry = csi.Spec.GlobalRegistry
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level
-
+	config.configFolder = configFolder
 	return config
 }
 
@@ -76,4 +78,5 @@ type patcherConfiguration struct {
 	schedulerFolder string
 	manifestsFolder string
 	configMapName   string
+	configFolder    string
 }
