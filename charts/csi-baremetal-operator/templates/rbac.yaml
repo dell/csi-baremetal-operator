@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: leader-election-role
+  name: csi-operator-leader-election-role
 rules:
 - apiGroups:
   - ""
@@ -34,7 +34,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: manager-role
+  name: csi-operator-manager-role
 rules:
 - apiGroups:
   - "apps"
@@ -80,11 +80,26 @@ rules:
   - get
   - patch
   - update
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch", "update"]
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: proxy-role
+  name: csi-operator-proxy-role
 rules:
 - apiGroups:
   - authentication.k8s.io
@@ -102,7 +117,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: metrics-reader
+  name: csi-operator-metrics-reader
 rules:
 - nonResourceURLs:
   - /metrics
@@ -112,11 +127,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: leader-election-rolebinding
+  name: csi-operator-leader-election-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: leader-election-role
+  name: csi-operator-leader-election-role
 subjects:
 - kind: ServiceAccount
   name: default
@@ -125,11 +140,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: manager-rolebinding
+  name: csi-operator-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-role
+  name: csi-operator-manager-role
 subjects:
 - kind: ServiceAccount
   name: default
@@ -138,11 +153,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: proxy-rolebinding
+  name: csi-operator-proxy-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: proxy-role
+  name: csi-operator-proxy-role
 subjects:
 - kind: ServiceAccount
   name: default
@@ -153,7 +168,7 @@ kind: Service
 metadata:
   labels:
     control-plane: controller-manager
-  name: controller-manager-metrics-service
+  name: csi-operator-controller-manager-metrics-service
   namespace: {{ .Release.Namespace }}
 spec:
   ports:

@@ -16,7 +16,7 @@ import (
 
 const (
 	masterNodeLabel = "node-role.kubernetes.io/master"
-	label           = "labeltag"
+	label           = "nodes.csi-baremetal.dell.com/platform"
 )
 
 type Node struct {
@@ -129,20 +129,18 @@ func (n *Node) updateNodeLabels() (Set, error) {
 	}
 
 	for _, node := range nodes.Items {
-		if _, ok := node.Labels[masterNodeLabel]; !ok {
-			kernelVersion, err := GetNodeKernelVersion(node)
-			if err != nil {
-				n.log.Error(err, "Failed to get kernel version for "+node.Name)
-				continue
-			}
+		kernelVersion, err := GetNodeKernelVersion(node)
+		if err != nil {
+			n.log.Error(err, "Failed to get kernel version for "+node.Name)
+			continue
+		}
 
-			platformName := findPlatform(kernelVersion)
-			needToDeploy[platformName] = true
+		platformName := findPlatform(kernelVersion)
+		needToDeploy[platformName] = true
 
-			node.Labels[label] = platforms[platformName].labeltag
-			if _, err := n.clientset.CoreV1().Nodes().Update(n.ctx, &node, metav1.UpdateOptions{}); err != nil {
-				n.log.Error(err, "Failed to update label on "+node.Name)
-			}
+		node.Labels[label] = platforms[platformName].labeltag
+		if _, err := n.clientset.CoreV1().Nodes().Update(n.ctx, &node, metav1.UpdateOptions{}); err != nil {
+			n.log.Error(err, "Failed to update label on "+node.Name)
 		}
 	}
 
