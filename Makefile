@@ -13,6 +13,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+
 # Print version
 version:
 	@printf $(TAG)
