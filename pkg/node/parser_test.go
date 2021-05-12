@@ -17,23 +17,24 @@ limitations under the License.
 package node
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetOSNameAndVersion(t *testing.T) {
 	name, version, err := GetOSNameAndVersion("")
-	//assert.Equal(t, errTypes.ErrorEmptyParameter, err)
+	assert.NotNil(t, err)
 	assert.Equal(t, name, "")
 	assert.Equal(t, version, "")
 
 	name, version, err = GetOSNameAndVersion("Wrong OS")
-	//assert.Equal(t, err, errTypes.ErrorFailedParsing)
+	assert.NotNil(t, err)
 	assert.Equal(t, name, "")
 	assert.Equal(t, version, "")
 
 	name, version, err = GetOSNameAndVersion("12.04")
-	//assert.Equal(t, err, errTypes.ErrorFailedParsing)
+	assert.NotNil(t, err)
 	assert.Equal(t, name, "")
 	assert.Equal(t, version, "")
 
@@ -56,11 +57,11 @@ func TestGetOSNameAndVersion(t *testing.T) {
 
 func TestGetKernelVersion(t *testing.T) {
 	version, err := GetKernelVersion("")
-	//assert.Equal(t, errTypes.ErrorEmptyParameter, err)
+	assert.NotNil(t, err)
 	assert.Equal(t, version, "")
 
 	version, err = GetKernelVersion("bla-bla")
-	//assert.Equal(t, errTypes.ErrorFailedParsing, err)
+	assert.NotNil(t, err)
 	assert.Equal(t, version, "")
 
 	// ubuntu 19

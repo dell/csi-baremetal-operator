@@ -2,8 +2,6 @@ package pkg
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
-	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"path"
 	"strconv"
 
@@ -20,6 +18,8 @@ import (
 	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 const (

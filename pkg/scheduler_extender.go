@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -17,6 +16,7 @@ import (
 	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 

@@ -26,7 +26,7 @@ func NewCSIDeployment(ctx context.Context, clientSet kubernetes.Clientset,
 	return CSIDeployment{
 		node: node.NewNode(
 			ctx,
-			clientSet,
+			&clientSet,
 			log.WithValues(constant.CSIName, "node"),
 		),
 		controller: Controller{

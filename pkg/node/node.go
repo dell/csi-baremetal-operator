@@ -21,11 +21,11 @@ const (
 
 type Node struct {
 	ctx       context.Context
-	clientset kubernetes.Clientset
+	clientset kubernetes.Interface
 	log       logr.Logger
 }
 
-func NewNode(ctx context.Context, clientset kubernetes.Clientset, logger logr.Logger) *Node {
+func NewNode(ctx context.Context, clientset kubernetes.Interface, logger logr.Logger) *Node {
 	return &Node{
 		ctx:       ctx,
 		clientset: clientset,
@@ -110,7 +110,7 @@ func (n *Node) updateNodeLabels() (Set, error) {
 	// return err != nil to request reconcile again if one ore more nodes failed
 	var resultErr error
 
-	needToDeploy := createNeedToDeploySet()
+	needToDeploy := createPlatformsSet()
 
 	nodes, err := n.clientset.CoreV1().Nodes().List(n.ctx, metav1.ListOptions{})
 	if err != nil {
@@ -172,7 +172,7 @@ func findPlatform(kernelVersion string) string {
 type Set map[string]bool
 
 // createNeedToDeploySet returns set of platform-names
-func createNeedToDeploySet() Set {
+func createPlatformsSet() Set {
 	var result = Set{}
 
 	for key := range platforms {

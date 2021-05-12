@@ -59,6 +59,7 @@ const (
 
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("deployment", req.NamespacedName)
+	log.Info("reconcile!!!")
 
 	deployment := new(csibaremetalv1.Deployment)
 	err := r.Client.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
@@ -165,16 +166,12 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}
 
 		return requests
-	}),
-		predicate.Funcs{
-			CreateFunc: func(createEvent event.CreateEvent) bool {
-				return true
-			},
-			UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-				return isKernelVersionChanged(updateEvent.ObjectOld, updateEvent.ObjectNew) ||
-					isLabelsChanged(updateEvent.ObjectOld, updateEvent.ObjectNew)
-			},
-		})
+	}), predicate.Or(predicate.Funcs{
+		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+			return isKernelVersionChanged(updateEvent.ObjectOld, updateEvent.ObjectNew) ||
+				isLabelsChanged(updateEvent.ObjectOld, updateEvent.ObjectNew)
+		},
+	}))
 	if err != nil {
 		return err
 	}
@@ -212,7 +209,7 @@ func isLabelsChanged(old runtime.Object, new runtime.Object) bool {
 	if newNode, ok = new.(*corev1.Node); !ok {
 		return false
 	}
-	if reflect.DeepEqual(oldNode.Labels, newNode.Labels) {
+	if !reflect.DeepEqual(oldNode.Labels, newNode.Labels) {
 		return true
 	}
 	return false
