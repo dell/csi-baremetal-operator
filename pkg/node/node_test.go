@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	testNS           = "test"
 	kernelVersion    = "4.15"
 	newKernelVersion = "5.4"
 )
