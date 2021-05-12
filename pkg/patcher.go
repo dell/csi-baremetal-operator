@@ -23,7 +23,7 @@ const (
 	config19Path = schedulerFolder + "/" + config19File
 )
 
-func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) patcherConfiguration {
+func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) (patcherConfiguration, error) {
 	var config patcherConfiguration
 	switch csi.Spec.Platform {
 	case platformVanilla, "":
@@ -45,7 +45,7 @@ func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) patcherConfiguratio
 			manifestsFolder: rke2ManifestsFolder,
 		}
 	default:
-		panic(fmt.Sprintf("Non supported platform %s", csi.Spec.Platform))
+		return config, fmt.Errorf("%s platform is not supported platform for the patcher", csi.Spec.Platform)
 	}
 	config.enable = csi.Spec.Scheduler.Patcher.Enable
 	config.image = csi.Spec.Scheduler.Patcher.Image
@@ -57,7 +57,7 @@ func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) patcherConfiguratio
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level
 	config.configFolder = configurationPath
-	return config
+	return config, nil
 }
 
 type patcherConfiguration struct {

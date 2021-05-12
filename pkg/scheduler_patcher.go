@@ -44,7 +44,10 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 		p.Logger.Info("Patcher disabled - skipping patcher pod creation")
 		return nil
 	}
-	cfg := NewPatcherConfiguration(csi)
+	cfg, err := NewPatcherConfiguration(csi)
+	if err != nil {
+		return err
+	}
 	expected := cfg.createPatcherDaemonSet()
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 		return err
