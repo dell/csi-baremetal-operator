@@ -59,7 +59,6 @@ const (
 
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("deployment", req.NamespacedName)
-	log.Info("reconcile!!!")
 
 	deployment := new(csibaremetalv1.Deployment)
 	err := r.Client.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
