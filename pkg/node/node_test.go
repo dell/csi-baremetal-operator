@@ -10,6 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
 
 const (
@@ -18,7 +20,8 @@ const (
 )
 
 var (
-	ctx = context.Background()
+	ctx          = context.Background()
+	nodeSelector *components.NodeSelector
 
 	testNode1 = coreV1.Node{
 		ObjectMeta: metav1.ObjectMeta{
@@ -61,7 +64,7 @@ func TestNewCSIBMController(t *testing.T) {
 		)
 
 		node := prepareNode(node1, node2)
-		needToDeploy, err := node.updateNodeLabels()
+		needToDeploy, err := node.updateNodeLabels(nodeSelector)
 		assert.Nil(t, err)
 		assert.True(t, needToDeploy["default"])
 		assert.False(t, needToDeploy["kernel-5.4"])
@@ -86,7 +89,7 @@ func TestNewCSIBMController(t *testing.T) {
 		node2.Status.NodeInfo = coreV1.NodeSystemInfo{KernelVersion: newKernelVersion}
 
 		node := prepareNode(node1, node2)
-		needToDeploy, err := node.updateNodeLabels()
+		needToDeploy, err := node.updateNodeLabels(nodeSelector)
 		assert.Nil(t, err)
 		assert.True(t, needToDeploy["kernel-5.4"])
 		assert.False(t, needToDeploy["default"])
@@ -109,7 +112,7 @@ func TestNewCSIBMController(t *testing.T) {
 		node1.Status.NodeInfo = coreV1.NodeSystemInfo{KernelVersion: newKernelVersion}
 
 		node := prepareNode(node1, node2)
-		needToDeploy, err := node.updateNodeLabels()
+		needToDeploy, err := node.updateNodeLabels(nodeSelector)
 		assert.Nil(t, err)
 		assert.True(t, needToDeploy["kernel-5.4"])
 		assert.True(t, needToDeploy["default"])
@@ -153,7 +156,7 @@ func TestNewCSIBMController(t *testing.T) {
 		corruptedNode.Status.NodeInfo = coreV1.NodeSystemInfo{KernelVersion: "corrupted_version"}
 
 		node := prepareNode(corruptedNode)
-		needToDeploy, err := node.updateNodeLabels()
+		needToDeploy, err := node.updateNodeLabels(nodeSelector)
 		assert.NotNil(t, err)
 		assert.False(t, needToDeploy["kernel-5.4"])
 		assert.False(t, needToDeploy["default"])
@@ -161,6 +164,32 @@ func TestNewCSIBMController(t *testing.T) {
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, corruptedNode.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
 		assert.Equal(t, map[string]string{}, updatedNode.Labels)
+	})
+
+	t.Run("Should label nodes only with selector", func(t *testing.T) {
+		var (
+			node1         = testNode1.DeepCopy()
+			node2         = testNode2.DeepCopy()
+			selectorLabel = "label"
+			selectorTag   = "tag"
+		)
+
+		nodeSelector = &components.NodeSelector{Key: selectorLabel, Value: selectorTag}
+		node1.Labels[selectorLabel] = selectorTag
+
+		node := prepareNode(node1, node2)
+		needToDeploy, err := node.updateNodeLabels(nodeSelector)
+		assert.Nil(t, err)
+		assert.True(t, needToDeploy["default"])
+
+		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
+		assert.Nil(t, err)
+		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[label])
+
+		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
+		assert.Nil(t, err)
+		_, ok := updatedNode.Labels[selectorLabel]
+		assert.False(t, ok)
 	})
 }
 

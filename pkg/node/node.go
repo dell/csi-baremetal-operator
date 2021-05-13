@@ -7,11 +7,13 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
@@ -41,7 +43,7 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) er
 		namespace = common.GetNamespace(csi)
 	)
 
-	needToDeploy, err := n.updateNodeLabels()
+	needToDeploy, err := n.updateNodeLabels(csi.Spec.NodeSelector)
 	if err != nil {
 		return err
 	}
@@ -105,14 +107,22 @@ func (n *Node) updateDaemonset(expected *v1.DaemonSet, namespace string) error {
 // updateNodeLabels gets list of all nodes in cluster,
 // selects fit platform for each one and add/update node platform-label
 // returns a Set of platforms, which will be deployed
-func (n *Node) updateNodeLabels() (Set, error) {
+func (n *Node) updateNodeLabels(selector *components.NodeSelector) (Set, error) {
 	// need to trying getKernelVersion and update label on each node
 	// return err != nil to request reconcile again if one ore more nodes failed
-	var resultErr error
+	var (
+		resultErr   error
+		listOptions = metav1.ListOptions{}
+	)
 
 	needToDeploy := createPlatformsSet()
 
-	nodes, err := n.clientset.CoreV1().Nodes().List(n.ctx, metav1.ListOptions{})
+	if selector != nil {
+		labelSelector := metav1.LabelSelector{MatchLabels: common.MakeNodeSelectorMap(selector)}
+		listOptions.LabelSelector = labels.Set(labelSelector.MatchLabels).String()
+	}
+
+	nodes, err := n.clientset.CoreV1().Nodes().List(n.ctx, listOptions)
 	if err != nil {
 		return nil, err
 	}

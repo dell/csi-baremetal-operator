@@ -147,16 +147,34 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// reconcile CSI Deployment if node was creates, node kernel-version or label were changed
-	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(func(a client.Object) []reconcile.Request {
-		ctx := context.Background()
-		deployments := &csibaremetalv1.DeploymentList{}
+	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		var (
+			ctx         = context.Background()
+			deployments = &csibaremetalv1.DeploymentList{}
+			node        *corev1.Node
+			ok          bool
+		)
+
 		err := r.Client.List(ctx, deployments)
 		if err != nil {
 			return []reconcile.Request{}
 		}
 
+		if node, ok = obj.(*corev1.Node); !ok {
+			return nil
+		}
+
 		var requests []reconcile.Request
 		for _, dep := range deployments.Items {
+			// check node has label from csi node selector
+			// skip request if not
+			if dep.Spec.NodeSelector != nil {
+				value, ok := node.Labels[dep.Spec.NodeSelector.Key]
+				if !ok || value != dep.Spec.NodeSelector.Value {
+					continue
+				}
+			}
+
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      dep.Name,

@@ -39,7 +39,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      platform.daemonsetName,
+			Name:      platform.DaemonsetName(nodeName),
 			Namespace: common.GetNamespace(csi),
 		},
 		Spec: v1.DaemonSetSpec{
@@ -67,7 +67,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 				},
 				Spec: corev1.PodSpec{
 					Volumes:                       createNodeVolumes(csi.Spec.GlobalRegistry == ""),
-					Containers:                    createNodeContainers(csi, platform.imageName),
+					Containers:                    createNodeContainers(csi, platform),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
@@ -144,7 +144,7 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 }
 
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
-func createNodeContainers(csi *csibaremetalv1.Deployment, nodeImageName string) []corev1.Container {
+func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDescription) []corev1.Container {
 	var (
 		bidirectional = corev1.MountPropagationBidirectional
 		driveMgr      = csi.Spec.Driver.Node.DriveMgr
@@ -154,7 +154,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, nodeImageName string) 
 		dr            = node.Sidecars[constant.DriverRegistrarName]
 		nodeImage     = node.Image
 	)
-	nodeImage.Name = nodeImageName
+	nodeImage.Name = platform.ImageName(nodeImage.Name)
 	args := []string{
 		"--loglevel=" + common.MatchLogLevel(node.Log.Level),
 		"--drivemgrendpoint=" + driveMgr.Endpoint,

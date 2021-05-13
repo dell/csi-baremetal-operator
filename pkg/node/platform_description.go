@@ -4,10 +4,13 @@ import (
 	"strconv"
 )
 
+const (
+	supportedKernel = 5.4
+)
+
 type PlatformDescription struct {
-	imageName     string
-	daemonsetName string
-	labeltag      string
+	tag      string
+	labeltag string
 	checkVersion
 }
 
@@ -16,31 +19,35 @@ type checkVersion func(version string) bool
 var (
 	platforms = map[string]*PlatformDescription{
 		"default": {
-			imageName:     "csi-baremetal-node",
-			daemonsetName: "csi-baremetal-node",
-			labeltag:      "default",
+			tag:      "",
+			labeltag: "default",
 			// default checkVersion returns false everytime to detect only specific platforms
 			checkVersion: func(version string) bool { return false },
 		},
 		"kernel-5.4": {
-			imageName:     "csi-baremetal-node-kernel-5.4",
-			daemonsetName: "csi-baremetal-node-kernel-5.4",
-			labeltag:      "kernel-5.4",
-			checkVersion:  isNewKernel,
+			tag:          "kernel-5.4",
+			labeltag:     "kernel-5.4",
+			checkVersion: func(version string) bool { return moreThan(version, supportedKernel) },
 		},
 	}
 )
 
-// isNewKernel returns true if kernel version >= 5.4
-func isNewKernel(version string) bool {
-	kernelVersion := 5.4
+func (pd *PlatformDescription) DaemonsetName(baseName string) string {
+	return baseName + pd.tag
+}
 
+func (pd *PlatformDescription) ImageName(baseName string) string {
+	return baseName + pd.tag
+}
+
+// moreThan returns true if version >= supported
+func moreThan(version string, supported float64) bool {
 	versionFloat, err := strconv.ParseFloat(version, 32)
 	if err != nil {
 		return false
 	}
 
-	if versionFloat >= kernelVersion {
+	if versionFloat >= supported {
 		return true
 	}
 
