@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	"path"
+	"context"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -144,8 +144,8 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            patcherContainerName,
-			Image:           common.ConstructFullImageName(p.Image, p.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(p.PullPolicy),
+			Image:           common.ConstructFullImageName(p.image, p.globalRegistry),
+			ImagePullPolicy: corev1.PullPolicy(p.pullPolicy),
 			Command: []string{
 				"python3",
 				"-u",
