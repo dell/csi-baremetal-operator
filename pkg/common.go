@@ -40,7 +40,7 @@ var (
 		VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}}
-		
+
 	crashMountVolume = corev1.VolumeMount{
 		Name: "crash-dump", MountPath: "/crash-dump",
 	}
