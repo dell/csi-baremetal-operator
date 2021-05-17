@@ -90,7 +90,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 						"app":                    extenderName,
 						"app.kubernetes.io/name": CSIName,
 						// release label used by fluentbit to make "release" folder
-						"release":                extenderName,
+						"release": extenderName,
 					},
 					// integration with monitoring
 					Annotations: map[string]string{

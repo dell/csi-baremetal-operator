@@ -84,7 +84,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
 					Labels: map[string]string{
-						"app":     nodeControllerName,
+						"app": nodeControllerName,
 						// release label used by fluentbit to make "release" folder
 						"release": nodeControllerName,
 					},
