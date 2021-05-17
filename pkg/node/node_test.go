@@ -45,7 +45,7 @@ var (
 	}
 )
 
-func TestNewCSIBMController(t *testing.T) {
+func TestNewNode(t *testing.T) {
 	t.Run("Create Node", func(t *testing.T) {
 		ctx := context.Background()
 		clientset := fake.NewSimpleClientset()
@@ -56,7 +56,9 @@ func TestNewCSIBMController(t *testing.T) {
 		assert.NotNil(t, node.clientset)
 		assert.NotNil(t, node.log)
 	})
+}
 
+func Test_updateNodeLabels(t *testing.T) {
 	t.Run("Should deploy default platform and label nodes", func(t *testing.T) {
 		var (
 			node1 = testNode1.DeepCopy()
@@ -126,28 +128,6 @@ func TestNewCSIBMController(t *testing.T) {
 		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[label])
 	})
 
-	t.Run("Should clean labels", func(t *testing.T) {
-		var (
-			node1 = testNode1.DeepCopy()
-			node2 = testNode2.DeepCopy()
-		)
-
-		node1.Labels[label] = "default"
-		node2.Labels[label] = "default"
-
-		node := prepareNode(node1, node2)
-		err := node.cleanNodeLabels()
-		assert.Nil(t, err)
-
-		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
-		assert.Nil(t, err)
-		assert.Equal(t, map[string]string{}, updatedNode.Labels)
-
-		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
-		assert.Nil(t, err)
-		assert.Equal(t, map[string]string{}, updatedNode.Labels)
-	})
-
 	t.Run("Error when node kernel version not readable", func(t *testing.T) {
 		var (
 			corruptedNode = testNode1.DeepCopy()
@@ -190,6 +170,30 @@ func TestNewCSIBMController(t *testing.T) {
 		assert.Nil(t, err)
 		_, ok := updatedNode.Labels[selectorLabel]
 		assert.False(t, ok)
+	})
+}
+
+func Test_cleanNodeLabels(t *testing.T) {
+	t.Run("Should clean labels", func(t *testing.T) {
+		var (
+			node1 = testNode1.DeepCopy()
+			node2 = testNode2.DeepCopy()
+		)
+
+		node1.Labels[label] = "default"
+		node2.Labels[label] = "default"
+
+		node := prepareNode(node1, node2)
+		err := node.cleanNodeLabels()
+		assert.Nil(t, err)
+
+		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
+		assert.Nil(t, err)
+		assert.Equal(t, map[string]string{}, updatedNode.Labels)
+
+		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
+		assert.Nil(t, err)
+		assert.Equal(t, map[string]string{}, updatedNode.Labels)
 	})
 }
 
