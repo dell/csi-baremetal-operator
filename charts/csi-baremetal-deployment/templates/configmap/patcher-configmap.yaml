@@ -4,19 +4,23 @@ kind: ConfigMap
 metadata:
   name: {{ .Values.scheduler.patcher.config_map_name }}
 data:
-  {{ .Values.scheduler.patcher.source_config_path }}: |
+  config.yaml: |
     apiVersion: kubescheduler.config.k8s.io/v1alpha1
     kind: KubeSchedulerConfiguration
     schedulerName: default-scheduler
     algorithmSource:
       policy:
         file:
-          path: {{ .Values.scheduler.patcher.target_policy_path }}
+          path: /etc/kubernetes/manifests/scheduler/policy.yaml
     leaderElection:
       leaderElect: true
     clientConnection:
+    {{- if eq .Values.platform "rke" }}
+      kubeconfig: {{ .Values.scheduler.patcher.rke.kubeconfig }}
+    {{- else }}
       kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
-  {{ .Values.scheduler.patcher.source_policy_path }}: |
+    {{- end }}
+  policy.yaml: |
     apiVersion: v1
     kind: Policy
     extenders:
@@ -30,7 +34,7 @@ data:
         ignorable: true
         # 15 seconds
         httpTimeout: 15000000000
-  {{ .Values.scheduler.patcher.source_config_19_path }}: |
+  config-19.yaml: |
     apiVersion: kubescheduler.config.k8s.io/v1beta1
     kind: KubeSchedulerConfiguration
     extenders:
@@ -47,5 +51,9 @@ data:
     leaderElection:
       leaderElect: true
     clientConnection:
+    {{- if eq .Values.platform "rke" }}
+      kubeconfig: {{ .Values.scheduler.patcher.rke.kubeconfig }}
+    {{- else }}
       kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
-{{ end }}
+    {{- end }}
+{{- end }}

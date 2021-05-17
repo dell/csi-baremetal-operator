@@ -18,17 +18,9 @@ package components
 
 // Patcher represents scheduler patcher container, which tries to patch Kubernetes scheduler
 type Patcher struct {
-	Enable             bool   `json:"enable,omitempty"`
-	Image              *Image `json:"image,omitempty"`
-	Manifest           string `json:"manifest,omitempty"`
-	SrcConfigPath      string `json:"srcConfigPath,omitempty"`
-	SrcConfig19Path    string `json:"srcConfig19Path,omitempty"`
-	SrcPolicyPath      string `json:"srcPolicyPath,omitempty"`
-	TargetConfigPath   string `json:"targetConfigPath,omitempty"`
-	TargetConfig19Path string `json:"targetConfig19Path,omitempty"`
-	TargetPolicyPath   string `json:"targetPolicyPath,omitempty"`
-	BackupPath         string `json:"backupPath,omitempty"`
-	Interval           int    `json:"interval,omitempty"`
-	RestoreOnShutdown  bool   `json:"restoreOnShutdown,omitempty"`
-	ConfigMapName      string `json:"configMapName,omitempty"`
+	Enable            bool   `json:"enable,omitempty"`
+	Image             *Image `json:"image,omitempty"`
+	Interval          int    `json:"interval,omitempty"`
+	RestoreOnShutdown bool   `json:"restoreOnShutdown,omitempty"`
+	ConfigMapName     string `json:"configMapName,omitempty"`
 }
