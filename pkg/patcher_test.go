@@ -50,7 +50,7 @@ func TestNewPatcherConfiguration(t *testing.T) {
 				targetConfig:      "/etc/kubernetes/manifests/scheduler/config.yaml",
 				targetPolicy:      "/etc/kubernetes/manifests/scheduler/policy.yaml",
 				targetConfig19:    "/etc/kubernetes/manifests/scheduler/config-19.yaml",
-				schedulerFolder:   "scheduler",
+				schedulerFolder:   "/etc/kubernetes/manifests/scheduler",
 				manifestsFolder:   "/etc/kubernetes/manifests",
 				configMapName:     "scheduler-configuration",
 				configFolder:      "/config",
@@ -89,7 +89,7 @@ func TestNewPatcherConfiguration(t *testing.T) {
 				targetConfig:      "/etc/kubernetes/manifests/scheduler/config.yaml",
 				targetPolicy:      "/etc/kubernetes/manifests/scheduler/policy.yaml",
 				targetConfig19:    "/etc/kubernetes/manifests/scheduler/config-19.yaml",
-				schedulerFolder:   "scheduler",
+				schedulerFolder:   "/etc/kubernetes/manifests/scheduler",
 				manifestsFolder:   "/etc/kubernetes/manifests",
 				configMapName:     "scheduler-configuration",
 				configFolder:      "/config",
@@ -127,7 +127,7 @@ func TestNewPatcherConfiguration(t *testing.T) {
 				targetConfig:      "/var/lib/rancher/rke2/agent/pod-manifests/scheduler/config.yaml",
 				targetPolicy:      "/var/lib/rancher/rke2/agent/pod-manifests/scheduler/policy.yaml",
 				targetConfig19:    "/var/lib/rancher/rke2/agent/pod-manifests/scheduler/config-19.yaml",
-				schedulerFolder:   "scheduler",
+				schedulerFolder:   "/var/lib/rancher/rke2/agent/pod-manifests/scheduler",
 				manifestsFolder:   "/var/lib/rancher/rke2/agent/pod-manifests",
 				configMapName:     "scheduler-conf",
 				configFolder:      "/config",
@@ -215,7 +215,7 @@ func TestNewPatcherConfiguration(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewPatcherConfiguration() = %v, want %v", got, tt.want)
+				t.Errorf("NewPatcherConfiguration() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}

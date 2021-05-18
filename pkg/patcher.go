@@ -57,7 +57,6 @@ func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) (patcherConfigurati
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level
 	config.configFolder = configurationPath
-	config.schedulerFolder = schedulerFolder
 	return config, nil
 }
 
