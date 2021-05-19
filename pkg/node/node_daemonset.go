@@ -35,7 +35,7 @@ const (
 
 func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescription) *v1.DaemonSet {
 	var nodeSelectors = common.MakeNodeSelectorMap(csi.Spec.NodeSelector)
-	nodeSelectors[label] = platform.labeltag
+	nodeSelectors[platformLabel] = platform.labeltag
 
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{

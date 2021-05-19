@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,6 +15,7 @@ import (
 )
 
 type CSIDeployment struct {
+	ctx            context.Context
 	node           *node.Node
 	controller     Controller
 	extender       SchedulerExtender
@@ -24,6 +26,7 @@ type CSIDeployment struct {
 func NewCSIDeployment(ctx context.Context, clientSet kubernetes.Clientset,
 	client client.Client, log logr.Logger) CSIDeployment {
 	return CSIDeployment{
+		ctx: ctx,
 		node: node.NewNode(
 			ctx,
 			&clientSet,
@@ -53,37 +56,32 @@ func NewCSIDeployment(ctx context.Context, clientSet kubernetes.Clientset,
 	}
 }
 
-func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	if err := c.node.Update(csi, scheme); err != nil {
-		return err
-	}
+func (c *CSIDeployment) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	errs, _ := errgroup.WithContext(c.ctx)
 
-	if err := c.controller.Update(csi, scheme); err != nil {
-		return err
-	}
+	errs.Go(func() error { return c.nodeController.Update(csi, scheme) })
+	errs.Go(func() error { return c.controller.Update(csi, scheme) })
+	errs.Go(func() error { return c.node.Update(csi, scheme) })
+	errs.Go(func() error { return c.extender.Update(csi, scheme) })
+	errs.Go(func() error { return c.patchPlatform(csi, scheme) })
 
-	if err := c.extender.Update(csi, scheme); err != nil {
-		return err
-	}
+	return errs.Wait()
+}
 
-	if err := c.nodeController.Update(csi, scheme); err != nil {
-		return err
-	}
-
-	// Patching method for the scheduler depends on the platform
+// patchPlatform is patching method for the scheduler depends on the platform
+func (c *CSIDeployment) patchPlatform(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	switch csi.Spec.Platform {
 	case platformOpenshift:
-		return c.patcher.PatchOpenShift(ctx, scheme)
+		return c.patcher.PatchOpenShift(c.ctx, scheme)
 	default:
 		return c.patcher.Update(csi, scheme)
-
 	}
 }
 
-func (c *CSIDeployment) UninstallPatcher(ctx context.Context, csi csibaremetalv1.Deployment) error {
+func (c *CSIDeployment) UninstallPatcher(csi csibaremetalv1.Deployment) error {
 	switch csi.Spec.Platform {
 	case platformOpenshift:
-		return c.patcher.UnPatchOpenShift(ctx)
+		return c.patcher.UnPatchOpenShift(c.ctx)
 	default:
 		return nil
 	}
