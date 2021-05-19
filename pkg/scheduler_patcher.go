@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -69,7 +70,7 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 			}
 
 			p.Logger.Info("Daemonset created successfully")
-			//p.Logger.Info("Daemonset expected %v", expected)
+			p.Logger.Info(fmt.Sprintf("Daemonset expected %+v", expected))
 			return nil
 		}
 
