@@ -73,11 +73,11 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[label])
+		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[platformLabel])
 
 		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[label])
+		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[platformLabel])
 
 	})
 
@@ -98,11 +98,11 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[label])
+		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
 
 		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[label])
+		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
 	})
 
 	t.Run("Should deploy multi platform and label nodes", func(t *testing.T) {
@@ -121,11 +121,11 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[label])
+		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
 
 		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[label])
+		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[platformLabel])
 	})
 
 	t.Run("Error when node kernel version not readable", func(t *testing.T) {
@@ -164,7 +164,7 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[label])
+		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[platformLabel])
 
 		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
@@ -180,8 +180,8 @@ func Test_cleanNodeLabels(t *testing.T) {
 			node2 = testNode2.DeepCopy()
 		)
 
-		node1.Labels[label] = "default"
-		node2.Labels[label] = "default"
+		node1.Labels[platformLabel] = "default"
+		node2.Labels[platformLabel] = "default"
 
 		node := prepareNode(node1, node2)
 		err := node.cleanNodeLabels()
