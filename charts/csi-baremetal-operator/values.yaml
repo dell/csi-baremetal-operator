@@ -6,4 +6,4 @@ global:
 image:
   name: csi-baremetal-operator
   tag: latest
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
