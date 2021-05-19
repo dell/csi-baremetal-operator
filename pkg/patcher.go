@@ -6,6 +6,7 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
 const (
@@ -52,7 +53,7 @@ func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) (patcherConfigurati
 	config.interval = csi.Spec.Scheduler.Patcher.Interval
 	config.restoreOnShutdown = csi.Spec.Scheduler.Patcher.RestoreOnShutdown
 	config.configMapName = csi.Spec.Scheduler.Patcher.ConfigMapName
-	config.ns = GetNamespace(csi)
+	config.ns = common.GetNamespace(csi)
 	config.globalRegistry = csi.Spec.GlobalRegistry
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level

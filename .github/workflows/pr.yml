@@ -49,11 +49,14 @@ jobs:
         
     - name: Lint code
       run: GOGC=300 golangci-lint -v run ./...
-  
       
     - name: Build binary
       run: |
         make manager
+
+    - name: Run tests
+      run: |
+        make test
 
         
  

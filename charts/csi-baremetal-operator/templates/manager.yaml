@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: csi-baremetal-operator
   namespace: {{ .Release.Namespace }}
   labels:
     control-plane: controller-manager
@@ -22,7 +22,7 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: {{ .Values.image.name }}:{{ .Values.image.tag }}
+        image: {{ if .Values.global.registry }} {{ .Values.global.registry }}/{{ end }}{{ .Values.image.name }}:{{ .Values.image.tag }}
         name: manager
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources:

@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -15,11 +16,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 const (
 	controller     = "controller"
-	controllerName = CSIName + "-" + controller
+	controllerName = constant.CSIName + "-" + controller
 	replicasCount  = 1
 
 	controllerRoleKey            = "csi-do"
@@ -28,13 +31,11 @@ const (
 	// ports
 	healthPort = 9999
 
-	resizerName     = "csi-resizer"
-	provisionerName = "csi-provisioner"
-
 	provisionerTimeout = "30s"
 )
 
 type Controller struct {
+	ctx context.Context
 	kubernetes.Clientset
 	logr.Logger
 }
@@ -46,13 +47,13 @@ func (c *Controller) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Sche
 		return err
 	}
 
-	namespace := GetNamespace(csi)
+	namespace := common.GetNamespace(csi)
 	dsClient := c.AppsV1().Deployments(namespace)
 
-	found, err := dsClient.Get(controllerName, metav1.GetOptions{})
+	found, err := dsClient.Get(c.ctx, controllerName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(expected); err != nil {
+			if _, err := dsClient.Create(c.ctx, expected, metav1.CreateOptions{}); err != nil {
 				c.Logger.Error(err, "Failed to create deployment")
 				return err
 			}
@@ -65,9 +66,9 @@ func (c *Controller) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Sche
 		return err
 	}
 
-	if deploymentChanged(expected, found) {
+	if common.DeploymentChanged(expected, found) {
 		found.Spec = expected.Spec
-		if _, err := dsClient.Update(found); err != nil {
+		if _, err := dsClient.Update(c.ctx, found, metav1.UpdateOptions{}); err != nil {
 			c.Logger.Error(err, "Failed to update deployment")
 			return err
 		}
@@ -83,7 +84,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      controllerName,
-			Namespace: GetNamespace(csi),
+			Namespace: common.GetNamespace(csi),
 		},
 		Spec: v1.DeploymentSpec{
 			Replicas: pointer.Int32Ptr(replicasCount),
@@ -98,7 +99,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 					// labels
 					Labels: map[string]string{
 						"app":                    controllerName,
-						"app.kubernetes.io/name": CSIName,
+						"app.kubernetes.io/name": constant.CSIName,
 						"role":                   controllerRoleKey,
 						// release label used by fluentbit to make "release" folder
 						"release": controllerName,
@@ -106,25 +107,25 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",
-						"prometheus.io/port":   strconv.Itoa(PrometheusPort),
+						"prometheus.io/port":   strconv.Itoa(constant.PrometheusPort),
 						"prometheus.io/path":   "/metrics",
 					},
 				},
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
-						{Name: LogsVolume, VolumeSource: corev1.VolumeSource{
+						{Name: constant.LogsVolume, VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						}},
-						{Name: CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
+						{Name: constant.CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						}},
-						crashVolume,
+						constant.CrashVolume,
 					},
 					Containers:                    createControllerContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
-					NodeSelector:                  makeNodeSelectorMap(csi.Spec.NodeSelector),
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
+					NodeSelector:                  common.MakeNodeSelectorMap(csi.Spec.NodeSelector),
 					ServiceAccountName:            controllerServiceAccountName,
 					DeprecatedServiceAccount:      controllerServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
@@ -137,23 +138,23 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 
 func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
-		provisioner = csi.Spec.Driver.Controller.Sidecars[provisionerName]
-		resizer     = csi.Spec.Driver.Controller.Sidecars[resizerName]
-		liveness    = csi.Spec.Driver.Controller.Sidecars[livenessProbeSidecar]
+		provisioner = csi.Spec.Driver.Controller.Sidecars[constant.ProvisionerName]
+		resizer     = csi.Spec.Driver.Controller.Sidecars[constant.ResizerName]
+		liveness    = csi.Spec.Driver.Controller.Sidecars[constant.LivenessProbeName]
 		c           = csi.Spec.Driver.Controller
 	)
 	return []corev1.Container{
 		{
 			Name:            controller,
-			Image:           constructFullImageName(c.Image, csi.Spec.GlobalRegistry),
+			Image:           common.ConstructFullImageName(c.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--endpoint=$(CSI_ENDPOINT)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--loglevel=" + matchLogLevel(c.Log.Level),
+				"--loglevel=" + common.MatchLogLevel(c.Log.Level),
 				"--healthport=" + strconv.Itoa(healthPort),
-				"--metrics-address=:" + strconv.Itoa(PrometheusPort),
+				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
 				"--metrics-path=/metrics",
 			},
 			Env: []corev1.EnvVar{
@@ -164,7 +165,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 					},
 				}},
 				{Name: "CSI_ENDPOINT", Value: "unix:///csi/csi.sock"},
-				{Name: "LOG_FORMAT", Value: matchLogFormat(c.Log.Format)},
+				{Name: "LOG_FORMAT", Value: common.MatchLogFormat(c.Log.Format)},
 				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
@@ -173,18 +174,18 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				}},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: LogsVolume, MountPath: "/var/log"},
-				{Name: CSISocketDirVolume, MountPath: "/csi"},
-				crashMountVolume,
+				{Name: constant.LogsVolume, MountPath: "/var/log"},
+				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
+				constant.CrashMountVolume,
 			},
 			Ports: []corev1.ContainerPort{
-				{Name: LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
-				{Name: "metrics", ContainerPort: PrometheusPort, Protocol: corev1.ProtocolTCP},
+				{Name: constant.LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
+				{Name: "metrics", ContainerPort: constant.PrometheusPort, Protocol: corev1.ProtocolTCP},
 			},
 			LivenessProbe: &corev1.Probe{
 				Handler: corev1.Handler{HTTPGet: &corev1.HTTPGetAction{
 					Path:   "/healthz",
-					Port:   intstr.FromString(LivenessPort),
+					Port:   intstr.FromString(constant.LivenessPort),
 					Scheme: corev1.URISchemeHTTP}},
 				InitialDelaySeconds: 300,
 				TimeoutSeconds:      3,
@@ -202,12 +203,12 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				SuccessThreshold:    1,
 				FailureThreshold:    15,
 			},
-			TerminationMessagePath:   defaultTerminationMessagePath,
-			TerminationMessagePolicy: defaultTerminationMessagePolicy,
+			TerminationMessagePath:   constant.TerminationMessagePath,
+			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
 		{
-			Name:            provisionerName,
-			Image:           constructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
+			Name:            constant.ProvisionerName,
+			Image:           common.ConstructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--csi-address=$(ADDRESS)",
@@ -220,15 +221,15 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: CSISocketDirVolume, MountPath: "/csi"},
-				crashMountVolume,
+				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
+				constant.CrashMountVolume,
 			},
-			TerminationMessagePath:   defaultTerminationMessagePath,
-			TerminationMessagePolicy: defaultTerminationMessagePolicy,
+			TerminationMessagePath:   constant.TerminationMessagePath,
+			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
 		{
-			Name:            resizerName,
-			Image:           constructFullImageName(resizer.Image, csi.Spec.GlobalRegistry),
+			Name:            constant.ResizerName,
+			Image:           common.ConstructFullImageName(resizer.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Command:         []string{"/csi-resizer"},
 			Args: []string{
@@ -240,26 +241,26 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: CSISocketDirVolume, MountPath: "/csi"},
-				crashMountVolume,
+				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
+				constant.CrashMountVolume,
 			},
-			TerminationMessagePath:   defaultTerminationMessagePath,
-			TerminationMessagePolicy: defaultTerminationMessagePolicy,
+			TerminationMessagePath:   constant.TerminationMessagePath,
+			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
 		{
-			Name:            livenessProbeSidecar,
-			Image:           constructFullImageName(liveness.Image, csi.Spec.GlobalRegistry),
+			Name:            constant.LivenessProbeName,
+			Image:           common.ConstructFullImageName(liveness.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args:            []string{"--csi-address=$(ADDRESS)"},
 			Env: []corev1.EnvVar{
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
 			VolumeMounts: []corev1.VolumeMount{
-				{Name: CSISocketDirVolume, MountPath: "/csi"},
-				crashMountVolume,
+				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
+				constant.CrashMountVolume,
 			},
-			TerminationMessagePath:   defaultTerminationMessagePath,
-			TerminationMessagePolicy: defaultTerminationMessagePolicy,
+			TerminationMessagePath:   constant.TerminationMessagePath,
+			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
 	}
 }

@@ -1,6 +1,8 @@
 package pkg
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -12,17 +14,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 const (
 	nodeController     = "node-controller"
-	nodeControllerName = CSIName + "-" + nodeController
+	nodeControllerName = constant.CSIName + "-" + nodeController
 	ncReplicasCount    = 1
 
 	nodeControllerServiceAccountName = "csi-node-controller-sa"
 )
 
 type NodeController struct {
+	ctx context.Context
 	kubernetes.Clientset
 	logr.Logger
 }
@@ -34,13 +39,13 @@ func (nc *NodeController) Update(csi *csibaremetalv1.Deployment, scheme *runtime
 		return err
 	}
 
-	namespace := GetNamespace(csi)
+	namespace := common.GetNamespace(csi)
 	dsClient := nc.AppsV1().Deployments(namespace)
 
-	found, err := dsClient.Get(nodeControllerName, metav1.GetOptions{})
+	found, err := dsClient.Get(nc.ctx, nodeControllerName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(expected); err != nil {
+			if _, err := dsClient.Create(nc.ctx, expected, metav1.CreateOptions{}); err != nil {
 				nc.Logger.Error(err, "Failed to create deployment")
 				return err
 			}
@@ -53,9 +58,9 @@ func (nc *NodeController) Update(csi *csibaremetalv1.Deployment, scheme *runtime
 		return err
 	}
 
-	if deploymentChanged(expected, found) {
+	if common.DeploymentChanged(expected, found) {
 		found.Spec = expected.Spec
-		if _, err := dsClient.Update(found); err != nil {
+		if _, err := dsClient.Update(nc.ctx, found, metav1.UpdateOptions{}); err != nil {
 			nc.Logger.Error(err, "Failed to update deployment")
 			return err
 		}
@@ -71,7 +76,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeControllerName,
-			Namespace: GetNamespace(csi),
+			Namespace: common.GetNamespace(csi),
 		},
 		Spec: v1.DeploymentSpec{
 			Replicas: pointer.Int32Ptr(ncReplicasCount),
@@ -93,12 +98,12 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 					Containers:                    createNodeControllerContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					ServiceAccountName:            nodeControllerServiceAccountName,
 					DeprecatedServiceAccount:      nodeControllerServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
 					SchedulerName:                 corev1.DefaultSchedulerName,
-					Volumes:                       []corev1.Volume{crashVolume},
+					Volumes:                       []corev1.Volume{constant.CrashVolume},
 				},
 			},
 		},
@@ -114,8 +119,8 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 
 	args := []string{
 		"--namespace=$(NAMESPACE)",
-		"--loglevel=" + matchLogLevel(log.Level),
-		"--logformat=" + matchLogFormat(log.Format),
+		"--loglevel=" + common.MatchLogLevel(log.Level),
+		"--logformat=" + common.MatchLogFormat(log.Format),
 	}
 	if ns != nil {
 		args = append(args, "--nodeselector="+ns.Key+":"+ns.Value)
@@ -124,7 +129,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 	return []corev1.Container{
 		{
 			Name:            nodeController,
-			Image:           constructFullImageName(image, csi.Spec.GlobalRegistry),
+			Image:           common.ConstructFullImageName(image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args:            args,
 			Env: []corev1.EnvVar{
@@ -132,9 +137,9 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
 				}},
 			},
-			TerminationMessagePath:   defaultTerminationMessagePath,
-			TerminationMessagePolicy: defaultTerminationMessagePolicy,
-			VolumeMounts:             []corev1.VolumeMount{crashMountVolume},
+			TerminationMessagePath:   constant.TerminationMessagePath,
+			TerminationMessagePolicy: constant.TerminationMessagePolicy,
+			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
 		},
 	}
 }
