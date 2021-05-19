@@ -18,15 +18,21 @@ package controllers
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	// TODO change log library - https://github.com/dell/csi-baremetal/issues/351
@@ -51,8 +57,7 @@ const (
 // +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments/status,verbs=get;update;patch
 
-func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("deployment", req.NamespacedName)
 
 	deployment := new(csibaremetalv1.Deployment)
@@ -86,6 +91,9 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			if err = r.UninstallPatcher(ctx, *deployment); err != nil {
 				log.Error(err, "Error uninstalling patcher")
 			}
+			if err = r.CleanLabels(); err != nil {
+				log.Error(err, "Error cleaning node labels")
+			}
 			deployment.ObjectMeta.Finalizers = deleteFinalizer(deployment)
 			if err = r.Client.Update(ctx, deployment); err != nil {
 				log.Error(err, "Error removing finalizer")
@@ -106,23 +114,122 @@ func (r *DeploymentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 }
 
 func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		WithOptions(controller.Options{
+	c, err := controller.New("csi-controller", mgr,
+		controller.Options{
+			Reconciler: r,
 			// only one instance of CSIDeployment is allowed to be installed
 			// concurrent reconciliation isn't supported
 			MaxConcurrentReconciles: 1,
-		}).
-		Watches(&source.Kind{Type: &csibaremetalv1.Deployment{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &csibaremetalv1.Deployment{},
-		}).
-		Watches(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &csibaremetalv1.Deployment{},
-		}).
-		For(&csibaremetalv1.Deployment{}).
-		Complete(r)
+		})
+	if err != nil {
+		return err
+	}
+
+	err = c.Watch(&source.Kind{Type: &csibaremetalv1.Deployment{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
+
+	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &csibaremetalv1.Deployment{},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = c.Watch(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &csibaremetalv1.Deployment{},
+	})
+	if err != nil {
+		return err
+	}
+
+	// reconcile CSI Deployment if node was creates, node kernel-version or label were changed
+	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		var (
+			ctx         = context.Background()
+			deployments = &csibaremetalv1.DeploymentList{}
+			node        *corev1.Node
+			ok          bool
+		)
+
+		err := r.Client.List(ctx, deployments)
+		if err != nil {
+			return []reconcile.Request{}
+		}
+
+		if node, ok = obj.(*corev1.Node); !ok {
+			return nil
+		}
+
+		var requests []reconcile.Request
+		for _, dep := range deployments.Items {
+			// check node has label from csi node selector
+			// skip request if not
+			if dep.Spec.NodeSelector != nil {
+				value, ok := node.Labels[dep.Spec.NodeSelector.Key]
+				if !ok || value != dep.Spec.NodeSelector.Value {
+					continue
+				}
+			}
+
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      dep.Name,
+					Namespace: dep.Namespace,
+				}})
+		}
+
+		return requests
+	}), predicate.Or(predicate.Funcs{
+		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+			return isKernelVersionChanged(updateEvent.ObjectOld, updateEvent.ObjectNew) ||
+				isLabelsChanged(updateEvent.ObjectOld, updateEvent.ObjectNew)
+		},
+	}))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isKernelVersionChanged(old runtime.Object, new runtime.Object) bool {
+	var (
+		oldNode *corev1.Node
+		newNode *corev1.Node
+		ok      bool
+	)
+	if oldNode, ok = old.(*corev1.Node); !ok {
+		return false
+	}
+	if newNode, ok = new.(*corev1.Node); !ok {
+		return false
+	}
+	if oldNode.Status.NodeInfo.KernelVersion != newNode.Status.NodeInfo.KernelVersion {
+		return true
+	}
+	return false
+}
+
+func isLabelsChanged(old runtime.Object, new runtime.Object) bool {
+	var (
+		oldNode *corev1.Node
+		newNode *corev1.Node
+		ok      bool
+	)
+	if oldNode, ok = old.(*corev1.Node); !ok {
+		return false
+	}
+	if newNode, ok = new.(*corev1.Node); !ok {
+		return false
+	}
+	if !reflect.DeepEqual(oldNode.Labels, newNode.Labels) {
+		return true
+	}
+	return false
 }
 
 func containsFinalizer(csiDep *csibaremetalv1.Deployment) bool {

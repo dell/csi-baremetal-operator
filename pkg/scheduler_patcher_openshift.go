@@ -33,7 +33,7 @@ const (
 
 func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, scheme *runtime.Scheme) error {
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
-	oscf, err := cfClient.Get(openshiftConfig, metav1.GetOptions{})
+	oscf, err := cfClient.Get(p.ctx, openshiftConfig, metav1.GetOptions{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			p.Logger.Error(err, "Failed to get configmap")
@@ -47,14 +47,14 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, scheme *runtime.S
 			}
 		}
 
-		err := cfClient.Delete(openshiftConfig, metav1.NewDeleteOptions(0))
+		err := cfClient.Delete(p.ctx, openshiftConfig, *metav1.NewDeleteOptions(0))
 		if err != nil {
 			p.Logger.Error(err, "Failed to delete configmap")
 			return err
 		}
 	}
 
-	_, err = cfClient.Create(createOpenshiftConfig())
+	_, err = cfClient.Create(p.ctx, createOpenshiftConfig(), metav1.CreateOptions{})
 	if err != nil {
 		p.Logger.Error(err, "Failed to create configmap")
 		return err
@@ -71,7 +71,7 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, scheme *runtime.S
 
 func (p *SchedulerPatcher) UnPatchOpenShift(ctx context.Context) error {
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
-	err := cfClient.Delete(openshiftConfig, metav1.NewDeleteOptions(0))
+	err := cfClient.Delete(p.ctx, openshiftConfig, *metav1.NewDeleteOptions(0))
 	if err != nil {
 		p.Logger.Error(err, "Failed to delete configmap")
 		return err

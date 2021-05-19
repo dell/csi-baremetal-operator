@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -16,6 +17,8 @@ import (
 	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 const (
@@ -34,6 +37,7 @@ const (
 )
 
 type SchedulerPatcher struct {
+	ctx context.Context
 	kubernetes.Clientset
 	logr.Logger
 	Client client.Client
@@ -53,13 +57,13 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 		return err
 	}
 
-	namespace := GetNamespace(csi)
+	namespace := common.GetNamespace(csi)
 	dsClient := p.AppsV1().DaemonSets(namespace)
 
-	found, err := dsClient.Get(patcherName, metav1.GetOptions{})
+	found, err := dsClient.Get(p.ctx, patcherName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(expected); err != nil {
+			if _, err := dsClient.Create(p.ctx, expected, metav1.CreateOptions{}); err != nil {
 				p.Logger.Error(err, "Failed to create daemonset")
 				return err
 			}
@@ -73,9 +77,9 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 		return err
 	}
 
-	if daemonsetChanged(expected, found) {
+	if common.DaemonsetChanged(expected, found) {
 		found.Spec = expected.Spec
-		if _, err := dsClient.Update(found); err != nil {
+		if _, err := dsClient.Update(p.ctx, found, metav1.UpdateOptions{}); err != nil {
 			p.Logger.Error(err, "Failed to update daemonset")
 			return err
 		}
@@ -114,7 +118,7 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 					Volumes:                       p.createPatcherVolumes(),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(TerminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					SecurityContext:               &corev1.PodSecurityContext{},
 					SchedulerName:                 corev1.DefaultSchedulerName,
 					// todo https://github.com/dell/csi-baremetal/issues/329
@@ -141,7 +145,7 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            patcherContainerName,
-			Image:           constructFullImageName(p.image, p.globalRegistry),
+			Image:           common.ConstructFullImageName(p.image, p.globalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(p.pullPolicy),
 			Command: []string{
 				"python3",
@@ -149,7 +153,7 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				"main.py",
 			},
 			Args: []string{
-				"--loglevel=" + matchLogLevel(p.loglevel),
+				"--loglevel=" + common.MatchLogLevel(p.loglevel),
 				"--restore",
 				"--interval=" + strconv.Itoa(p.interval),
 				"--target-config-path=" + p.targetConfig,
@@ -165,10 +169,10 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				{Name: p.configMapName, MountPath: configurationPath, ReadOnly: true},
 				{Name: kubernetesSchedulerVolume, MountPath: p.schedulerFolder},
 				{Name: kubernetesManifestsVolume, MountPath: p.manifestsFolder},
-				crashMountVolume,
+				constant.CrashMountVolume,
 			},
-			TerminationMessagePath:   defaultTerminationMessagePath,
-			TerminationMessagePolicy: defaultTerminationMessagePolicy,
+			TerminationMessagePath:   constant.TerminationMessagePath,
+			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
 	}
 }
@@ -192,6 +196,6 @@ func (p patcherConfiguration) createPatcherVolumes() []corev1.Volume {
 		{Name: kubernetesManifestsVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: p.manifestsFolder, Type: &unset},
 		}},
-		crashVolume,
+		constant.CrashVolume,
 	}
 }

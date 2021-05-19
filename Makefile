@@ -20,8 +20,8 @@ version:
 all: manager
 
 # Run tests
-test: generate fmt vet manifests
-	go test ./... -coverprofile cover.out
+test:
+	go test ./... -race -cover -coverprofile=coverage.out
 
 # Build manager binary
 manager: fmt vet
