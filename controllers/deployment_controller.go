@@ -88,10 +88,10 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	} else {
 		if containsFinalizer(deployment) {
-			if err = r.UninstallPatcher(*deployment); err != nil {
+			if err = r.UninstallPatcher(ctx, *deployment); err != nil {
 				log.Error(err, "Error uninstalling patcher")
 			}
-			if err = r.CleanLabels(); err != nil {
+			if err = r.CleanLabels(ctx); err != nil {
 				log.Error(err, "Error cleaning node labels")
 			}
 			deployment.ObjectMeta.Finalizers = deleteFinalizer(deployment)
@@ -105,7 +105,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
-	if err = r.CSIDeployment.Update(deployment, r.Scheme); err != nil {
+	if err = r.CSIDeployment.Update(ctx, deployment, r.Scheme); err != nil {
 		log.Error(err, "Unable to update deployment")
 		return ctrl.Result{Requeue: true}, err
 	}

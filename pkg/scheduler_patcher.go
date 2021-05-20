@@ -38,13 +38,12 @@ const (
 )
 
 type SchedulerPatcher struct {
-	ctx context.Context
 	kubernetes.Clientset
 	logr.Logger
 	Client client.Client
 }
 
-func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	if !csi.Spec.Scheduler.Patcher.Enable {
 		p.Logger.Info("Patcher disabled - skipping patcher pod creation")
 		return nil
@@ -61,10 +60,10 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 	namespace := common.GetNamespace(csi)
 	dsClient := p.AppsV1().DaemonSets(namespace)
 
-	found, err := dsClient.Get(p.ctx, patcherName, metav1.GetOptions{})
+	found, err := dsClient.Get(ctx, patcherName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(p.ctx, expected, metav1.CreateOptions{}); err != nil {
+			if _, err := dsClient.Create(ctx, expected, metav1.CreateOptions{}); err != nil {
 				p.Logger.Error(err, "Failed to create daemonset")
 				return err
 			}
@@ -80,7 +79,7 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 
 	if common.DaemonsetChanged(expected, found) {
 		found.Spec = expected.Spec
-		if _, err := dsClient.Update(p.ctx, found, metav1.UpdateOptions{}); err != nil {
+		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
 			p.Logger.Error(err, "Failed to update daemonset")
 			return err
 		}
