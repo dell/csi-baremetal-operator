@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	supportedKernel = 3.4
+	supportedKernel = 5.4
 )
 
 type PlatformDescription struct {
