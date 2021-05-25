@@ -1,8 +1,9 @@
 package node
 
 import (
-	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"strconv"
+
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
 
 const (
