@@ -69,7 +69,7 @@ func (p *SchedulerPatcher) Update(csi *csibaremetalv1.Deployment, scheme *runtim
 			}
 
 			p.Logger.Info("Daemonset created successfully")
-			p.Logger.Info("Daemonset expected %+v", expected)
+			//p.Logger.Info("Daemonset expected %+v", expected)
 			return nil
 		}
 

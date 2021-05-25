@@ -33,11 +33,19 @@ var (
 )
 
 func (pd *PlatformDescription) DaemonsetName(baseName string) string {
-	return baseName + pd.tag
+	return createNameWithTag(baseName, pd.tag)
 }
 
 func (pd *PlatformDescription) ImageName(baseName string) string {
-	return baseName + pd.tag
+	return createNameWithTag(baseName, pd.tag)
+}
+
+func createNameWithTag(name, tag string) string {
+	if tag != "" {
+		return name + "-" + tag
+	}
+
+	return name
 }
 
 // moreThan returns true if version >= supported
