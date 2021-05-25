@@ -152,9 +152,8 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		testEnv       = csi.Spec.GlobalRegistry == ""
 		lp            = node.Sidecars[constant.LivenessProbeName]
 		dr            = node.Sidecars[constant.DriverRegistrarName]
-		nodeImage     = node.Image
+		nodeImage     = platform.NodeImage(node.Image)
 	)
-	nodeImage.Name = platform.ImageName(nodeImage.Name)
 	args := []string{
 		"--loglevel=" + common.MatchLogLevel(node.Log.Level),
 		"--drivemgrendpoint=" + driveMgr.Endpoint,
@@ -209,7 +208,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		},
 		{
 			Name:            "node",
-			Image:           common.ConstructFullImageName(node.Image, csi.Spec.GlobalRegistry),
+			Image:           common.ConstructFullImageName(nodeImage, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{
 				"--csiendpoint=$(CSI_ENDPOINT)",
