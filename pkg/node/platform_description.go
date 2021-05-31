@@ -2,6 +2,8 @@ package node
 
 import (
 	"strconv"
+
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
 
 const (
@@ -33,11 +35,24 @@ var (
 )
 
 func (pd *PlatformDescription) DaemonsetName(baseName string) string {
-	return baseName + pd.tag
+	return createNameWithTag(baseName, pd.tag)
 }
 
-func (pd *PlatformDescription) ImageName(baseName string) string {
-	return baseName + pd.tag
+func (pd *PlatformDescription) NodeImage(baseImage *components.Image) *components.Image {
+	var taggedImage = components.Image{}
+
+	taggedImage.Tag = baseImage.Tag
+	taggedImage.Name = createNameWithTag(baseImage.Name, pd.tag)
+
+	return &taggedImage
+}
+
+func createNameWithTag(name, tag string) string {
+	if tag != "" {
+		return name + "-" + tag
+	}
+
+	return name
 }
 
 // moreThan returns true if version >= supported
