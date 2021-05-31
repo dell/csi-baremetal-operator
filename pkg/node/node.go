@@ -2,8 +2,6 @@ package node
 
 import (
 	"context"
-	"errors"
-
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -43,14 +41,6 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 		resultErr error
 		namespace = common.GetNamespace(csi)
 	)
-
-	isReady, err := n.isAnnotationsReady(ctx, csi.Spec.NodeSelector)
-	if err != nil {
-		return err
-	}
-	if !isReady {
-		return errors.New("nodes are not annotated yet")
-	}
 
 	needToDeploy, err := n.updateNodeLabels(ctx, csi.Spec.NodeSelector)
 	if err != nil {
@@ -113,21 +103,6 @@ func (n *Node) updateDaemonset(ctx context.Context, expected *v1.DaemonSet, name
 	return nil
 }
 
-func (n *Node) isAnnotationsReady(ctx context.Context, selector *components.NodeSelector) (bool, error) {
-	nodes, err := n.getNodes(ctx, selector)
-	if err != nil {
-		return false, err
-	}
-
-	for _, node := range nodes.Items {
-		if _, ok := node.Annotations[nodeIDAnnotation]; !ok {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
 // updateNodeLabels gets list of all nodes in cluster,
 // selects fit platform for each one and add/update node platform-label
 // returns a Set of platforms, which will be deployed
@@ -155,6 +130,11 @@ func (n *Node) updateNodeLabels(ctx context.Context, selector *components.NodeSe
 
 		platformName := findPlatform(kernelVersion)
 		needToDeploy[platformName] = true
+
+		// skip updating label if exists
+		if value, ok := node.Labels[platformLabel]; ok && (value == platforms[platformName].labeltag) {
+			continue
+		}
 
 		node.Labels[platformLabel] = platforms[platformName].labeltag
 		if _, err := n.clientset.CoreV1().Nodes().Update(ctx, &node, metav1.UpdateOptions{}); err != nil {
