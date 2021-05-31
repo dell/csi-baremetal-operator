@@ -17,6 +17,7 @@ spec:
         # release label used by fluentbit to make "release" folder
         release: {{ .Release.Name }}
     spec:
+      serviceAccount: csi-baremetal-operator-sa
       containers:
       - command:
         - /manager
