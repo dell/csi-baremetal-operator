@@ -2,9 +2,9 @@ package pkg
 
 import (
 	"context"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/go-logr/logr"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"

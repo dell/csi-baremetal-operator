@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	platformLabel    = "nodes.csi-baremetal.dell.com/platform"
-	nodeIDAnnotation = "nodes.csi-baremetal.dell.com/uuid"
+	platformLabel = "nodes.csi-baremetal.dell.com/platform"
 )
 
 type Node struct {
