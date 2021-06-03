@@ -16,9 +16,9 @@ data:
       leaderElect: true
     clientConnection:
     {{- if eq .Values.platform "rke" }}
-      kubeconfig: {{ .Values.scheduler.patcher.rke.kubeconfig }}
+      kubeconfig: /var/lib/rancher/rke2/server/cred/scheduler.kubeconfig
     {{- else }}
-      kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
+      kubeconfig: /etc/kubernetes/scheduler.conf
     {{- end }}
   policy.yaml: |
     apiVersion: v1
@@ -52,8 +52,8 @@ data:
       leaderElect: true
     clientConnection:
     {{- if eq .Values.platform "rke" }}
-      kubeconfig: {{ .Values.scheduler.patcher.rke.kubeconfig }}
+      kubeconfig: /var/lib/rancher/rke2/server/cred/scheduler.kubeconfig
     {{- else }}
-      kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
+      kubeconfig: /etc/kubernetes/scheduler.conf
     {{- end }}
 {{- end }}
