@@ -2,6 +2,7 @@ package node
 
 import (
 	"strconv"
+	"strings"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +38,8 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 	var nodeSelectors = common.MakeNodeSelectorMap(csi.Spec.NodeSelector)
 	nodeSelectors[label] = platform.labeltag
 
+	isLoopbackmgr := strings.Contains(csi.Spec.Driver.Node.DriveMgr.Image.Name, "loopbackmgr")
+
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      platform.DaemonsetName(nodeName),
@@ -66,7 +69,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 					},
 				},
 				Spec: corev1.PodSpec{
-					Volumes:                       createNodeVolumes(csi.Spec.GlobalRegistry == ""),
+					Volumes:                       createNodeVolumes(isLoopbackmgr),
 					Containers:                    createNodeContainers(csi, platform),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
@@ -83,7 +86,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 	}
 }
 
-func createNodeVolumes(deployConfig bool) []corev1.Volume {
+func createNodeVolumes(isLoopbackmgr bool) []corev1.Volume {
 	directory := corev1.HostPathDirectory
 	directoryOrCreate := corev1.HostPathDirectoryOrCreate
 	unset := corev1.HostPathUnset
@@ -128,7 +131,7 @@ func createNodeVolumes(deployConfig bool) []corev1.Volume {
 		constant.CrashVolume,
 	)
 
-	if deployConfig {
+	if isLoopbackmgr {
 		configMapMode := corev1.ConfigMapVolumeSourceDefaultMode
 		volumes = append(volumes, corev1.Volume{
 			Name: driveConfigVolume,
@@ -149,7 +152,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		bidirectional = corev1.MountPropagationBidirectional
 		driveMgr      = csi.Spec.Driver.Node.DriveMgr
 		node          = csi.Spec.Driver.Node
-		testEnv       = csi.Spec.GlobalRegistry == ""
+		isLoopbackmgr = strings.Contains(driveMgr.Image.Name, "loopbackmgr")
 		lp            = node.Sidecars[constant.LivenessProbeName]
 		dr            = node.Sidecars[constant.DriverRegistrarName]
 		nodeImage     = platform.NodeImage(node.Image)
@@ -163,7 +166,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		{Name: hostHomeVolume, MountPath: "/host/home"},
 		constant.CrashMountVolume,
 	}
-	if testEnv {
+	if isLoopbackmgr {
 		mounts = append(mounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
 		args = append(args, "--usenodeannotation="+strconv.FormatBool(csi.Spec.NodeIDAnnotation))
 	}
