@@ -21,7 +21,7 @@ const (
    "apiVersion" : "v1",
    "extenders": [
         {
-            "urlPrefix": "http://127.0.0.1:$PORT",
+            "urlPrefix": "http://127.0.0.1:8889",
             "filterVerb": "filter",
             "enableHttps": false,
             "nodeCacheCapable": false,
