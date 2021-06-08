@@ -2,36 +2,39 @@ package pkg
 
 import (
 	"context"
+	"fmt"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 )
 
 const (
 	openshiftNS     = "openshift-config"
 	openshiftConfig = "scheduler-policy"
 
-	oshiftpolicyFile = "policy.cfg"
-	oshiftpolicy     = `{
+	openshiftPolicyFile = "policy.cfg"
+)
+
+func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	openshiftPolicy := fmt.Sprintf(`{
    "kind" : "Policy",
    "apiVersion" : "v1",
    "extenders": [
         {
-            "urlPrefix": "http://127.0.0.1:8889",
+            "urlPrefix": "%s",
             "filterVerb": "filter",
             "enableHttps": false,
             "nodeCacheCapable": false,
             "ignorable": true
         }
     ]
-}`
-)
+}`, csi.Spec.Scheduler.Patcher.UrlPrefix)
 
-func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, scheme *runtime.Scheme) error {
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	oscf, err := cfClient.Get(p.ctx, openshiftConfig, metav1.GetOptions{})
 	if err != nil {
@@ -40,8 +43,8 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, scheme *runtime.S
 			return err
 		}
 	} else {
-		if v, ok := oscf.Data[oshiftpolicyFile]; ok {
-			if v == oshiftpolicy {
+		if v, ok := oscf.Data[openshiftPolicyFile]; ok {
+			if v == openshiftPolicy {
 				p.Logger.Info("Configmap is already patched")
 				return nil
 			}
@@ -54,7 +57,7 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, scheme *runtime.S
 		}
 	}
 
-	_, err = cfClient.Create(p.ctx, createOpenshiftConfig(), metav1.CreateOptions{})
+	_, err = cfClient.Create(p.ctx, createOpenshiftConfig(openshiftPolicy), metav1.CreateOptions{})
 	if err != nil {
 		p.Logger.Error(err, "Failed to create configmap")
 		return err
@@ -79,14 +82,14 @@ func (p *SchedulerPatcher) UnPatchOpenShift(ctx context.Context) error {
 	return p.unpatchSheduler(ctx)
 }
 
-func createOpenshiftConfig() *corev1.ConfigMap {
+func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      openshiftConfig,
 			Namespace: openshiftNS,
 		},
-		Data: map[string]string{oshiftpolicyFile: oshiftpolicy},
+		Data: map[string]string{openshiftPolicyFile: policy},
 	}
 }
 

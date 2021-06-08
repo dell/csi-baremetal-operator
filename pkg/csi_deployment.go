@@ -73,7 +73,7 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 	// Patching method for the scheduler depends on the platform
 	switch csi.Spec.Platform {
 	case platformOpenshift:
-		return c.patcher.PatchOpenShift(ctx, scheme)
+		return c.patcher.PatchOpenShift(ctx, csi)
 	default:
 		return c.patcher.Update(csi, scheme)
 

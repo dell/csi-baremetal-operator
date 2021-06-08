@@ -23,4 +23,5 @@ type Patcher struct {
 	Interval          int    `json:"interval,omitempty"`
 	RestoreOnShutdown bool   `json:"restoreOnShutdown,omitempty"`
 	ConfigMapName     string `json:"configMapName,omitempty"`
+	UrlPrefix         string `json:"urlPrefix,omitempty"`
 }
