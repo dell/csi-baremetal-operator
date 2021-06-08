@@ -27,6 +27,7 @@ spec:
         name: manager
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources:
+          # Memory limit is increased due to bug in OpenShift 4.6 - https://bugzilla.redhat.com/show_bug.cgi?id=1904558
           limits:
             cpu: 100m
             memory: 100Mi

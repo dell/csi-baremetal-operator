@@ -33,7 +33,7 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
             "ignorable": true
         }
     ]
-}`, csi.Spec.Scheduler.Patcher.ExtenderPort)
+}`, csi.Spec.Scheduler.ExtenderPort)
 
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	oscf, err := cfClient.Get(p.ctx, openshiftConfig, metav1.GetOptions{})

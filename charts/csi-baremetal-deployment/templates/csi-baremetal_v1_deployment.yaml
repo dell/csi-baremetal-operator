@@ -83,6 +83,7 @@ spec:
     metrics:
       path: {{ .Values.scheduler.metrics.path }}
       port: {{ .Values.scheduler.metrics.port }}
+    extenderPort: {{ .Values.scheduler.extender.port | quote }}
     patcher:
       enable: {{ .Values.scheduler.patcher.enable }}
       image:
@@ -99,7 +100,6 @@ spec:
       interval: {{ .Values.scheduler.patcher.interval }}
       restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
-      extenderPort: {{ .Values.scheduler.patcher.extender_port | quote}}
     storageProvisioner: {{ .Values.scheduler.provisioner }}
   nodeController:
     enable: {{ .Values.nodeController.enable }}

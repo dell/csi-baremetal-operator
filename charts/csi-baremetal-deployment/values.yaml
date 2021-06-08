@@ -117,6 +117,9 @@ scheduler:
     path: /metrics
     port: 8787
 
+  extender:
+    port: 8889
+
   # Patcher settings
   patcher:
     enable: false
@@ -124,7 +127,6 @@ scheduler:
     image:
       tag:
 
-    extender_port: 8889
     kubeconfig: /etc/kubernetes/scheduler.conf
     interval: 60
     restore_on_shutdown: true
