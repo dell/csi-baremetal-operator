@@ -99,7 +99,7 @@ spec:
       interval: {{ .Values.scheduler.patcher.interval }}
       restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
-      urlPrefix: {{ .Values.scheduler.patcher.url_prefix }}
+      extenderPort: {{ .Values.scheduler.patcher.extender_port | quote}}
     storageProvisioner: {{ .Values.scheduler.provisioner }}
   nodeController:
     enable: {{ .Values.nodeController.enable }}

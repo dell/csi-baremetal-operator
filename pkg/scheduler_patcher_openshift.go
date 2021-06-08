@@ -26,14 +26,14 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
    "apiVersion" : "v1",
    "extenders": [
         {
-            "urlPrefix": "%s",
+            "urlPrefix": "http://127.0.0.1:%s",
             "filterVerb": "filter",
             "enableHttps": false,
             "nodeCacheCapable": false,
             "ignorable": true
         }
     ]
-}`, csi.Spec.Scheduler.Patcher.UrlPrefix)
+}`, csi.Spec.Scheduler.Patcher.ExtenderPort)
 
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
 	oscf, err := cfClient.Get(p.ctx, openshiftConfig, metav1.GetOptions{})

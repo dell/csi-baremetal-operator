@@ -124,7 +124,7 @@ scheduler:
     image:
       tag:
 
-    url_prefix: http://127.0.0.1:8889
+    extender_port: 8889
     kubeconfig: /etc/kubernetes/scheduler.conf
     interval: 60
     restore_on_shutdown: true
