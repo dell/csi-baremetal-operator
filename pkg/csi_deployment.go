@@ -64,7 +64,7 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 func (c *CSIDeployment) patchPlatform(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	switch csi.Spec.Platform {
 	case platformOpenshift:
-		return c.patcher.PatchOpenShift(ctx, scheme)
+		return c.patcher.PatchOpenShift(ctx, csi)
 	default:
 		return c.patcher.Update(ctx, csi, scheme)
 	}

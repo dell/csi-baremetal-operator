@@ -16,15 +16,15 @@ data:
       leaderElect: true
     clientConnection:
     {{- if eq .Values.platform "rke" }}
-      kubeconfig: {{ .Values.scheduler.patcher.rke.kubeconfig }}
+      kubeconfig: /var/lib/rancher/rke2/server/cred/scheduler.kubeconfig
     {{- else }}
-      kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
+      kubeconfig: /etc/kubernetes/scheduler.conf
     {{- end }}
   policy.yaml: |
     apiVersion: v1
     kind: Policy
     extenders:
-      - urlPrefix: "http://127.0.0.1:8889"
+      - urlPrefix: "http://127.0.0.1:{{ .Values.scheduler.patcher.extender_port }}"
         filterVerb: filter
         prioritizeVerb: prioritize
         weight: 1
@@ -38,7 +38,7 @@ data:
     apiVersion: kubescheduler.config.k8s.io/v1beta1
     kind: KubeSchedulerConfiguration
     extenders:
-      - urlPrefix: "http://127.0.0.1:8889"
+      - urlPrefix: "http://127.0.0.1:{{ .Values.scheduler.patcher.extender_port }}"
         filterVerb: filter
         prioritizeVerb: prioritize
         weight: 1
@@ -52,8 +52,8 @@ data:
       leaderElect: true
     clientConnection:
     {{- if eq .Values.platform "rke" }}
-      kubeconfig: {{ .Values.scheduler.patcher.rke.kubeconfig }}
+      kubeconfig: /var/lib/rancher/rke2/server/cred/scheduler.kubeconfig
     {{- else }}
-      kubeconfig: {{ .Values.scheduler.patcher.kubeconfig }}
+      kubeconfig: /etc/kubernetes/scheduler.conf
     {{- end }}
 {{- end }}
