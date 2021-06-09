@@ -83,6 +83,7 @@ spec:
     metrics:
       path: {{ .Values.scheduler.metrics.path }}
       port: {{ .Values.scheduler.metrics.port }}
+    extenderPort: {{ .Values.scheduler.extender.port | quote }}
     patcher:
       enable: {{ .Values.scheduler.patcher.enable }}
       image:

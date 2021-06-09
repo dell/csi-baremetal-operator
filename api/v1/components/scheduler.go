@@ -23,5 +23,6 @@ type Scheduler struct {
 	Log                *Log     `json:"log,omitempty"`
 	Metrics            *Metrics `json:"metrics,omitempty"`
 	Patcher            *Patcher `json:"patcher,omitempty"`
+	ExtenderPort       string   `json:"extenderPort,omitempty"`
 	StorageProvisioner string   `json:"storageProvisioner"`
 }
