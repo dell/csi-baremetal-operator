@@ -154,4 +154,5 @@ nodeController:
     path: /metrics
     port: 8787
 
+# TODO Move parameter to Operator chart - https://github.com/dell/csi-baremetal/issues/422
 platform: "vanilla"
