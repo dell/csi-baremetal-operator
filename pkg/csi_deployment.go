@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,15 +48,27 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 }
 
 func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	errs, ctx := errgroup.WithContext(ctx)
+	if err := c.nodeController.Update(ctx, csi, scheme); err != nil {
+		return err
+	}
 
-	errs.Go(func() error { return c.nodeController.Update(ctx, csi, scheme) })
-	errs.Go(func() error { return c.controller.Update(ctx, csi, scheme) })
-	errs.Go(func() error { return c.node.Update(ctx, csi, scheme) })
-	errs.Go(func() error { return c.extender.Update(ctx, csi, scheme) })
-	errs.Go(func() error { return c.patchPlatform(ctx, csi, scheme) })
+	if err := c.node.Update(ctx, csi, scheme); err != nil {
+		return err
+	}
 
-	return errs.Wait()
+	if err := c.controller.Update(ctx, csi, scheme); err != nil {
+		return err
+	}
+
+	if err := c.extender.Update(ctx, csi, scheme); err != nil {
+		return err
+	}
+
+	if err := c.patchPlatform(ctx, csi, scheme); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // patchPlatform is patching method for the scheduler depends on the platform
