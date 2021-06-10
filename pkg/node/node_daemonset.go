@@ -36,7 +36,7 @@ const (
 
 func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescription) *v1.DaemonSet {
 	var nodeSelectors = common.MakeNodeSelectorMap(csi.Spec.NodeSelector)
-	nodeSelectors[label] = platform.labeltag
+	nodeSelectors[platformLabel] = platform.labeltag
 
 	isLoopbackmgr := strings.Contains(csi.Spec.Driver.Node.DriveMgr.Image.Name, "loopbackmgr")
 

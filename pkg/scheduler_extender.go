@@ -29,12 +29,11 @@ const (
 )
 
 type SchedulerExtender struct {
-	ctx context.Context
 	kubernetes.Clientset
 	logr.Logger
 }
 
-func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// create daemonset
 	expected := createExtenderDaemonSet(csi)
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
@@ -44,10 +43,10 @@ func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment, scheme *runti
 	namespace := common.GetNamespace(csi)
 	dsClient := n.AppsV1().DaemonSets(namespace)
 
-	found, err := dsClient.Get(n.ctx, extenderName, metav1.GetOptions{})
+	found, err := dsClient.Get(ctx, extenderName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(n.ctx, expected, metav1.CreateOptions{}); err != nil {
+			if _, err := dsClient.Create(ctx, expected, metav1.CreateOptions{}); err != nil {
 				n.Logger.Error(err, "Failed to create daemonset")
 				return err
 			}
@@ -62,7 +61,7 @@ func (n *SchedulerExtender) Update(csi *csibaremetalv1.Deployment, scheme *runti
 
 	if common.DaemonsetChanged(expected, found) {
 		found.Spec = expected.Spec
-		if _, err := dsClient.Update(n.ctx, found, metav1.UpdateOptions{}); err != nil {
+		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
 			n.Logger.Error(err, "Failed to update daemonset")
 			return err
 		}

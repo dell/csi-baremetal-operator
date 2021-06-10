@@ -91,7 +91,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			if err = r.UninstallPatcher(ctx, *deployment); err != nil {
 				log.Error(err, "Error uninstalling patcher")
 			}
-			if err = r.CleanLabels(); err != nil {
+			if err = r.CleanLabels(ctx); err != nil {
 				log.Error(err, "Error cleaning node labels")
 			}
 			deployment.ObjectMeta.Finalizers = deleteFinalizer(deployment)

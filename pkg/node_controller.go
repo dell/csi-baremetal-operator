@@ -27,12 +27,11 @@ const (
 )
 
 type NodeController struct {
-	ctx context.Context
 	kubernetes.Clientset
 	logr.Logger
 }
 
-func (nc *NodeController) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (nc *NodeController) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// create deployment
 	expected := createNodeControllerDeployment(csi)
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
@@ -42,10 +41,10 @@ func (nc *NodeController) Update(csi *csibaremetalv1.Deployment, scheme *runtime
 	namespace := common.GetNamespace(csi)
 	dsClient := nc.AppsV1().Deployments(namespace)
 
-	found, err := dsClient.Get(nc.ctx, nodeControllerName, metav1.GetOptions{})
+	found, err := dsClient.Get(ctx, nodeControllerName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(nc.ctx, expected, metav1.CreateOptions{}); err != nil {
+			if _, err := dsClient.Create(ctx, expected, metav1.CreateOptions{}); err != nil {
 				nc.Logger.Error(err, "Failed to create deployment")
 				return err
 			}
@@ -60,7 +59,7 @@ func (nc *NodeController) Update(csi *csibaremetalv1.Deployment, scheme *runtime
 
 	if common.DeploymentChanged(expected, found) {
 		found.Spec = expected.Spec
-		if _, err := dsClient.Update(nc.ctx, found, metav1.UpdateOptions{}); err != nil {
+		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
 			nc.Logger.Error(err, "Failed to update deployment")
 			return err
 		}

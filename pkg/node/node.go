@@ -2,10 +2,10 @@ package node
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,24 +18,22 @@ import (
 )
 
 const (
-	label = "nodes.csi-baremetal.dell.com/platform"
+	platformLabel = "nodes.csi-baremetal.dell.com/platform"
 )
 
 type Node struct {
-	ctx       context.Context
 	clientset kubernetes.Interface
 	log       logr.Logger
 }
 
-func NewNode(ctx context.Context, clientset kubernetes.Interface, logger logr.Logger) *Node {
+func NewNode(clientset kubernetes.Interface, logger logr.Logger) *Node {
 	return &Node{
-		ctx:       ctx,
 		clientset: clientset,
 		log:       logger,
 	}
 }
 
-func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	var (
 		// need to trying deploy each daemonset
 		// return err != nil to request reconcile again if one ore more daemonsets failed
@@ -43,7 +41,7 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) er
 		namespace = common.GetNamespace(csi)
 	)
 
-	needToDeploy, err := n.updateNodeLabels(csi.Spec.NodeSelector)
+	needToDeploy, err := n.updateNodeLabels(ctx, csi.Spec.NodeSelector)
 	if err != nil {
 		return err
 	}
@@ -56,7 +54,7 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) er
 				continue
 			}
 
-			if err = n.updateDaemonset(expected, namespace); err != nil {
+			if err = n.updateDaemonset(ctx, expected, namespace); err != nil {
 				n.log.Error(err, "Failed to update daemonset "+expected.Name)
 				resultErr = err
 			}
@@ -67,17 +65,17 @@ func (n *Node) Update(csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) er
 }
 
 // CleanLabels deletes platform-label on each node in cluster
-func (n *Node) CleanLabels() error {
-	return n.cleanNodeLabels()
+func (n *Node) CleanLabels(ctx context.Context) error {
+	return n.cleanNodeLabels(ctx)
 }
 
-func (n *Node) updateDaemonset(expected *v1.DaemonSet, namespace string) error {
+func (n *Node) updateDaemonset(ctx context.Context, expected *v1.DaemonSet, namespace string) error {
 	dsClient := n.clientset.AppsV1().DaemonSets(namespace)
 
-	found, err := dsClient.Get(n.ctx, expected.Name, metav1.GetOptions{})
+	found, err := dsClient.Get(ctx, expected.Name, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(n.ctx, expected, metav1.CreateOptions{}); err != nil {
+		if k8serrors.IsNotFound(err) {
+			if _, err := dsClient.Create(ctx, expected, metav1.CreateOptions{}); err != nil {
 				n.log.Error(err, "Failed to create daemonset "+expected.Name)
 				return err
 			}
@@ -92,7 +90,7 @@ func (n *Node) updateDaemonset(expected *v1.DaemonSet, namespace string) error {
 
 	if common.DaemonsetChanged(expected, found) {
 		found.Spec = expected.Spec
-		if _, err := dsClient.Update(n.ctx, found, metav1.UpdateOptions{}); err != nil {
+		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
 			n.log.Error(err, "Failed to update daemonset "+expected.Name)
 			return err
 		}
@@ -107,24 +105,18 @@ func (n *Node) updateDaemonset(expected *v1.DaemonSet, namespace string) error {
 // updateNodeLabels gets list of all nodes in cluster,
 // selects fit platform for each one and add/update node platform-label
 // returns a Set of platforms, which will be deployed
-func (n *Node) updateNodeLabels(selector *components.NodeSelector) (Set, error) {
+func (n *Node) updateNodeLabels(ctx context.Context, selector *components.NodeSelector) (Set, error) {
 	// need to trying getKernelVersion and update label on each node
 	// return err != nil to request reconcile again if one ore more nodes failed
 	var (
-		resultErr   error
-		listOptions = metav1.ListOptions{}
+		resultErr error
 	)
 
 	needToDeploy := createPlatformsSet()
 
-	if selector != nil {
-		labelSelector := metav1.LabelSelector{MatchLabels: common.MakeNodeSelectorMap(selector)}
-		listOptions.LabelSelector = labels.Set(labelSelector.MatchLabels).String()
-	}
-
-	nodes, err := n.clientset.CoreV1().Nodes().List(n.ctx, listOptions)
+	nodes, err := n.getNodes(ctx, selector)
 	if err != nil {
-		return nil, err
+		return needToDeploy, err
 	}
 
 	for _, node := range nodes.Items {
@@ -138,8 +130,13 @@ func (n *Node) updateNodeLabels(selector *components.NodeSelector) (Set, error) 
 		platformName := findPlatform(kernelVersion)
 		needToDeploy[platformName] = true
 
-		node.Labels[label] = platforms[platformName].labeltag
-		if _, err := n.clientset.CoreV1().Nodes().Update(n.ctx, &node, metav1.UpdateOptions{}); err != nil {
+		// skip updating label if exists
+		if value, ok := node.Labels[platformLabel]; ok && (value == platforms[platformName].labeltag) {
+			continue
+		}
+
+		node.Labels[platformLabel] = platforms[platformName].labeltag
+		if _, err := n.clientset.CoreV1().Nodes().Update(ctx, &node, metav1.UpdateOptions{}); err != nil {
 			n.log.Error(err, "Failed to update label on "+node.Name)
 			resultErr = err
 		}
@@ -148,22 +145,38 @@ func (n *Node) updateNodeLabels(selector *components.NodeSelector) (Set, error) 
 	return needToDeploy, resultErr
 }
 
-func (n *Node) cleanNodeLabels() error {
-	nodes, err := n.clientset.CoreV1().Nodes().List(n.ctx, metav1.ListOptions{})
+func (n *Node) cleanNodeLabels(ctx context.Context) error {
+	nodes, err := n.clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	for _, node := range nodes.Items {
-		if _, ok := node.Labels[label]; ok {
-			delete(node.Labels, label)
-			if _, err := n.clientset.CoreV1().Nodes().Update(n.ctx, &node, metav1.UpdateOptions{}); err != nil {
+		if _, ok := node.Labels[platformLabel]; ok {
+			delete(node.Labels, platformLabel)
+			if _, err := n.clientset.CoreV1().Nodes().Update(ctx, &node, metav1.UpdateOptions{}); err != nil {
 				n.log.Error(err, "Failed to delete label on "+node.Name)
 			}
 		}
 	}
 
 	return nil
+}
+
+func (n *Node) getNodes(ctx context.Context, selector *components.NodeSelector) (*corev1.NodeList, error) {
+	var listOptions = metav1.ListOptions{}
+
+	if selector != nil {
+		labelSelector := metav1.LabelSelector{MatchLabels: common.MakeNodeSelectorMap(selector)}
+		listOptions.LabelSelector = labels.Set(labelSelector.MatchLabels).String()
+	}
+
+	nodes, err := n.clientset.CoreV1().Nodes().List(ctx, listOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return nodes, nil
 }
 
 // findPlatform calls checkVersion for all platforms in list,

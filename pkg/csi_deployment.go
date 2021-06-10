@@ -21,32 +21,26 @@ type CSIDeployment struct {
 	nodeController NodeController
 }
 
-func NewCSIDeployment(ctx context.Context, clientSet kubernetes.Clientset,
-	client client.Client, log logr.Logger) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
-			ctx,
 			&clientSet,
 			log.WithValues(constant.CSIName, "node"),
 		),
 		controller: Controller{
-			ctx:       ctx,
 			Clientset: clientSet,
 			Logger:    log.WithValues(constant.CSIName, "controller"),
 		},
 		extender: SchedulerExtender{
-			ctx:       ctx,
 			Clientset: clientSet,
 			Logger:    log.WithValues(constant.CSIName, "extender"),
 		},
 		patcher: SchedulerPatcher{
-			ctx:       ctx,
 			Clientset: clientSet,
 			Client:    client,
 			Logger:    log.WithValues(constant.CSIName, "patcher"),
 		},
 		nodeController: NodeController{
-			ctx:       ctx,
 			Clientset: clientSet,
 			Logger:    log.WithValues(constant.CSIName, "nodeController"),
 		},
@@ -54,29 +48,36 @@ func NewCSIDeployment(ctx context.Context, clientSet kubernetes.Clientset,
 }
 
 func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	if err := c.node.Update(csi, scheme); err != nil {
+	if err := c.nodeController.Update(ctx, csi, scheme); err != nil {
 		return err
 	}
 
-	if err := c.controller.Update(csi, scheme); err != nil {
+	if err := c.node.Update(ctx, csi, scheme); err != nil {
 		return err
 	}
 
-	if err := c.extender.Update(csi, scheme); err != nil {
+	if err := c.controller.Update(ctx, csi, scheme); err != nil {
 		return err
 	}
 
-	if err := c.nodeController.Update(csi, scheme); err != nil {
+	if err := c.extender.Update(ctx, csi, scheme); err != nil {
 		return err
 	}
 
-	// Patching method for the scheduler depends on the platform
+	if err := c.patchPlatform(ctx, csi, scheme); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// patchPlatform is patching method for the scheduler depends on the platform
+func (c *CSIDeployment) patchPlatform(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	switch csi.Spec.Platform {
 	case platformOpenshift:
 		return c.patcher.PatchOpenShift(ctx, csi)
 	default:
-		return c.patcher.Update(csi, scheme)
-
+		return c.patcher.Update(ctx, csi, scheme)
 	}
 }
 
@@ -89,6 +90,6 @@ func (c *CSIDeployment) UninstallPatcher(ctx context.Context, csi csibaremetalv1
 	}
 }
 
-func (c *CSIDeployment) CleanLabels() error {
-	return c.node.CleanLabels()
+func (c *CSIDeployment) CleanLabels(ctx context.Context) error {
+	return c.node.CleanLabels(ctx)
 }
