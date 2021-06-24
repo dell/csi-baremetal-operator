@@ -2,15 +2,17 @@ package pkg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
-	openshiftv1 "github.com/openshift/api/config/v1"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	openshiftv1 "github.com/openshift/api/config/v1"
 )
 
 const (
@@ -36,34 +38,36 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
 }`, csi.Spec.Scheduler.ExtenderPort)
 
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
-	oscf, err := cfClient.Get(ctx, openshiftConfig, metav1.GetOptions{})
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			p.Logger.Error(err, "Failed to get configmap")
-			return err
-		}
-	} else {
-		if v, ok := oscf.Data[openshiftPolicyFile]; ok {
-			if v == openshiftPolicy {
-				p.Logger.Info("Configmap is already patched")
-				return nil
-			}
-		}
-
-		err := cfClient.Delete(ctx, openshiftConfig, *metav1.NewDeleteOptions(0))
-		if err != nil {
-			p.Logger.Error(err, "Failed to delete configmap")
-			return err
-		}
-	}
-
-	_, err = cfClient.Create(ctx, createOpenshiftConfig(openshiftPolicy), metav1.CreateOptions{})
-	if err != nil {
-		p.Logger.Error(err, "Failed to create configmap")
+	config, err := cfClient.Get(ctx, openshiftConfig, metav1.GetOptions{})
+	// exclude not found error
+	if err != nil && !apiErrors.IsNotFound(err) {
+		p.Logger.Error(err, "Failed to get ConfigMap")
 		return err
 	}
 
-	err = p.patchSheduler(ctx, openshiftConfig)
+	// ConfigMap not found - create
+	if apiErrors.IsNotFound(err) {
+		_, err = cfClient.Create(ctx, createOpenshiftConfig(openshiftPolicy), metav1.CreateOptions{})
+		if err != nil {
+			p.Logger.Error(err, "Failed to create ConfigMap")
+			return err
+		}
+	} else {
+		// check if already patched and update otherwise
+		if v, ok := config.Data[openshiftPolicyFile]; ok && v == openshiftPolicy {
+			p.Logger.Info("ConfigMap is already patched")
+		} else {
+			// try to update
+			_, err = cfClient.Update(ctx, createOpenshiftConfig(openshiftPolicy), metav1.UpdateOptions{})
+			if err != nil {
+				p.Logger.Error(err, "Failed to update ConfigMap")
+				return err
+			}
+		}
+	}
+
+	// try to patch
+	err = p.patchScheduler(ctx, openshiftConfig)
 	if err != nil {
 		p.Logger.Error(err, "Failed to patch Scheduler")
 		return err
@@ -74,12 +78,25 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
 
 func (p *SchedulerPatcher) UnPatchOpenShift(ctx context.Context) error {
 	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
+	// delete ConfigMap
+	var errMsgs []string
 	err := cfClient.Delete(ctx, openshiftConfig, *metav1.NewDeleteOptions(0))
 	if err != nil {
-		p.Logger.Error(err, "Failed to delete configmap")
-		return err
+		p.Logger.Error(err, "Failed to delete ConfigMap")
+		errMsgs = append(errMsgs, err.Error())
 	}
-	return p.unpatchSheduler(ctx)
+	// Unpatch Scheduler
+	err = p.unpatchScheduler(ctx, openshiftConfig)
+	if err != nil {
+		p.Logger.Error(err, "Failed to unpatch Scheduler")
+		errMsgs = append(errMsgs, err.Error())
+	}
+	// check for errors
+	if len(errMsgs) == 0 {
+		return nil
+	}
+	// return errors
+	return fmt.Errorf(strings.Join(errMsgs, "\n"))
 }
 
 func createOpenshiftConfig(policy string) *corev1.ConfigMap {
@@ -93,7 +110,7 @@ func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 	}
 }
 
-func (p *SchedulerPatcher) patchSheduler(ctx context.Context, config string) error {
+func (p *SchedulerPatcher) patchScheduler(ctx context.Context, config string) error {
 	sc := &openshiftv1.Scheduler{}
 
 	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster"}, sc)
@@ -101,16 +118,48 @@ func (p *SchedulerPatcher) patchSheduler(ctx context.Context, config string) err
 		return err
 	}
 
-	sc.Spec.Policy.Name = config
-
-	err = p.Client.Update(ctx, sc)
-	if err != nil {
-		return err
+	name := sc.Spec.Policy.Name
+	// patch when name is not set
+	if name == "" {
+		sc.Spec.Policy.Name = config
+		// update scheduler cluster
+		err = p.Client.Update(ctx, sc)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	// if name is set but not to CSI config name return error
+	if name != config {
+		return errors.New("scheduler is already patched with the config name: " + name)
 	}
 
 	return nil
 }
 
-func (p *SchedulerPatcher) unpatchSheduler(ctx context.Context) error {
-	return p.patchSheduler(ctx, "")
+func (p *SchedulerPatcher) unpatchScheduler(ctx context.Context, config string) error {
+	sc := &openshiftv1.Scheduler{}
+
+	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster"}, sc)
+	if err != nil {
+		return err
+	}
+
+	name := sc.Spec.Policy.Name
+	// patch when name is not set
+	switch name {
+	case "":
+		// already unpatched
+		return nil
+	case config:
+		sc.Spec.Policy.Name = ""
+		// update scheduler cluster
+		err = p.Client.Update(ctx, sc)
+		if err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("scheduler was patched with the config name: " + name)
+	}
 }
