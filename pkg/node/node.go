@@ -2,7 +2,9 @@ package node
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
+	"github.com/masterminds/semver"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -181,7 +183,7 @@ func (n *Node) getNodes(ctx context.Context, selector *components.NodeSelector) 
 
 // findPlatform calls checkVersion for all platforms in list,
 // returns first found platform-name or "default" if no one passed
-func findPlatform(kernelVersion string) string {
+func findPlatform(kernelVersion *semver.Version) string {
 	for key, value := range platforms {
 		if value.checkVersion(kernelVersion) {
 			return key

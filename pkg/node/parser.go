@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/masterminds/semver"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -51,21 +52,16 @@ func GetOSNameAndVersion(osInfo string) (name, version string, err error) {
 // GetKernelVersion receives string with the kernel version information in the following format:
 // "X.Y.Z-<Number>-<Description>". For example, "5.4.0-66-generic"
 // returns kernel version - major and minor. For example, "5.4"
-func GetKernelVersion(kernelVersion string) (version string, err error) {
-	// check input parameter
+func GetKernelVersion(kernelVersion string) (version *semver.Version, err error) {
 	if len(kernelVersion) == 0 {
-		return "", errors.New("ErrorEmptyParameter")
+		return nil, errors.New("ErrorEmptyParameter")
 	}
 
 	// extract kernel version - x.y.z
-	version = regexp.MustCompile(`^[0-9]+\.[0-9]+`).FindString(kernelVersion)
-	if len(version) == 0 {
-		return "", errors.New("ErrorEmptyParameter")
-	}
-
-	return version, nil
+	versionStr := regexp.MustCompile(`^[0-9]+\.[0-9]+`).FindString(kernelVersion)
+	return semver.NewVersion(versionStr)
 }
 
-func GetNodeKernelVersion(node corev1.Node) (version string, err error) {
+func GetNodeKernelVersion(node corev1.Node) (version *semver.Version, err error) {
 	return GetKernelVersion(node.Status.NodeInfo.KernelVersion)
 }
