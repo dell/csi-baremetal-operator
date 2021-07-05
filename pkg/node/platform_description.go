@@ -54,7 +54,7 @@ func createNameWithTag(name, tag string) string {
 	return name
 }
 
-// moreThan returns true if version >= supported
+// greaterOrEqual returns true if version >= supported
 func greaterOrEqual(version *semver.Version, supported *semver.Version) bool {
 	return !version.LessThan(supported)
 }
