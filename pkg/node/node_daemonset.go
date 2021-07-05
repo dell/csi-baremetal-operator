@@ -180,18 +180,31 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		"--loglevel=" + common.MatchLogLevel(node.Log.Level),
 		"--drivemgrendpoint=" + driveMgr.Endpoint,
 	}
-	mounts := []corev1.VolumeMount{
+	driveMgrMounts := []corev1.VolumeMount{
 		{Name: hostDevVolume, MountPath: "/dev"},
 		{Name: hostHomeVolume, MountPath: "/host/home"},
 		constant.CrashMountVolume,
 	}
 	if isLoopbackMgr(driveMgr.Image.Name) {
-		mounts = append(mounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
+		driveMgrMounts = append(driveMgrMounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
 		args = append(args, "--usenodeannotation="+strconv.FormatBool(csi.Spec.NodeIDAnnotation))
+	}
+	nodeMounts := []corev1.VolumeMount{
+		{Name: constant.LogsVolume, MountPath: "/var/log"},
+		{Name: hostDevVolume, MountPath: "/dev"},
+		{Name: hostSysVolume, MountPath: "/sys"},
+		{Name: hostRunUdevVolume, MountPath: "/run/udev"},
+		{Name: hostRunLVMVolume, MountPath: "/run/lvm"},
+		{Name: hostRunLock, MountPath: "/run/lock"},
+		{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
+		{Name: mountPointDirVolume, MountPath: "/var/lib/kubelet/pods", MountPropagation: &bidirectional},
+		{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
+		{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
+		constant.CrashMountVolume,
 	}
 	// mount volume
 	if csi.Spec.Driver.MountAlertsConfig {
-		mounts = append(mounts, corev1.VolumeMount{Name: alertsConfigVolume, MountPath: "/etc/config"})
+		nodeMounts = append(nodeMounts, corev1.VolumeMount{Name: alertsConfigVolume, MountPath: "/etc/config"})
 	}
 	return []corev1.Container{
 		{
@@ -286,19 +299,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 				}},
 			},
 			SecurityContext: &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
-			VolumeMounts: []corev1.VolumeMount{
-				{Name: constant.LogsVolume, MountPath: "/var/log"},
-				{Name: hostDevVolume, MountPath: "/dev"},
-				{Name: hostSysVolume, MountPath: "/sys"},
-				{Name: hostRunUdevVolume, MountPath: "/run/udev"},
-				{Name: hostRunLVMVolume, MountPath: "/run/lvm"},
-				{Name: hostRunLock, MountPath: "/run/lock"},
-				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				{Name: mountPointDirVolume, MountPath: "/var/lib/kubelet/pods", MountPropagation: &bidirectional},
-				{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
-				{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
-				constant.CrashMountVolume,
-			},
+			VolumeMounts: nodeMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
@@ -314,7 +315,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 				}},
 			},
 			SecurityContext:          &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
-			VolumeMounts:             mounts,
+			VolumeMounts:             driveMgrMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
