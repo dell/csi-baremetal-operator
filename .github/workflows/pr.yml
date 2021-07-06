@@ -48,7 +48,7 @@ jobs:
         sudo dpkg -i golangci-lint.deb
         
     - name: Lint code
-      run: GOGC=300 golangci-lint -v run ./...
+      run: GOGC=300 golangci-lint -v run --timeout 3m ./...
       
     - name: Build binary
       run: |

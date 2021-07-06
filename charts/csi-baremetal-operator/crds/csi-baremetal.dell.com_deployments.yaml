@@ -13,8 +13,8 @@ spec:
     listKind: DeploymentList
     plural: deployments
     shortNames:
-      - csi
-      - csis
+      - bmcsi
+      - bmcsis
     singular: deployment
   scope: Namespaced
   version: v1

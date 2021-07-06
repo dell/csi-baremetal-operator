@@ -71,7 +71,7 @@ spec:
       image:
         name: {{ .Values.driver.logReceiver.fluentbitAgent.image.name | default "fluent-bit" }}
         tag: {{ .Values.driver.logReceiver.fluentbitAgent.image.tag | default "shippable" }}
-    deployAlertsConfig: {{ .Values.driver.alerts.deployConfig }}
+    mountAlertsConfig: {{ .Values.driver.alerts.mountConfig }}
   scheduler:
     enable: {{ .Values.scheduler.enable }}
     image:

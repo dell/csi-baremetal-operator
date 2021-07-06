@@ -18,10 +18,11 @@ package components
 
 // Drive represent CSI driver with all necessary CSI components
 type Driver struct {
-	Controller         *Controller  `json:"controller,omitempty"`
-	Node               *Node        `json:"node,omitempty"`
-	Metrics            *Metrics     `json:"metrics,omitempty"`
-	LogReceiver        *LogReceiver `json:"logReceiver,omitempty"`
-	DeployAlertsConfig bool         `json:"deployAlertsConfig"`
-	MountRootHost      bool         `json:"mountRootHost"`
+	Controller        *Controller  `json:"controller,omitempty"`
+	Node              *Node        `json:"node,omitempty"`
+	Metrics           *Metrics     `json:"metrics,omitempty"`
+	LogReceiver       *LogReceiver `json:"logReceiver,omitempty"`
+	MountAlertsConfig bool         `json:"mountAlertsConfig"`
+	// todo need to implement this
+	MountRootHost bool `json:"mountRootHost"`
 }

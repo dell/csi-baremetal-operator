@@ -18,6 +18,7 @@ import (
 const (
 	nodeName                  = constant.CSIName + "-node"
 	nodeServiceAccountName    = "csi-node-sa"
+	loopbackManagerImageName  = "loopbackmgr"
 	loopbackManagerConfigName = "loopback-config"
 
 	// volumes
@@ -32,13 +33,15 @@ const (
 	mountPointDirVolume   = "mountpoint-dir"
 	csiPathVolume         = "csi-path"
 	driveConfigVolume     = "drive-config"
+
+	// alerts
+	alertsConfigName   = "csi-baremetal-alerts"
+	alertsConfigVolume = "alert-config"
 )
 
 func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescription) *v1.DaemonSet {
 	var nodeSelectors = common.MakeNodeSelectorMap(csi.Spec.NodeSelector)
 	nodeSelectors[platformLabel] = platform.labeltag
-
-	isLoopbackmgr := strings.Contains(csi.Spec.Driver.Node.DriveMgr.Image.Name, "loopbackmgr")
 
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -69,7 +72,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 					},
 				},
 				Spec: corev1.PodSpec{
-					Volumes:                       createNodeVolumes(isLoopbackmgr),
+					Volumes:                       createNodeVolumes(csi),
 					Containers:                    createNodeContainers(csi, platform),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
@@ -86,7 +89,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 	}
 }
 
-func createNodeVolumes(isLoopbackmgr bool) []corev1.Volume {
+func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 	directory := corev1.HostPathDirectory
 	directoryOrCreate := corev1.HostPathDirectoryOrCreate
 	unset := corev1.HostPathUnset
@@ -131,7 +134,7 @@ func createNodeVolumes(isLoopbackmgr bool) []corev1.Volume {
 		constant.CrashVolume,
 	)
 
-	if isLoopbackmgr {
+	if isLoopbackMgr(csi.Spec.Driver.Node.DriveMgr.Image.Name) {
 		configMapMode := corev1.ConfigMapVolumeSourceDefaultMode
 		volumes = append(volumes, corev1.Volume{
 			Name: driveConfigVolume,
@@ -143,7 +146,24 @@ func createNodeVolumes(isLoopbackmgr bool) []corev1.Volume {
 				},
 			}})
 	}
+	// mount config for alerts
+	if csi.Spec.Driver.MountAlertsConfig {
+		configMapMode := corev1.ConfigMapVolumeSourceDefaultMode
+		volumes = append(volumes, corev1.Volume{
+			Name: alertsConfigVolume,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: alertsConfigName},
+					DefaultMode:          &configMapMode,
+					Optional:             pointer.BoolPtr(true),
+				},
+			}})
+	}
 	return volumes
+}
+
+func isLoopbackMgr(imageName string) bool {
+	return strings.Contains(imageName, loopbackManagerImageName)
 }
 
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
@@ -152,7 +172,6 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		bidirectional = corev1.MountPropagationBidirectional
 		driveMgr      = csi.Spec.Driver.Node.DriveMgr
 		node          = csi.Spec.Driver.Node
-		isLoopbackmgr = strings.Contains(driveMgr.Image.Name, "loopbackmgr")
 		lp            = node.Sidecars[constant.LivenessProbeName]
 		dr            = node.Sidecars[constant.DriverRegistrarName]
 		nodeImage     = platform.NodeImage(node.Image)
@@ -161,14 +180,31 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		"--loglevel=" + common.MatchLogLevel(node.Log.Level),
 		"--drivemgrendpoint=" + driveMgr.Endpoint,
 	}
-	mounts := []corev1.VolumeMount{
+	driveMgrMounts := []corev1.VolumeMount{
 		{Name: hostDevVolume, MountPath: "/dev"},
 		{Name: hostHomeVolume, MountPath: "/host/home"},
 		constant.CrashMountVolume,
 	}
-	if isLoopbackmgr {
-		mounts = append(mounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
+	if isLoopbackMgr(driveMgr.Image.Name) {
+		driveMgrMounts = append(driveMgrMounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
 		args = append(args, "--usenodeannotation="+strconv.FormatBool(csi.Spec.NodeIDAnnotation))
+	}
+	nodeMounts := []corev1.VolumeMount{
+		{Name: constant.LogsVolume, MountPath: "/var/log"},
+		{Name: hostDevVolume, MountPath: "/dev"},
+		{Name: hostSysVolume, MountPath: "/sys"},
+		{Name: hostRunUdevVolume, MountPath: "/run/udev"},
+		{Name: hostRunLVMVolume, MountPath: "/run/lvm"},
+		{Name: hostRunLock, MountPath: "/run/lock"},
+		{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
+		{Name: mountPointDirVolume, MountPath: "/var/lib/kubelet/pods", MountPropagation: &bidirectional},
+		{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
+		{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
+		constant.CrashMountVolume,
+	}
+	// mount volume
+	if csi.Spec.Driver.MountAlertsConfig {
+		nodeMounts = append(nodeMounts, corev1.VolumeMount{Name: alertsConfigVolume, MountPath: "/etc/config"})
 	}
 	return []corev1.Container{
 		{
@@ -262,20 +298,8 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
 				}},
 			},
-			SecurityContext: &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
-			VolumeMounts: []corev1.VolumeMount{
-				{Name: constant.LogsVolume, MountPath: "/var/log"},
-				{Name: hostDevVolume, MountPath: "/dev"},
-				{Name: hostSysVolume, MountPath: "/sys"},
-				{Name: hostRunUdevVolume, MountPath: "/run/udev"},
-				{Name: hostRunLVMVolume, MountPath: "/run/lvm"},
-				{Name: hostRunLock, MountPath: "/run/lock"},
-				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				{Name: mountPointDirVolume, MountPath: "/var/lib/kubelet/pods", MountPropagation: &bidirectional},
-				{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
-				{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
-				constant.CrashMountVolume,
-			},
+			SecurityContext:          &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
+			VolumeMounts:             nodeMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},
@@ -291,7 +315,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 				}},
 			},
 			SecurityContext:          &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
-			VolumeMounts:             mounts,
+			VolumeMounts:             driveMgrMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 		},

@@ -97,7 +97,7 @@ driver:
         tag:
 
   alerts:
-    deployConfig: false
+    mountConfig: false
 
 # CSI Scheduler parameters
 scheduler:
