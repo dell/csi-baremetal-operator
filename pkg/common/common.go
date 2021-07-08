@@ -1,8 +1,14 @@
 package common
 
 import (
+	"context"
+
 	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
@@ -87,4 +93,21 @@ func MakeNodeSelectorMap(ns *components.NodeSelector) map[string]string {
 	}
 
 	return map[string]string{}
+}
+
+// GetSelectedNodes returns a list of nodes filtered with NodeSelector
+func GetSelectedNodes(ctx context.Context, c kubernetes.Interface, selector *components.NodeSelector) (*corev1.NodeList, error) {
+	var listOptions = metav1.ListOptions{}
+
+	if selector != nil {
+		labelSelector := metav1.LabelSelector{MatchLabels: MakeNodeSelectorMap(selector)}
+		listOptions.LabelSelector = labels.Set(labelSelector.MatchLabels).String()
+	}
+
+	nodes, err := c.CoreV1().Nodes().List(ctx, listOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return nodes, nil
 }

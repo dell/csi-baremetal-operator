@@ -6,10 +6,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/masterminds/semver"
 	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -116,7 +114,7 @@ func (n *Node) updateNodeLabels(ctx context.Context, selector *components.NodeSe
 
 	needToDeploy := createPlatformsSet()
 
-	nodes, err := n.getNodes(ctx, selector)
+	nodes, err := common.GetSelectedNodes(ctx, n.clientset, selector)
 	if err != nil {
 		return needToDeploy, err
 	}
@@ -163,22 +161,6 @@ func (n *Node) cleanNodeLabels(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (n *Node) getNodes(ctx context.Context, selector *components.NodeSelector) (*corev1.NodeList, error) {
-	var listOptions = metav1.ListOptions{}
-
-	if selector != nil {
-		labelSelector := metav1.LabelSelector{MatchLabels: common.MakeNodeSelectorMap(selector)}
-		listOptions.LabelSelector = labels.Set(labelSelector.MatchLabels).String()
-	}
-
-	nodes, err := n.clientset.CoreV1().Nodes().List(ctx, listOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	return nodes, nil
 }
 
 // findPlatform calls checkVersion for all platforms in list,
