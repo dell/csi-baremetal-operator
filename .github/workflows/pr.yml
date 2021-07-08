@@ -58,5 +58,18 @@ jobs:
       run: |
         make test
 
-        
- 
+    - name: Coverage
+      run: make coverage
+
+    - name: Upload coverage report to artifacts
+      uses: actions/upload-artifact@v2.2.1
+      with:
+        name: coverage.html
+        path: ./coverage.html
+
+    - name: Upload coverage report to codecov
+      uses: codecov/codecov-action@v1.0.2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.out
+        flags: unittests
