@@ -1,14 +1,13 @@
 package node
 
 import (
-	"strconv"
-
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
+	"github.com/masterminds/semver"
 )
 
-const (
-	supportedKernel = 5.4
-)
+const supportedKernel = "5.4"
+
+var supportedKernelVersion = semver.MustParse(supportedKernel)
 
 type PlatformDescription struct {
 	tag      string
@@ -16,7 +15,7 @@ type PlatformDescription struct {
 	checkVersion
 }
 
-type checkVersion func(version string) bool
+type checkVersion func(version *semver.Version) bool
 
 var (
 	platforms = map[string]*PlatformDescription{
@@ -24,12 +23,12 @@ var (
 			tag:      "",
 			labeltag: "default",
 			// default checkVersion returns false everytime to detect only specific platforms
-			checkVersion: func(version string) bool { return false },
+			checkVersion: func(version *semver.Version) bool { return false },
 		},
 		"kernel-5.4": {
 			tag:          "kernel-5.4",
 			labeltag:     "kernel-5.4",
-			checkVersion: func(version string) bool { return moreThan(version, supportedKernel) },
+			checkVersion: func(version *semver.Version) bool { return greaterOrEqual(version, supportedKernelVersion) },
 		},
 	}
 )
@@ -55,16 +54,7 @@ func createNameWithTag(name, tag string) string {
 	return name
 }
 
-// moreThan returns true if version >= supported
-func moreThan(version string, supported float64) bool {
-	versionFloat, err := strconv.ParseFloat(version, 32)
-	if err != nil {
-		return false
-	}
-
-	if versionFloat >= supported {
-		return true
-	}
-
-	return false
+// greaterOrEqual returns true if version >= supported
+func greaterOrEqual(version *semver.Version, supported *semver.Version) bool {
+	return !version.LessThan(supported)
 }

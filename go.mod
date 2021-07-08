@@ -3,7 +3,9 @@ module github.com/dell/csi-baremetal-operator
 go 1.16
 
 require (
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/go-logr/logr v0.3.0
+	github.com/masterminds/semver v1.5.0
 	github.com/openshift/api v0.0.0-20200618202633-7192180f496a
 	github.com/stretchr/testify v1.5.1
 	k8s.io/api v0.19.2
