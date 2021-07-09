@@ -1,0 +1,19 @@
+apiVersion: v1
+entries:
+  csi-baremetal-operator:
+  - apiVersion: v2
+    appVersion: 0.2.2
+    description: Bare-metal CSI Operator
+    name: csi-baremetal-operator
+    version: 0.2.2
+    urls:
+    - https://github.com/dell/csi-baremetal-operator/releases/download/v0.2.2-beta/csi-baremetal-operator-0.2.2-39.5850f57.tgz
+  csi-baremetal-deployment
+  - apiVersion: v2
+    appVersion: 0.2.2
+    description: Bare-metal CSI Deployment
+    name: csi-baremetal-deployment
+    version: 0.2.2
+    urls:
+    - https://github.com/dell/csi-baremetal-operator/releases/download/v0.2.2-beta/csi-baremetal-deployment-0.2.2-39.5850f57.tgz
+generated: "2021-07-09T14:59:36.354768389Z"
