@@ -65,8 +65,9 @@ vet:
 	go vet ./...
 
 # Generate code
-generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+generate:
+	controller-gen object paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:dir=api/v1
+	controller-gen crd:trivialVersions=true paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=config/crd
 
 # Build the docker image
 docker-build:

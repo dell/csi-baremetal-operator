@@ -110,6 +110,12 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{Requeue: true}, err
 	}
 
+	deployment.Status.Ready = false
+	if err = r.Client.Update(ctx, deployment, &client.UpdateOptions{}); err != nil {
+		log.Error(err, "Unable to update deployment status")
+		return ctrl.Result{Requeue: true}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 

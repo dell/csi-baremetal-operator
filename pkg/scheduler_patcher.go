@@ -29,8 +29,9 @@ const (
 )
 
 const (
-	patcherName          = extenderName + "-patcher"
-	patcherContainerName = "schedulerpatcher"
+	patcherName               = extenderName + "-patcher"
+	patcherContainerName      = "schedulerpatcher"
+	patcherServiceAccountName = constant.CSIName + "-patcher-sa"
 
 	kubernetesManifestsVolume = "kubernetes-manifests"
 	kubernetesSchedulerVolume = "kubernetes-scheduler"
@@ -121,6 +122,8 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					SecurityContext:               &corev1.PodSecurityContext{},
 					SchedulerName:                 corev1.DefaultSchedulerName,
+					ServiceAccountName:            patcherServiceAccountName,
+					DeprecatedServiceAccount:      patcherServiceAccountName,
 					// todo https://github.com/dell/csi-baremetal/issues/329
 					Tolerations: []corev1.Toleration{
 						{Key: "CriticalAddonsOnly", Operator: corev1.TolerationOpExists},
@@ -164,12 +167,18 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				"--target_config_19_path=" + p.targetConfig19,
 				"--backup-path=" + p.schedulerFolder,
 				"--platform=" + p.platform,
+				"--node-name=$(KUBE_NODE_NAME)",
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: p.configMapName, MountPath: configurationPath, ReadOnly: true},
 				{Name: kubernetesSchedulerVolume, MountPath: p.schedulerFolder},
 				{Name: kubernetesManifestsVolume, MountPath: p.manifestsFolder},
 				constant.CrashMountVolume,
+			},
+			Env: []corev1.EnvVar{
+				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
+				}},
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,

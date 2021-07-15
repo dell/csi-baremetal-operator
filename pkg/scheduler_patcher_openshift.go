@@ -163,3 +163,25 @@ func (p *SchedulerPatcher) unpatchScheduler(ctx context.Context, config string) 
 		return errors.New("scheduler was patched with the config name: " + name)
 	}
 }
+
+func (p *SchedulerPatcher) isSchedulerReady(ctx context.Context) bool {
+	config, err := p.CoreV1().ConfigMaps(openshiftNS).Get(ctx, openshiftConfig, metav1.GetOptions{})
+	if err != nil {
+		return false
+	}
+
+	cmCreationTime := config.GetCreationTimestamp()
+
+	pods, err := p.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: "component=kube-scheduler"})
+	if err != nil {
+		return false
+	}
+
+	for _, pod := range pods.Items {
+		if !pod.Status.ContainerStatuses[0].State.Running.StartedAt.After(cmCreationTime.Time) {
+			return false
+		}
+	}
+
+	return true
+}

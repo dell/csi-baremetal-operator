@@ -24,12 +24,12 @@ import (
 
 // DeploymentStatus defines the observed state of Deployment
 type DeploymentStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Ready bool `json:"ready"`
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:shortName={csi,csis}
+// +kubebuilder:resource:shortName={bmcsi,bmcsis}
 // Deployment is the Schema for the deployments API
 type Deployment struct {
 	metav1.TypeMeta   `json:",inline"`

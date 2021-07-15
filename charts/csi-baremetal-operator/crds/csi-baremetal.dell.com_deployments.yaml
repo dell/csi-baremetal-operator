@@ -22,6 +22,11 @@ spec:
     - name: v1
       served: true
       storage: true
+  additionalPrinterColumns:
+    - name: READY
+      type: boolean
+      description: CSI Baremetal Deployment installation status
+      JSONPath: .status.ready
 status:
   acceptedNames:
     kind: ""
