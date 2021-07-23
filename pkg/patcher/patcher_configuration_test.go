@@ -1,4 +1,4 @@
-package pkg
+package patcher
 
 import (
 	"reflect"
@@ -29,7 +29,6 @@ func TestNewPatcherConfiguration(t *testing.T) {
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-configuration",
@@ -68,7 +67,6 @@ func TestNewPatcherConfiguration(t *testing.T) {
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-configuration",
@@ -106,7 +104,6 @@ func TestNewPatcherConfiguration(t *testing.T) {
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-conf",
@@ -144,7 +141,6 @@ func TestNewPatcherConfiguration(t *testing.T) {
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-conf",
@@ -168,7 +164,6 @@ func TestNewPatcherConfiguration(t *testing.T) {
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-conf",
@@ -192,7 +187,6 @@ func TestNewPatcherConfiguration(t *testing.T) {
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-conf",

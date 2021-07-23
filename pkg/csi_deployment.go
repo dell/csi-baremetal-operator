@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -11,13 +13,14 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/node"
+	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 )
 
 type CSIDeployment struct {
 	node           *node.Node
 	controller     Controller
 	extender       SchedulerExtender
-	patcher        SchedulerPatcher
+	patcher        patcher.SchedulerPatcher
 	nodeController NodeController
 }
 
@@ -35,7 +38,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			Clientset: clientSet,
 			Logger:    log.WithValues(constant.CSIName, "extender"),
 		},
-		patcher: SchedulerPatcher{
+		patcher: patcher.SchedulerPatcher{
 			Clientset: clientSet,
 			Client:    client,
 			Logger:    log.WithValues(constant.CSIName, "patcher"),
@@ -64,32 +67,29 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 		return err
 	}
 
-	if err := c.patchPlatform(ctx, csi, scheme); err != nil {
+	if err := c.patcher.Update(ctx, csi, scheme); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// patchPlatform is patching method for the scheduler depends on the platform
-func (c *CSIDeployment) patchPlatform(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	switch csi.Spec.Platform {
-	case platformOpenshift:
-		return c.patcher.PatchOpenShift(ctx, csi)
-	default:
-		return c.patcher.Update(ctx, csi, scheme)
-	}
-}
+func (c *CSIDeployment) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	var errMsgs []string
 
-func (c *CSIDeployment) UninstallPatcher(ctx context.Context, csi csibaremetalv1.Deployment) error {
-	switch csi.Spec.Platform {
-	case platformOpenshift:
-		return c.patcher.UnPatchOpenShift(ctx)
-	default:
-		return nil
+	err := c.patcher.Uninstall(ctx, csi)
+	if err != nil {
+		errMsgs = append(errMsgs, err.Error())
 	}
-}
 
-func (c *CSIDeployment) CleanLabels(ctx context.Context) error {
-	return c.node.CleanLabels(ctx)
+	err = c.node.Uninstall(ctx, csi)
+	if err != nil {
+		errMsgs = append(errMsgs, err.Error())
+	}
+
+	if len(errMsgs) != 0 {
+		return fmt.Errorf(strings.Join(errMsgs, "\n"))
+	}
+
+	return nil
 }

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 	"reflect"
 	"strings"
 
@@ -88,12 +89,10 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	} else {
 		if containsFinalizer(deployment) {
-			if err = r.UninstallPatcher(ctx, *deployment); err != nil {
+			if err = r.Uninstall(ctx, deployment); err != nil {
 				log.Error(err, "Error uninstalling patcher")
 			}
-			if err = r.CleanLabels(ctx); err != nil {
-				log.Error(err, "Error cleaning node labels")
-			}
+
 			deployment.ObjectMeta.Finalizers = deleteFinalizer(deployment)
 			if err = r.Client.Update(ctx, deployment); err != nil {
 				log.Error(err, "Error removing finalizer")
@@ -152,6 +151,55 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &csibaremetalv1.Deployment{},
+	})
+	if err != nil {
+		return err
+	}
+
+	// reconcile CSI Deployment if kube-scheduler pods were changed
+	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		var (
+			ctx         = context.Background()
+			deployments = &csibaremetalv1.DeploymentList{}
+			pod         *corev1.Pod
+			ok          bool
+		)
+
+		err := r.Client.List(ctx, deployments)
+		if err != nil {
+			return []reconcile.Request{}
+		}
+
+		if pod, ok = obj.(*corev1.Pod); !ok {
+			return []reconcile.Request{}
+		}
+
+		var requests []reconcile.Request
+		for _, dep := range deployments.Items {
+			// check kube-scheduler label
+			// it depends on platform
+			key, value, err := patcher.ChooseKubeSchedulerLabel(&dep)
+			if err != nil {
+				continue
+			}
+
+			if realValue, ok := pod.GetLabels()[key]; !ok || value != realValue {
+				continue
+			}
+
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      dep.Name,
+					Namespace: dep.Namespace,
+				}})
+		}
+
+		return requests
+	}))
+
 	// reconcile CSI Deployment if node was creates, node kernel-version or label were changed
 	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		var (
@@ -167,7 +215,7 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}
 
 		if node, ok = obj.(*corev1.Node); !ok {
-			return nil
+			return []reconcile.Request{}
 		}
 
 		var requests []reconcile.Request

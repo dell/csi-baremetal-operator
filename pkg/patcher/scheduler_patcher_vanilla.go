@@ -1,4 +1,4 @@
-package pkg
+package patcher
 
 import (
 	"context"
@@ -10,12 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"github.com/go-logr/logr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
@@ -23,13 +19,7 @@ import (
 )
 
 const (
-	platformVanilla   = "vanilla"
-	platformRKE       = "rke"
-	platformOpenshift = "openshift"
-)
-
-const (
-	patcherName               = extenderName + "-patcher"
+	patcherName               = constant.CSIName + "-se-patcher"
 	patcherContainerName      = "schedulerpatcher"
 	patcherServiceAccountName = constant.CSIName + "-patcher-sa"
 
@@ -38,21 +28,26 @@ const (
 	configurationPath         = "/config"
 )
 
-type SchedulerPatcher struct {
-	kubernetes.Clientset
-	logr.Logger
-	Client client.Client
-}
-
-func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	if !csi.Spec.Scheduler.Patcher.Enable {
-		p.Logger.Info("Patcher disabled - skipping patcher pod creation")
+func (p *SchedulerPatcher) updateVanilla(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	err := p.updateVanillaConfigMap(ctx, csi, scheme)
+	if err != nil {
 		return nil
 	}
+
+	err = p.updateVanillaDaemonset(ctx, csi, scheme)
+	if err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	cfg, err := NewPatcherConfiguration(csi)
 	if err != nil {
 		return err
 	}
+
 	expected := cfg.createPatcherDaemonSet()
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 		return err
@@ -87,6 +82,112 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 
 		p.Logger.Info("Daemonset updated successfully")
 		return nil
+	}
+
+	return nil
+}
+
+func (p *SchedulerPatcher) updateVanillaConfigMap(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	expected, err := createVanillaConfig(csi)
+	if err != nil {
+		return err
+	}
+
+	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
+		return err
+	}
+
+	err = common.UpdateConfigMap(ctx, p, expected)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createVanillaConfig(csi *csibaremetalv1.Deployment) (*corev1.ConfigMap, error) {
+	cfg, err := NewPatcherConfiguration(csi)
+	if err != nil {
+		return nil, err
+	}
+
+	vanillaPolicy :=
+		fmt.Sprintf(`apiVersion: v1
+kind: Policy
+extenders:
+  - urlPrefix: "http://127.0.0.1:%s"
+    filterVerb: filter
+    prioritizeVerb: prioritize
+    weight: 1
+    #bindVerb: bind
+    enableHttps: false
+    nodeCacheCapable: false
+    ignorable: true
+    httpTimeout: 15000000000
+`, csi.Spec.Scheduler.ExtenderPort)
+
+	vanillaConfig :=
+		fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1alpha1
+kind: KubeSchedulerConfiguration
+schedulerName: default-scheduler
+algorithmSource:
+  policy:
+    file:
+      path: %s
+leaderElection:
+  leaderElect: true
+clientConnection:
+  kubeconfig: %s`, cfg.targetPolicy, cfg.kubeconfig)
+
+	vanillaConfig19 :=
+		fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta1
+kind: KubeSchedulerConfiguration
+extenders:
+  - urlPrefix: "http://127.0.0.1:%s"
+    filterVerb: filter
+    prioritizeVerb: prioritize
+    weight: 1
+    #bindVerb: bind
+    enableHTTPS: false
+    nodeCacheCapable: false
+    ignorable: true
+    httpTimeout: 15s
+leaderElection:
+  leaderElect: true
+clientConnection:
+  kubeconfig: %s`, csi.Spec.Scheduler.ExtenderPort, cfg.kubeconfig)
+
+	return &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      csi.Spec.Scheduler.Patcher.ConfigMapName,
+			Namespace: csi.GetNamespace(),
+		},
+		Data: map[string]string{
+			policyFile:   vanillaPolicy,
+			configFile:   vanillaConfig,
+			config19File: vanillaConfig19,
+		}}, nil
+}
+
+func (p *SchedulerPatcher) retryPatchVanilla(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	dsClient := p.AppsV1().DaemonSets(csi.GetNamespace())
+	err := dsClient.Delete(ctx, patcherName, metav1.DeleteOptions{})
+	if err != nil {
+		p.Logger.Error(err, "Failed to delete patcher daemonset")
+		return err
+	}
+
+	cmClient := p.CoreV1().ConfigMaps(csi.GetNamespace())
+	err = cmClient.Delete(ctx, csi.Spec.Scheduler.Patcher.ConfigMapName, metav1.DeleteOptions{})
+	if err != nil {
+		p.Logger.Error(err, "Failed to delete patcher configmap")
+		return err
+	}
+
+	p.updateVanilla(ctx, csi, scheme)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -167,18 +268,12 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				"--target_config_19_path=" + p.targetConfig19,
 				"--backup-path=" + p.schedulerFolder,
 				"--platform=" + p.platform,
-				"--node-name=$(KUBE_NODE_NAME)",
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: p.configMapName, MountPath: configurationPath, ReadOnly: true},
 				{Name: kubernetesSchedulerVolume, MountPath: p.schedulerFolder},
 				{Name: kubernetesManifestsVolume, MountPath: p.manifestsFolder},
 				constant.CrashMountVolume,
-			},
-			Env: []corev1.EnvVar{
-				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
-					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
-				}},
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,

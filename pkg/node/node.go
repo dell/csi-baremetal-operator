@@ -66,8 +66,8 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 	return resultErr
 }
 
-// CleanLabels deletes platform-label on each node in cluster
-func (n *Node) CleanLabels(ctx context.Context) error {
+// Uninstall deletes platform-label on each node in cluster
+func (n *Node) Uninstall(ctx context.Context, _ *csibaremetalv1.Deployment) error {
 	return n.cleanNodeLabels(ctx)
 }
 

@@ -1,15 +1,15 @@
-package pkg
+package patcher
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	openshiftv1 "github.com/openshift/api/config/v1"
@@ -22,7 +22,7 @@ const (
 	openshiftPolicyFile = "policy.cfg"
 )
 
-func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	openshiftPolicy := fmt.Sprintf(`{
    "kind" : "Policy",
    "apiVersion" : "v1",
@@ -30,6 +30,8 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
         {
             "urlPrefix": "http://127.0.0.1:%s",
             "filterVerb": "filter",
+            "prioritizeVerb": "prioritize",
+            "weight": 1,
             "enableHttps": false,
             "nodeCacheCapable": false,
             "ignorable": true
@@ -37,33 +39,14 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
     ]
 }`, csi.Spec.Scheduler.ExtenderPort)
 
-	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
-	config, err := cfClient.Get(ctx, openshiftConfig, metav1.GetOptions{})
-	// exclude not found error
-	if err != nil && !apiErrors.IsNotFound(err) {
-		p.Logger.Error(err, "Failed to get ConfigMap")
+	expected := createOpenshiftConfig(openshiftPolicy)
+	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 		return err
 	}
 
-	// ConfigMap not found - create
-	if apiErrors.IsNotFound(err) {
-		_, err = cfClient.Create(ctx, createOpenshiftConfig(openshiftPolicy), metav1.CreateOptions{})
-		if err != nil {
-			p.Logger.Error(err, "Failed to create ConfigMap")
-			return err
-		}
-	} else {
-		// check if already patched and update otherwise
-		if v, ok := config.Data[openshiftPolicyFile]; ok && v == openshiftPolicy {
-			p.Logger.Info("ConfigMap is already patched")
-		} else {
-			// try to update
-			_, err = cfClient.Update(ctx, createOpenshiftConfig(openshiftPolicy), metav1.UpdateOptions{})
-			if err != nil {
-				p.Logger.Error(err, "Failed to update ConfigMap")
-				return err
-			}
-		}
+	err := common.UpdateConfigMap(ctx, p, expected)
+	if err != nil {
+		return err
 	}
 
 	// try to patch
@@ -77,26 +60,35 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
 }
 
 func (p *SchedulerPatcher) UnPatchOpenShift(ctx context.Context) error {
-	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
-	// delete ConfigMap
-	var errMsgs []string
-	err := cfClient.Delete(ctx, openshiftConfig, *metav1.NewDeleteOptions(0))
-	if err != nil {
-		p.Logger.Error(err, "Failed to delete ConfigMap")
-		errMsgs = append(errMsgs, err.Error())
-	}
-	// Unpatch Scheduler
-	err = p.unpatchScheduler(ctx, openshiftConfig)
+	err := p.unpatchScheduler(ctx, openshiftConfig)
 	if err != nil {
 		p.Logger.Error(err, "Failed to unpatch Scheduler")
-		errMsgs = append(errMsgs, err.Error())
+		return err
 	}
-	// check for errors
-	if len(errMsgs) == 0 {
-		return nil
+
+	return nil
+}
+
+func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
+	err := cfClient.Delete(ctx, openshiftConfig, metav1.DeleteOptions{})
+	if err != nil {
+		p.Logger.Error(err, "Failed to delete Openshift extender ConfigMap")
+		return err
 	}
-	// return errors
-	return fmt.Errorf(strings.Join(errMsgs, "\n"))
+
+	err = p.UnPatchOpenShift(ctx)
+	if err != nil {
+		p.Logger.Error(err, "Failed to unpatch Openshift Scheduler")
+		return err
+	}
+
+	err = p.PatchOpenShift(ctx, csi, scheme)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func createOpenshiftConfig(policy string) *corev1.ConfigMap {
@@ -162,26 +154,4 @@ func (p *SchedulerPatcher) unpatchScheduler(ctx context.Context, config string) 
 	default:
 		return errors.New("scheduler was patched with the config name: " + name)
 	}
-}
-
-func (p *SchedulerPatcher) isSchedulerReady(ctx context.Context) bool {
-	config, err := p.CoreV1().ConfigMaps(openshiftNS).Get(ctx, openshiftConfig, metav1.GetOptions{})
-	if err != nil {
-		return false
-	}
-
-	cmCreationTime := config.GetCreationTimestamp()
-
-	pods, err := p.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: "component=kube-scheduler"})
-	if err != nil {
-		return false
-	}
-
-	for _, pod := range pods.Items {
-		if !pod.Status.ContainerStatuses[0].State.Running.StartedAt.After(cmCreationTime.Time) {
-			return false
-		}
-	}
-
-	return true
 }

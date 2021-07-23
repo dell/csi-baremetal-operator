@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"context"
+	"github.com/dell/csi-baremetal-operator/pkg/patcher"
+	"path"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -74,6 +76,23 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 }
 
 func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
+	var (
+		extenderConfigMapMode = corev1.ConfigMapVolumeSourceDefaultMode
+		volumes               = []corev1.Volume{constant.CrashVolume}
+	)
+
+	if patcher.IsPatchingEnabled(csi) {
+		volumes = append(volumes, corev1.Volume{
+			Name: patcher.ExtenderConfigMapName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: patcher.ExtenderConfigMapName},
+					DefaultMode:          &extenderConfigMapMode,
+					Optional:             pointer.BoolPtr(true),
+				},
+			}})
+	}
+
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      extenderName,
@@ -124,7 +143,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 								}},
 							}},
 					}},
-					Volumes: []corev1.Volume{constant.CrashVolume},
+					Volumes: volumes,
 				},
 			},
 		},
@@ -132,6 +151,19 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 }
 
 func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
+	var (
+		statusFile   = ""
+		volumeMounts = []corev1.VolumeMount{constant.CrashMountVolume}
+	)
+
+	if patcher.IsPatchingEnabled(csi) {
+		statusFile = path.Join(patcher.ExtenderConfigMapPath, patcher.ExtenderConfigMapFile)
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      patcher.ExtenderConfigMapName,
+			MountPath: patcher.ExtenderConfigMapPath,
+			ReadOnly:  true})
+	}
+
 	return []corev1.Container{
 		{
 			Name:            extenderContainerName,
@@ -141,16 +173,22 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 				"--namespace=$(NAMESPACE)",
 				"--provisioner=" + constant.CSIName,
 				"--port=" + strconv.Itoa(extenderPort),
+				"--healthport=" + strconv.Itoa(healthPort),
 				"--loglevel=" + common.MatchLogLevel(csi.Spec.Scheduler.Log.Level),
 				"--certFile=",
 				"--privateKeyFile=",
 				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
 				"--metrics-path=/metrics",
 				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
+				"--statusFile=" + statusFile,
+				"--nodeName=$(KUBE_NODE_NAME)",
 			},
 			Env: []corev1.EnvVar{
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
+				}},
+				{Name: "KUBE_NODE_NAME", ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
 				{Name: "LOG_FORMAT", Value: common.MatchLogFormat(csi.Spec.Scheduler.Log.Format)},
 			},
@@ -158,9 +196,19 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 				{Name: "metrics", HostPort: constant.PrometheusPort, ContainerPort: constant.PrometheusPort, Protocol: corev1.ProtocolTCP},
 				{Name: "extender", HostPort: extenderPort, ContainerPort: extenderPort, Protocol: corev1.ProtocolTCP},
 			},
+			ReadinessProbe: &corev1.Probe{
+				Handler: corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
+					"/health_probe",
+					"-addr=:9999"}}},
+				InitialDelaySeconds: 3,
+				TimeoutSeconds:      1,
+				PeriodSeconds:       10,
+				SuccessThreshold:    1,
+				FailureThreshold:    15,
+			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
+			VolumeMounts:             volumeMounts,
 		},
 	}
 }
