@@ -34,7 +34,7 @@ const (
 func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfiguration, error) {
 	var config patcherConfiguration
 	switch csi.Spec.Platform {
-	case PlatformVanilla, "":
+	case PlatformVanilla:
 		config = patcherConfiguration{
 			platform:        PlatformVanilla,
 			targetConfig:    path.Join(vanillaManifestsFolder, configPath),
@@ -70,7 +70,6 @@ func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 }
 
 type patcherConfiguration struct {
-	enable            bool
 	ns                string
 	image             *components.Image
 	globalRegistry    string
