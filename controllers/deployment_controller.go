@@ -199,6 +199,9 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 		return requests
 	}))
+	if err != nil {
+		return err
+	}
 
 	// reconcile CSI Deployment if node was creates, node kernel-version or label were changed
 	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {

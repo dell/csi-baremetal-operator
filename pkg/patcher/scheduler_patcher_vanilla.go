@@ -185,7 +185,7 @@ func (p *SchedulerPatcher) retryPatchVanilla(ctx context.Context, csi *csibareme
 		return err
 	}
 
-	p.updateVanilla(ctx, csi, scheme)
+	err = p.updateVanilla(ctx, csi, scheme)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package patcher
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -59,7 +58,7 @@ func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadi
 		}
 	default:
 		{
-			return nil, errors.New(fmt.Sprintf("%s platform is not supported platform for the patcher", csi.Spec.Platform))
+			return nil, fmt.Errorf("%s platform is not supported platform for the patcher", csi.Spec.Platform)
 		}
 	}
 
@@ -92,7 +91,7 @@ func ChooseKubeSchedulerLabel(csi *csibaremetalv1.Deployment) (string, string, e
 	case PlatformVanilla, PlatformRKE:
 		return VanillaKubeSchedulerLabelKey, VanillaKubeSchedulerLabelValue, nil
 	default:
-		return "", "", errors.New(fmt.Sprintf("%s platform is not supported platform for the patcher", csi.Spec.Platform))
+		return "", "", fmt.Errorf("%s platform is not supported platform for the patcher", csi.Spec.Platform)
 	}
 }
 
@@ -146,7 +145,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 			err = p.retryPatchVanilla(ctx, csi, scheme)
 			return err
 		default:
-			return errors.New(fmt.Sprintf("%s platform is not supported platform for the patcher", csi.Spec.Platform))
+			return fmt.Errorf("%s platform is not supported platform for the patcher", csi.Spec.Platform)
 		}
 	}
 
