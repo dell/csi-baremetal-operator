@@ -54,7 +54,7 @@ func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadi
 	case PlatformVanilla, PlatformRKE:
 		{
 			options.watchedConfigMapName = csi.Spec.Scheduler.Patcher.ConfigMapName
-			options.watchedConfigMapNamespace = csi.Namespace
+			options.watchedConfigMapNamespace = csi.GetNamespace()
 		}
 	default:
 		{
@@ -115,7 +115,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		return err
 	}
 
-	readinessStatuses, err := p.updateReadinessStatuses(ctx, options, cmCreationTime)
+	readinessStatuses, err := p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime)
 	if err != nil {
 		return err
 	}
@@ -161,10 +161,10 @@ func (p *SchedulerPatcher) getConfigMapCreationTime(ctx context.Context, options
 	return config.GetCreationTimestamp(), nil
 }
 
-func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, options *ExtenderReadinessOptions, cmCreationTime metav1.Time) (*ReadinessStatusList, error) {
+func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSchedulerLabel string, cmCreationTime metav1.Time) (*ReadinessStatusList, error) {
 	readinessStatuses := &ReadinessStatusList{}
 
-	pods, err := p.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: options.kubeSchedulerLabel})
+	pods, err := p.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: kubeSchedulerLabel})
 	if err != nil {
 		return nil, err
 	}
