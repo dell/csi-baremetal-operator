@@ -12,7 +12,7 @@ import (
 )
 
 type SchedulerPatcher struct {
-	kubernetes.Clientset
+	Clientset kubernetes.Interface
 	logr.Logger
 	Client client.Client
 }

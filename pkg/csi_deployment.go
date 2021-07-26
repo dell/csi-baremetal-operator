@@ -39,7 +39,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			Logger:    log.WithValues(constant.CSIName, "extender"),
 		},
 		patcher: patcher.SchedulerPatcher{
-			Clientset: clientSet,
+			Clientset: &clientSet,
 			Client:    client,
 			Logger:    log.WithValues(constant.CSIName, "patcher"),
 		},

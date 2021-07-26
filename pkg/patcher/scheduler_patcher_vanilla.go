@@ -54,7 +54,7 @@ func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csib
 	}
 
 	namespace := common.GetNamespace(csi)
-	dsClient := p.AppsV1().DaemonSets(namespace)
+	dsClient := p.Clientset.AppsV1().DaemonSets(namespace)
 
 	found, err := dsClient.Get(ctx, patcherName, metav1.GetOptions{})
 	if err != nil {
@@ -97,7 +97,7 @@ func (p *SchedulerPatcher) updateVanillaConfigMap(ctx context.Context, csi *csib
 		return err
 	}
 
-	err = common.UpdateConfigMap(ctx, p, expected)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected)
 	if err != nil {
 		return err
 	}
@@ -171,14 +171,14 @@ clientConnection:
 }
 
 func (p *SchedulerPatcher) retryPatchVanilla(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	dsClient := p.AppsV1().DaemonSets(csi.GetNamespace())
+	dsClient := p.Clientset.AppsV1().DaemonSets(csi.GetNamespace())
 	err := dsClient.Delete(ctx, patcherName, metav1.DeleteOptions{})
 	if err != nil {
 		p.Logger.Error(err, "Failed to delete patcher daemonset")
 		return err
 	}
 
-	cmClient := p.CoreV1().ConfigMaps(csi.GetNamespace())
+	cmClient := p.Clientset.CoreV1().ConfigMaps(csi.GetNamespace())
 	err = cmClient.Delete(ctx, csi.Spec.Scheduler.Patcher.ConfigMapName, metav1.DeleteOptions{})
 	if err != nil {
 		p.Logger.Error(err, "Failed to delete patcher configmap")

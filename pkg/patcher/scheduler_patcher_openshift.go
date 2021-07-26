@@ -44,7 +44,7 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
 		return err
 	}
 
-	err := common.UpdateConfigMap(ctx, p, expected)
+	err := common.UpdateConfigMap(ctx, p.Clientset, expected)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (p *SchedulerPatcher) UnPatchOpenShift(ctx context.Context) error {
 }
 
 func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	cfClient := p.CoreV1().ConfigMaps(openshiftNS)
+	cfClient := p.Clientset.CoreV1().ConfigMaps(openshiftNS)
 	err := cfClient.Delete(ctx, openshiftConfig, metav1.DeleteOptions{})
 	if err != nil {
 		p.Logger.Error(err, "Failed to delete Openshift extender ConfigMap")

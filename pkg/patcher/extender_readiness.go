@@ -128,7 +128,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		return err
 	}
 
-	err = common.UpdateConfigMap(ctx, p, expected)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 }
 
 func (p *SchedulerPatcher) getConfigMapCreationTime(ctx context.Context, options *ExtenderReadinessOptions) (metav1.Time, error) {
-	config, err := p.CoreV1().ConfigMaps(options.watchedConfigMapNamespace).Get(ctx, options.watchedConfigMapName, metav1.GetOptions{})
+	config, err := p.Clientset.CoreV1().ConfigMaps(options.watchedConfigMapNamespace).Get(ctx, options.watchedConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return metav1.Time{}, err
 	}
@@ -164,7 +164,7 @@ func (p *SchedulerPatcher) getConfigMapCreationTime(ctx context.Context, options
 func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSchedulerLabel string, cmCreationTime metav1.Time) (*ReadinessStatusList, error) {
 	readinessStatuses := &ReadinessStatusList{}
 
-	pods, err := p.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: kubeSchedulerLabel})
+	pods, err := p.Clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: kubeSchedulerLabel})
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 			readinessStatus.Restarted = false
 		} else if pod.Status.ContainerStatuses[0].State.Running == nil {
 			readinessStatus.Restarted = false
-		} else if !pod.Status.ContainerStatuses[0].State.Running.StartedAt.After(cmCreationTime.Time) {
+		} else if pod.Status.ContainerStatuses[0].State.Running.StartedAt.Before(&cmCreationTime) {
 			readinessStatus.Restarted = false
 		} else {
 			readinessStatus.Restarted = true
