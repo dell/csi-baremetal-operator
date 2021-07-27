@@ -4,16 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 	openshiftv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
 const (
@@ -41,9 +40,10 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 }`, csi.Spec.Scheduler.ExtenderPort)
 
 	expected := createOpenshiftConfig(openshiftPolicy)
-	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
-		return err
-	}
+	// TODO csi can't control cm in another namespace https://github.com/dell/csi-baremetal/issues/470
+	//if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
+	//	return err
+	//}
 
 	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Logger)
 	if err != nil {
@@ -61,24 +61,31 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 }
 
 func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
-	err := p.unpatchScheduler(ctx, openshiftConfig)
+	var errMsgs []string
+
+	// TODO Remove after https://github.com/dell/csi-baremetal/issues/470
+	cfClient := p.Clientset.CoreV1().ConfigMaps(openshiftNS)
+	err := cfClient.Delete(ctx, openshiftConfig, metav1.DeleteOptions{})
+	if err != nil {
+		p.Logger.Error(err, "Failed to delete Openshift extender ConfigMap")
+		errMsgs = append(errMsgs, err.Error())
+	}
+
+	err = p.unpatchScheduler(ctx, openshiftConfig)
 	if err != nil {
 		p.Logger.Error(err, "Failed to unpatch Scheduler")
-		return err
+		errMsgs = append(errMsgs, err.Error())
+	}
+
+	if len(errMsgs) != 0 {
+		return fmt.Errorf(strings.Join(errMsgs, "\n"))
 	}
 
 	return nil
 }
 
 func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	cfClient := p.Clientset.CoreV1().ConfigMaps(openshiftNS)
-	err := cfClient.Delete(ctx, openshiftConfig, metav1.DeleteOptions{})
-	if err != nil {
-		p.Logger.Error(err, "Failed to delete Openshift extender ConfigMap")
-		return err
-	}
-
-	err = p.unPatchOpenShift(ctx)
+	err := p.unPatchOpenShift(ctx)
 	if err != nil {
 		p.Logger.Error(err, "Failed to unpatch Openshift Scheduler")
 		return err
