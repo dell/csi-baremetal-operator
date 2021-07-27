@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
@@ -22,6 +24,9 @@ func TestNewPatcherConfiguration(t *testing.T) {
 			name: "Vanilla kubernetes",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
@@ -59,6 +64,9 @@ func TestNewPatcherConfiguration(t *testing.T) {
 			name: "RKE kubernetes",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
@@ -96,6 +104,9 @@ func TestNewPatcherConfiguration(t *testing.T) {
 			name: "Openshift kubernetes",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
@@ -119,6 +130,9 @@ func TestNewPatcherConfiguration(t *testing.T) {
 			name: "Empty platform",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
@@ -142,6 +156,9 @@ func TestNewPatcherConfiguration(t *testing.T) {
 			name: "Typo in platform",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
@@ -165,6 +182,9 @@ func TestNewPatcherConfiguration(t *testing.T) {
 			name: "Unsupported platform",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
