@@ -6,12 +6,14 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
 const (
-	PlatformVanilla   = "vanilla"
-	PlatformRKE       = "rke"
+	// PlatformVanilla - vanilla platform key
+	PlatformVanilla = "vanilla"
+	// PlatformRKE - RKE platform key
+	PlatformRKE = "rke"
+	// PlatformOpenshift - openshift platform key
 	PlatformOpenshift = "openshift"
 
 	rke2ManifestsFolder    = "/var/lib/rancher/rke2/agent/pod-manifests"
@@ -31,7 +33,8 @@ const (
 	config19Path = schedulerFolder + "/" + config19File
 )
 
-func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfiguration, error) {
+// newPatcherConfiguration creates patcherConfiguration
+func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfiguration, error) {
 	var config patcherConfiguration
 	switch csi.Spec.Platform {
 	case PlatformVanilla:
@@ -61,7 +64,7 @@ func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 	config.interval = csi.Spec.Scheduler.Patcher.Interval
 	config.restoreOnShutdown = csi.Spec.Scheduler.Patcher.RestoreOnShutdown
 	config.configMapName = csi.Spec.Scheduler.Patcher.ConfigMapName
-	config.ns = common.GetNamespace(csi)
+	config.ns = csi.GetNamespace()
 	config.globalRegistry = csi.Spec.GlobalRegistry
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level

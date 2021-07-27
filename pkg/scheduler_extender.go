@@ -2,13 +2,11 @@ package pkg
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 	"path"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -20,6 +18,7 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 )
 
 const (
@@ -30,11 +29,13 @@ const (
 	extenderPort = 8889
 )
 
+// SchedulerExtender controls csi-baremetal-se
 type SchedulerExtender struct {
-	kubernetes.Clientset
+	Clientset kubernetes.Interface
 	logr.Logger
 }
 
+// Update updates csi-baremetal-se or creates if not found
 func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// create daemonset
 	expected := createExtenderDaemonSet(csi)
@@ -42,34 +43,8 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 		return err
 	}
 
-	namespace := common.GetNamespace(csi)
-	dsClient := n.AppsV1().DaemonSets(namespace)
-
-	found, err := dsClient.Get(ctx, extenderName, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(ctx, expected, metav1.CreateOptions{}); err != nil {
-				n.Logger.Error(err, "Failed to create daemonset")
-				return err
-			}
-
-			n.Logger.Info("Daemonset created successfully")
-			return nil
-		}
-
-		n.Logger.Error(err, "Failed to get daemonset")
+	if err := common.UpdateDaemonSet(ctx, n.Clientset, expected, n.Logger); err != nil {
 		return err
-	}
-
-	if common.DaemonsetChanged(expected, found) {
-		found.Spec = expected.Spec
-		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
-			n.Logger.Error(err, "Failed to update daemonset")
-			return err
-		}
-
-		n.Logger.Info("Daemonset updated successfully")
-		return nil
 	}
 
 	return nil
@@ -96,7 +71,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      extenderName,
-			Namespace: common.GetNamespace(csi),
+			Namespace: csi.GetNamespace(),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector

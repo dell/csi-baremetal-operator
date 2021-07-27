@@ -39,6 +39,7 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+// nolint
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = openshiftv1.AddToScheme(scheme)

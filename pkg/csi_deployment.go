@@ -16,6 +16,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 )
 
+// CSIDeployment contains controllers of CSI resources
 type CSIDeployment struct {
 	node           *node.Node
 	controller     Controller
@@ -24,6 +25,7 @@ type CSIDeployment struct {
 	nodeController NodeController
 }
 
+// NewCSIDeployment creates CSIDeployment
 func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
@@ -31,11 +33,11 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			log.WithValues(constant.CSIName, "node"),
 		),
 		controller: Controller{
-			Clientset: clientSet,
+			Clientset: &clientSet,
 			Logger:    log.WithValues(constant.CSIName, "controller"),
 		},
 		extender: SchedulerExtender{
-			Clientset: clientSet,
+			Clientset: &clientSet,
 			Logger:    log.WithValues(constant.CSIName, "extender"),
 		},
 		patcher: patcher.SchedulerPatcher{
@@ -44,12 +46,13 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			Logger:    log.WithValues(constant.CSIName, "patcher"),
 		},
 		nodeController: NodeController{
-			Clientset: clientSet,
+			Clientset: &clientSet,
 			Logger:    log.WithValues(constant.CSIName, "nodeController"),
 		},
 	}
 }
 
+// Update performs Update functions of contained resources
 func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	if err := c.nodeController.Update(ctx, csi, scheme); err != nil {
 		return err
@@ -74,6 +77,7 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 	return nil
 }
 
+// Uninstall cleans CSI
 func (c *CSIDeployment) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	var errMsgs []string
 

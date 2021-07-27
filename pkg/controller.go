@@ -7,7 +7,6 @@ import (
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -34,11 +33,13 @@ const (
 	provisionerTimeout = "30s"
 )
 
+// Controller controls csi-baremetal-controller
 type Controller struct {
-	kubernetes.Clientset
+	Clientset kubernetes.Interface
 	logr.Logger
 }
 
+// Update updates csi-baremetal-controller or creates if not found
 func (c *Controller) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// create deployment
 	expected := createControllerDeployment(csi)
@@ -46,34 +47,8 @@ func (c *Controller) Update(ctx context.Context, csi *csibaremetalv1.Deployment,
 		return err
 	}
 
-	namespace := common.GetNamespace(csi)
-	dsClient := c.AppsV1().Deployments(namespace)
-
-	found, err := dsClient.Get(ctx, controllerName, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(ctx, expected, metav1.CreateOptions{}); err != nil {
-				c.Logger.Error(err, "Failed to create deployment")
-				return err
-			}
-
-			c.Logger.Info("Deployment created successfully")
-			return nil
-		}
-
-		c.Logger.Error(err, "Failed to get deployment")
+	if err := common.UpdateDeployment(ctx, c.Clientset, expected, c.Logger); err != nil {
 		return err
-	}
-
-	if common.DeploymentChanged(expected, found) {
-		found.Spec = expected.Spec
-		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
-			c.Logger.Error(err, "Failed to update deployment")
-			return err
-		}
-
-		c.Logger.Info("Deployment updated successfully")
-		return nil
 	}
 
 	return nil
@@ -83,7 +58,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      controllerName,
-			Namespace: common.GetNamespace(csi),
+			Namespace: csi.GetNamespace(),
 		},
 		Spec: v1.DeploymentSpec{
 			Replicas: pointer.Int32Ptr(replicasCount),

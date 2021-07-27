@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
+
+	openshiftv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	openshiftv1 "github.com/openshift/api/config/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 	openshiftPolicyFile = "policy.cfg"
 )
 
-func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	openshiftPolicy := fmt.Sprintf(`{
    "kind" : "Policy",
    "apiVersion" : "v1",
@@ -44,7 +45,7 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
 		return err
 	}
 
-	err := common.UpdateConfigMap(ctx, p.Clientset, expected)
+	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Logger)
 	if err != nil {
 		return err
 	}
@@ -59,7 +60,7 @@ func (p *SchedulerPatcher) PatchOpenShift(ctx context.Context, csi *csibaremetal
 	return nil
 }
 
-func (p *SchedulerPatcher) UnPatchOpenShift(ctx context.Context) error {
+func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 	err := p.unpatchScheduler(ctx, openshiftConfig)
 	if err != nil {
 		p.Logger.Error(err, "Failed to unpatch Scheduler")
@@ -77,13 +78,13 @@ func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibare
 		return err
 	}
 
-	err = p.UnPatchOpenShift(ctx)
+	err = p.unPatchOpenShift(ctx)
 	if err != nil {
 		p.Logger.Error(err, "Failed to unpatch Openshift Scheduler")
 		return err
 	}
 
-	err = p.PatchOpenShift(ctx, csi, scheme)
+	err = p.patchOpenShift(ctx, csi, scheme)
 	if err != nil {
 		return err
 	}

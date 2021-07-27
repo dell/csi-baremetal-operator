@@ -7,7 +7,6 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
@@ -43,7 +42,7 @@ func (p *SchedulerPatcher) updateVanilla(ctx context.Context, csi *csibaremetalv
 }
 
 func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	cfg, err := NewPatcherConfiguration(csi)
+	cfg, err := newPatcherConfiguration(csi)
 	if err != nil {
 		return err
 	}
@@ -53,35 +52,8 @@ func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csib
 		return err
 	}
 
-	namespace := common.GetNamespace(csi)
-	dsClient := p.Clientset.AppsV1().DaemonSets(namespace)
-
-	found, err := dsClient.Get(ctx, patcherName, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(ctx, expected, metav1.CreateOptions{}); err != nil {
-				p.Logger.Error(err, "Failed to create daemonset")
-				return err
-			}
-
-			p.Logger.Info("Daemonset created successfully")
-			p.Logger.Info(fmt.Sprintf("Daemonset expected %+v", expected))
-			return nil
-		}
-
-		p.Logger.Error(err, "Failed to get daemonset")
+	if err := common.UpdateDaemonSet(ctx, p.Clientset, expected, p.Logger); err != nil {
 		return err
-	}
-
-	if common.DaemonsetChanged(expected, found) {
-		found.Spec = expected.Spec
-		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
-			p.Logger.Error(err, "Failed to update daemonset")
-			return err
-		}
-
-		p.Logger.Info("Daemonset updated successfully")
-		return nil
 	}
 
 	return nil
@@ -97,7 +69,7 @@ func (p *SchedulerPatcher) updateVanillaConfigMap(ctx context.Context, csi *csib
 		return err
 	}
 
-	err = common.UpdateConfigMap(ctx, p.Clientset, expected)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Logger)
 	if err != nil {
 		return err
 	}
@@ -106,7 +78,7 @@ func (p *SchedulerPatcher) updateVanillaConfigMap(ctx context.Context, csi *csib
 }
 
 func createVanillaConfig(csi *csibaremetalv1.Deployment) (*corev1.ConfigMap, error) {
-	cfg, err := NewPatcherConfiguration(csi)
+	cfg, err := newPatcherConfiguration(csi)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +217,6 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 }
 
 func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
-
 	return []corev1.Container{
 		{
 			Name:            patcherContainerName,

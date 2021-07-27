@@ -16,11 +16,15 @@ import (
 )
 
 const (
+	// ExtenderConfigMapName - the configmap, which contains statuses of kube-scheduler restart
 	ExtenderConfigMapName = "extender-readiness"
+	// ExtenderConfigMapPath - the path to ExtenderConfigMap
 	ExtenderConfigMapPath = "/status"
+	// ExtenderConfigMapFile - ExtenderConfigMap data key
 	ExtenderConfigMapFile = "nodes.yaml"
 )
 
+// ExtenderReadinessOptions contains options to deploy ExtenderConfigMap
 type ExtenderReadinessOptions struct {
 	watchedConfigMapName      string
 	watchedConfigMapNamespace string
@@ -32,16 +36,19 @@ type ExtenderReadinessOptions struct {
 	kubeSchedulerLabel string
 }
 
+// ReadinessStatus contains restart status of one kube-scheduler
 type ReadinessStatus struct {
 	NodeName      string `yaml:"node_name"`
 	KubeScheduler string `yaml:"kube_scheduler"`
 	Restarted     bool   `yaml:"restarted"`
 }
 
+// ReadinessStatusList contains statuses of all kube-schedulers in cluster
 type ReadinessStatusList struct {
 	Items []ReadinessStatus `yaml:"nodes"`
 }
 
+// NewExtenderReadinessOptions creates ExtenderReadinessOptions
 func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadinessOptions, error) {
 	options := &ExtenderReadinessOptions{}
 
@@ -76,6 +83,7 @@ func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadi
 	return options, nil
 }
 
+// ChooseKubeSchedulerLabel creates a label value and key to find kube-scheduler
 func ChooseKubeSchedulerLabel(csi *csibaremetalv1.Deployment) (string, string, error) {
 	const (
 		OpenshiftKubeSchedulerLabelKey   = "app"
@@ -95,6 +103,7 @@ func ChooseKubeSchedulerLabel(csi *csibaremetalv1.Deployment) (string, string, e
 	}
 }
 
+// IsPatchingEnabled checks platform filed and returns true if platform is allowed
 func IsPatchingEnabled(csi *csibaremetalv1.Deployment) bool {
 	switch csi.Spec.Platform {
 	case PlatformOpenshift, PlatformVanilla, PlatformRKE:
@@ -104,6 +113,7 @@ func IsPatchingEnabled(csi *csibaremetalv1.Deployment) bool {
 	}
 }
 
+// UpdateReadinessConfigMap collects info about ExtenderReadiness statuses and updates configmap
 func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	options, err := NewExtenderReadinessOptions(csi)
 	if err != nil {
@@ -128,7 +138,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		return err
 	}
 
-	err = common.UpdateConfigMap(ctx, p.Clientset, expected)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Logger)
 	if err != nil {
 		return err
 	}
@@ -174,6 +184,7 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 		readinessStatus.KubeScheduler = pod.Name
 		readinessStatus.NodeName = pod.Spec.NodeName
 
+		// nolint
 		if len(pod.Status.ContainerStatuses) == 0 {
 			readinessStatus.Restarted = false
 		} else if pod.Status.ContainerStatuses[0].State.Running == nil {

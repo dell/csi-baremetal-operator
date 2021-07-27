@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 	"reflect"
 	"strings"
 
@@ -41,6 +40,7 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg"
+	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 )
 
 // DeploymentReconciler reconciles a Deployment object
@@ -58,6 +58,7 @@ const (
 // +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=csi-baremetal.dell.com,resources=deployments/status,verbs=get;update;patch
 
+// Reconcile reconciles a Deployment object
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("deployment", req.NamespacedName)
 
@@ -118,6 +119,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
+// SetupWithManager creates controller manager for CSI Deployment
 func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	c, err := controller.New("csi-controller", mgr,
 		controller.Options{
@@ -179,9 +181,11 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 		var requests []reconcile.Request
 		for _, dep := range deployments.Items {
+			depIns := dep
+
 			// check kube-scheduler label
 			// it depends on platform
-			key, value, err := patcher.ChooseKubeSchedulerLabel(&dep)
+			key, value, err := patcher.ChooseKubeSchedulerLabel(&depIns)
 			if err != nil {
 				continue
 			}
@@ -299,7 +303,7 @@ func containsFinalizer(csiDep *csibaremetalv1.Deployment) bool {
 }
 
 func deleteFinalizer(csiDep *csibaremetalv1.Deployment) []string {
-	var result []string
+	result := make([]string, 0)
 	for _, finalizer := range csiDep.ObjectMeta.Finalizers {
 		if finalizer == csiFinalizer {
 			continue

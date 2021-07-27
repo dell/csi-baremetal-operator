@@ -187,13 +187,13 @@ func TestNewPatcherConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewPatcherConfiguration(tt.args.csi)
+			got, err := newPatcherConfiguration(tt.args.csi)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewPatcherConfiguration() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newPatcherConfiguration() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewPatcherConfiguration() = %+v, want %+v", got, tt.want)
+				t.Errorf("newPatcherConfiguration() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}
