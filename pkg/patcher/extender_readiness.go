@@ -145,8 +145,8 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 
 	// Retry patching procedure if extenders is not ready and
 	// 	passed readiness-timeout after configmap creation
-	if !isAllReady(readinessStatuses) &&
-		cmCreationTime.Time.Before(time.Now().Add(time.Minute*time.Duration(-csi.Spec.Scheduler.Patcher.ReadinessTimeout))) {
+	isTimeoutPassed := cmCreationTime.Time.Before(time.Now().Add(time.Minute * time.Duration(-csi.Spec.Scheduler.Patcher.ReadinessTimeout)))
+	if !isAllReady(readinessStatuses) && isTimeoutPassed {
 		p.Logger.Info("Retry patching")
 		switch csi.Spec.Platform {
 		case PlatformOpenshift:
