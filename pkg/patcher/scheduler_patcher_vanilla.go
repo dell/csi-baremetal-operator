@@ -18,9 +18,8 @@ import (
 )
 
 const (
-	patcherName               = constant.CSIName + "-se-patcher"
-	patcherContainerName      = "schedulerpatcher"
-	patcherServiceAccountName = constant.CSIName + "-patcher-sa"
+	patcherName          = constant.CSIName + "-se-patcher"
+	patcherContainerName = "schedulerpatcher"
 
 	kubernetesManifestsVolume = "kubernetes-manifests"
 	kubernetesSchedulerVolume = "kubernetes-scheduler"
@@ -195,8 +194,6 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					SecurityContext:               &corev1.PodSecurityContext{},
 					SchedulerName:                 corev1.DefaultSchedulerName,
-					ServiceAccountName:            patcherServiceAccountName,
-					DeprecatedServiceAccount:      patcherServiceAccountName,
 					// todo https://github.com/dell/csi-baremetal/issues/329
 					Tolerations: []corev1.Toleration{
 						{Key: "CriticalAddonsOnly", Operator: corev1.TolerationOpExists},

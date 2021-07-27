@@ -147,6 +147,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	// 	passed readiness-timeout after configmap creation
 	if !isAllReady(readinessStatuses) &&
 		cmCreationTime.Time.Before(time.Now().Add(time.Minute*time.Duration(-csi.Spec.Scheduler.Patcher.ReadinessTimeout))) {
+		p.Logger.Info("Retry patching")
 		switch csi.Spec.Platform {
 		case PlatformOpenshift:
 			err = p.retryPatchOpenshift(ctx, csi)
