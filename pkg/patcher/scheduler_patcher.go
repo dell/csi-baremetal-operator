@@ -25,7 +25,7 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 
 	switch csi.Spec.Platform {
 	case PlatformOpenshift:
-		err = p.patchOpenShift(ctx, csi, scheme)
+		err = p.patchOpenShift(ctx, csi)
 	case PlatformVanilla, PlatformRKE:
 		err = p.updateVanilla(ctx, csi, scheme)
 	default:

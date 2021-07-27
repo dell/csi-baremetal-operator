@@ -11,7 +11,6 @@ import (
 	openshiftv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -22,7 +21,7 @@ const (
 	openshiftPolicyFile = "policy.cfg"
 )
 
-func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	openshiftPolicy := fmt.Sprintf(`{
    "kind" : "Policy",
    "apiVersion" : "v1",
@@ -40,10 +39,11 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 }`, csi.Spec.Scheduler.ExtenderPort)
 
 	expected := createOpenshiftConfig(openshiftPolicy)
+
 	// TODO csi can't control cm in another namespace https://github.com/dell/csi-baremetal/issues/470
-	//if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
-	//	return err
-	//}
+	// if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
+	// 	return err
+	// }
 
 	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Logger)
 	if err != nil {
@@ -84,14 +84,14 @@ func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 	return nil
 }
 
-func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	err := p.unPatchOpenShift(ctx)
 	if err != nil {
 		p.Logger.Error(err, "Failed to unpatch Openshift Scheduler")
 		return err
 	}
 
-	err = p.patchOpenShift(ctx, csi, scheme)
+	err = p.patchOpenShift(ctx, csi)
 	if err != nil {
 		return err
 	}

@@ -149,7 +149,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		cmCreationTime.Time.Before(time.Now().Add(time.Minute*time.Duration(-csi.Spec.Scheduler.Patcher.ReadinessTimeout))) {
 		switch csi.Spec.Platform {
 		case PlatformOpenshift:
-			err = p.retryPatchOpenshift(ctx, csi, scheme)
+			err = p.retryPatchOpenshift(ctx, csi)
 			return err
 		case PlatformVanilla, PlatformRKE:
 			err = p.retryPatchVanilla(ctx, csi, scheme)
