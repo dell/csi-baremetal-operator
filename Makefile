@@ -19,9 +19,13 @@ version:
 
 all: manager
 
-# Run tests
+### Unit tests
+
+coverage:
+	go tool cover -html=coverage.out -o coverage.html
+
 test:
-	go test ./... -race -cover -coverprofile=coverage.out
+	${GO_ENV_VARS} go test `go list ./... | grep pkg` -race -cover -coverprofile=coverage.out -covermode=atomic
 
 # Build manager binary
 manager: fmt vet
