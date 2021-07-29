@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"github.com/dell/csi-baremetal-operator/pkg/pmm"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,6 +20,7 @@ type CSIDeployment struct {
 	extender       SchedulerExtender
 	patcher        SchedulerPatcher
 	nodeController NodeController
+	nrc            *pmm.NodeRemovalController
 }
 
 func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
@@ -44,6 +46,11 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			Clientset: clientSet,
 			Logger:    log.WithValues(constant.CSIName, "nodeController"),
 		},
+		nrc: pmm.NewNodeRemovalController(
+			&clientSet,
+			client,
+			log.WithValues(constant.CSIName, "patcher"),
+		),
 	}
 }
 
@@ -65,6 +72,10 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 	}
 
 	if err := c.patchPlatform(ctx, csi, scheme); err != nil {
+		return err
+	}
+
+	if err := c.nrc.Reconcile(ctx, csi); err != nil {
 		return err
 	}
 

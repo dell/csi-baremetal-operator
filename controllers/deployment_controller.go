@@ -185,8 +185,7 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return requests
 	}), predicate.Or(predicate.Funcs{
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-			return isKernelVersionChanged(updateEvent.ObjectOld, updateEvent.ObjectNew) ||
-				isLabelsChanged(updateEvent.ObjectOld, updateEvent.ObjectNew)
+			return isNodeChanged(updateEvent.ObjectOld, updateEvent.ObjectNew)
 		},
 	}))
 	if err != nil {
@@ -196,7 +195,7 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
-func isKernelVersionChanged(old runtime.Object, new runtime.Object) bool {
+func isNodeChanged(old runtime.Object, new runtime.Object) bool {
 	var (
 		oldNode *corev1.Node
 		newNode *corev1.Node
@@ -208,27 +207,22 @@ func isKernelVersionChanged(old runtime.Object, new runtime.Object) bool {
 	if newNode, ok = new.(*corev1.Node); !ok {
 		return false
 	}
-	if oldNode.Status.NodeInfo.KernelVersion != newNode.Status.NodeInfo.KernelVersion {
-		return true
-	}
-	return false
-}
 
-func isLabelsChanged(old runtime.Object, new runtime.Object) bool {
-	var (
-		oldNode *corev1.Node
-		newNode *corev1.Node
-		ok      bool
-	)
-	if oldNode, ok = old.(*corev1.Node); !ok {
-		return false
-	}
-	if newNode, ok = new.(*corev1.Node); !ok {
-		return false
-	}
+	// labels
 	if !reflect.DeepEqual(oldNode.Labels, newNode.Labels) {
 		return true
 	}
+
+	// kernel version
+	if oldNode.Status.NodeInfo.KernelVersion != newNode.Status.NodeInfo.KernelVersion {
+		return true
+	}
+
+	// taints
+	if !reflect.DeepEqual(oldNode.Spec.Taints, newNode.Spec.Taints) {
+		return true
+	}
+
 	return false
 }
 

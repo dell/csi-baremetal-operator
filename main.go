@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/dell/csi-baremetal-operator/api/v1/nodecrd"
 	"os"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
@@ -44,6 +45,7 @@ func init() {
 	_ = openshiftv1.AddToScheme(scheme)
 
 	_ = csibaremetalv1.AddToScheme(scheme)
+	_ = nodecrd.AddToSchemeCSIBMNode(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
