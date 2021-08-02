@@ -19,11 +19,11 @@ package noderemoval
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/fields"
 	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -47,6 +47,7 @@ type Controller struct {
 	log       logr.Logger
 }
 
+// NewNodeRemovalController performs node removal procedure
 func NewNodeRemovalController(clientset kubernetes.Interface, client client.Client, log logr.Logger) *Controller {
 	return &Controller{
 		clientset: clientset,
@@ -55,6 +56,7 @@ func NewNodeRemovalController(clientset kubernetes.Interface, client client.Clie
 	}
 }
 
+// Reconcile checks node removal conditions and deletes CSI resources if csibmnode is labeled and k8sNode is deleted
 func (c *Controller) Reconcile(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	var nodeSelector *components.NodeSelector
 
