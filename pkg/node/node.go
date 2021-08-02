@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/masterminds/semver"
 	v1 "k8s.io/api/apps/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,7 +119,7 @@ func (n *Node) updateNodeLabels(ctx context.Context, selector *components.NodeSe
 	}
 
 	for _, node := range nodes.Items {
-		kernelVersion, err := GetNodeKernelVersion(node)
+		kernelVersion, err := GetNodeKernelVersion(&node)
 		if err != nil {
 			n.log.Error(err, "Failed to get kernel version for "+node.Name)
 			resultErr = err
@@ -161,18 +160,6 @@ func (n *Node) cleanNodeLabels(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// findPlatform calls checkVersion for all platforms in list,
-// returns first found platform-name or "default" if no one passed
-func findPlatform(kernelVersion *semver.Version) string {
-	for key, value := range platforms {
-		if value.checkVersion(kernelVersion) {
-			return key
-		}
-	}
-
-	return "default"
 }
 
 // Set is needed to check if one type of platform is exists in current cluster

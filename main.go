@@ -17,37 +17,24 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
-	"github.com/dell/csi-baremetal-operator/api/v1/nodecrd"
 	"os"
 
-	openshiftv1 "github.com/openshift/api/config/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/controllers"
 	"github.com/dell/csi-baremetal-operator/pkg"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 	// +kubebuilder:scaffold:imports
 )
 
 var (
-	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
-
-func init() {
-	_ = clientgoscheme.AddToScheme(scheme)
-	_ = openshiftv1.AddToScheme(scheme)
-
-	_ = csibaremetalv1.AddToScheme(scheme)
-	_ = nodecrd.AddToSchemeCSIBMNode(scheme)
-	// +kubebuilder:scaffold:scheme
-}
 
 func main() {
 	var metricsAddr string
@@ -67,6 +54,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	scheme, err := common.PrepareScheme()
+	if err != nil {
+		setupLog.Error(err, "unable to setup scheme")
+		os.Exit(1)
+	}
+
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
@@ -79,12 +72,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := context.Background()
+
 	if err = (&controllers.DeploymentReconciler{
 		Client:        mgr.GetClient(),
 		Log:           ctrl.Log.WithName("controllers").WithName("Deployment"),
 		Scheme:        mgr.GetScheme(),
 		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), ctrl.Log),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)
 	}

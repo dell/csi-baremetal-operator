@@ -110,10 +110,15 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{Requeue: true}, err
 	}
 
+	if err = r.CSIDeployment.ReconcileNodes(ctx, deployment); err != nil {
+		log.Error(err, "Failed to reconcile nodes")
+		return ctrl.Result{Requeue: true}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
-func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
 	c, err := controller.New("csi-controller", mgr,
 		controller.Options{
 			Reconciler: r,
@@ -189,6 +194,13 @@ func (r *DeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		},
 	}))
 	if err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
+		pod := rawObj.(*corev1.Pod)
+		return []string{pod.Spec.NodeName}
+	}); err != nil {
 		return err
 	}
 

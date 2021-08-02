@@ -17,6 +17,7 @@ rules:
   - configmaps/status
   - events
   - nodes
+  - pods
   verbs:
   - "*"
 - apiGroups:

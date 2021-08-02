@@ -1,3 +1,0 @@
-package pmm
-
-func deleteCSIResources() {}
