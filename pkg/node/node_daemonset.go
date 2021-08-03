@@ -40,6 +40,7 @@ const (
 	alertsConfigVolume = "alert-config"
 )
 
+// GetNodeDaemonsetPodsSelector returns a label-selector to use in the List method
 func GetNodeDaemonsetPodsSelector() labels.Selector {
 	return labels.SelectorFromSet(map[string]string{"app": nodeName})
 }
@@ -51,7 +52,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      platform.DaemonsetName(nodeName),
-			Namespace: common.GetNamespace(csi),
+			Namespace: csi.GetNamespace(),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector

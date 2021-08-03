@@ -1,12 +1,13 @@
-package pkg
+package patcher
 
 import (
 	"reflect"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewPatcherConfiguration(t *testing.T) {
@@ -16,20 +17,22 @@ func TestNewPatcherConfiguration(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    patcherConfiguration
+		want    *patcherConfiguration
 		wantErr bool
 	}{
 		{
 			name: "Vanilla kubernetes",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-configuration",
@@ -40,8 +43,7 @@ func TestNewPatcherConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want: patcherConfiguration{
-				enable:            true,
+			want: &patcherConfiguration{
 				ns:                "default",
 				loglevel:          "debug",
 				interval:          10,
@@ -54,45 +56,7 @@ func TestNewPatcherConfiguration(t *testing.T) {
 				manifestsFolder:   "/etc/kubernetes/manifests",
 				configMapName:     "scheduler-configuration",
 				configFolder:      "/config",
-			},
-			wantErr: false,
-		},
-		{
-			name: "Vanilla kubernetes with empty platform field",
-			args: args{
-				csi: &csibaremetalv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "csi"},
-					Spec: components.DeploymentSpec{
-						Scheduler: &components.Scheduler{
-							Log: &components.Log{
-								Level: "debug",
-							},
-							Patcher: &components.Patcher{
-								Enable:            true,
-								Interval:          10,
-								RestoreOnShutdown: true,
-								ConfigMapName:     "scheduler-configuration",
-							},
-						},
-						NodeIDAnnotation: false,
-						Platform:         "",
-					},
-				},
-			},
-			want: patcherConfiguration{
-				enable:            true,
-				ns:                "csi",
-				loglevel:          "debug",
-				interval:          10,
-				restoreOnShutdown: true,
-				platform:          "vanilla",
-				targetConfig:      "/etc/kubernetes/manifests/scheduler/config.yaml",
-				targetPolicy:      "/etc/kubernetes/manifests/scheduler/policy.yaml",
-				targetConfig19:    "/etc/kubernetes/manifests/scheduler/config-19.yaml",
-				schedulerFolder:   "/etc/kubernetes/manifests/scheduler",
-				manifestsFolder:   "/etc/kubernetes/manifests",
-				configMapName:     "scheduler-configuration",
-				configFolder:      "/config",
+				kubeconfig:        "/etc/kubernetes/scheduler.conf",
 			},
 			wantErr: false,
 		},
@@ -100,13 +64,15 @@ func TestNewPatcherConfiguration(t *testing.T) {
 			name: "RKE kubernetes",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-conf",
@@ -117,8 +83,7 @@ func TestNewPatcherConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want: patcherConfiguration{
-				enable:            true,
+			want: &patcherConfiguration{
 				ns:                "default",
 				loglevel:          "debug",
 				interval:          10,
@@ -131,6 +96,7 @@ func TestNewPatcherConfiguration(t *testing.T) {
 				manifestsFolder:   "/var/lib/rancher/rke2/agent/pod-manifests",
 				configMapName:     "scheduler-conf",
 				configFolder:      "/config",
+				kubeconfig:        "/var/lib/rancher/rke2/server/cred/scheduler.kubeconfig",
 			},
 			wantErr: false,
 		},
@@ -138,13 +104,15 @@ func TestNewPatcherConfiguration(t *testing.T) {
 			name: "Openshift kubernetes",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-conf",
@@ -155,20 +123,48 @@ func TestNewPatcherConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want:    patcherConfiguration{},
+			want:    nil,
 			wantErr: true,
 		},
 		{
-			name: "Typo in platform",
+			name: "Empty platform",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
+								Interval:          10,
+								RestoreOnShutdown: true,
+								ConfigMapName:     "scheduler-conf",
+							},
+						},
+						NodeIDAnnotation: false,
+						Platform:         "",
+					},
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Typo in platform",
+			args: args{
+				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
+					Spec: components.DeploymentSpec{
+						Scheduler: &components.Scheduler{
+							Log: &components.Log{
+								Level: "debug",
+							},
+							Patcher: &components.Patcher{
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-conf",
@@ -179,20 +175,22 @@ func TestNewPatcherConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want:    patcherConfiguration{},
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name: "Unsupported platform",
 			args: args{
 				csi: &csibaremetalv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
 					Spec: components.DeploymentSpec{
 						Scheduler: &components.Scheduler{
 							Log: &components.Log{
 								Level: "debug",
 							},
 							Patcher: &components.Patcher{
-								Enable:            true,
 								Interval:          10,
 								RestoreOnShutdown: true,
 								ConfigMapName:     "scheduler-conf",
@@ -203,19 +201,19 @@ func TestNewPatcherConfiguration(t *testing.T) {
 					},
 				},
 			},
-			want:    patcherConfiguration{},
+			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewPatcherConfiguration(tt.args.csi)
+			got, err := newPatcherConfiguration(tt.args.csi)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewPatcherConfiguration() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newPatcherConfiguration() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewPatcherConfiguration() = %+v, want %+v", got, tt.want)
+				t.Errorf("newPatcherConfiguration() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}

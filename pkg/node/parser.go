@@ -31,19 +31,19 @@ import (
 func GetOSNameAndVersion(osInfo string) (name, version string, err error) {
 	// check input parameter
 	if len(osInfo) == 0 {
-		return "", "", errors.New("ErrorEmptyParameter") //errTypes.ErrorEmptyParameter
+		return "", "", errors.New("errorEmptyParameter")
 	}
 
 	// extract OS name
 	name = regexp.MustCompile(`^[A-Za-z]+`).FindString(osInfo)
 	if len(name) == 0 {
-		return "", "", errors.New("ErrorEmptyParameter")
+		return "", "", errors.New("errorEmptyParameter")
 	}
 
 	// extract OS version
 	version = regexp.MustCompile(`[0-9]+\.[0-9]+`).FindString(osInfo)
 	if len(version) == 0 {
-		return "", "", errors.New("ErrorEmptyParameter")
+		return "", "", errors.New("errorEmptyParameter")
 	}
 
 	return strings.ToLower(name), version, nil
@@ -54,7 +54,7 @@ func GetOSNameAndVersion(osInfo string) (name, version string, err error) {
 // returns kernel version - major and minor. For example, "5.4"
 func GetKernelVersion(kernelVersion string) (version *semver.Version, err error) {
 	if len(kernelVersion) == 0 {
-		return nil, errors.New("ErrorEmptyParameter")
+		return nil, errors.New("errorEmptyParameter")
 	}
 
 	// extract kernel version - x.y.z
@@ -62,6 +62,7 @@ func GetKernelVersion(kernelVersion string) (version *semver.Version, err error)
 	return semver.NewVersion(versionStr)
 }
 
+// GetNodeKernelVersion returns kernel version of Node
 func GetNodeKernelVersion(node *corev1.Node) (version *semver.Version, err error) {
 	return GetKernelVersion(node.Status.NodeInfo.KernelVersion)
 }

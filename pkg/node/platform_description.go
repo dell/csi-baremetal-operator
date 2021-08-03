@@ -5,10 +5,17 @@ import (
 	"github.com/masterminds/semver"
 )
 
-const supportedKernel = "5.4"
+const (
+	supportedKernel = "5.4"
+	defaultPlatform = "default"
+)
 
 var supportedKernelVersion = semver.MustParse(supportedKernel)
 
+// PlatformDescription contains info to deploy specific node daemonsets
+// tag - the prefix for daemonset and image: csi-baremetal-node-<tag>
+// labeltag - label for node selctor
+// checkVersion - func to match related version
 type PlatformDescription struct {
 	tag      string
 	labeltag string
@@ -21,7 +28,7 @@ var (
 	platforms = map[string]*PlatformDescription{
 		"default": {
 			tag:      "",
-			labeltag: "default",
+			labeltag: defaultPlatform,
 			// default checkVersion returns false everytime to detect only specific platforms
 			checkVersion: func(version *semver.Version) bool { return false },
 		},
@@ -33,10 +40,12 @@ var (
 	}
 )
 
+// DaemonsetName constructs name of daemonset based on tag
 func (pd *PlatformDescription) DaemonsetName(baseName string) string {
 	return createNameWithTag(baseName, pd.tag)
 }
 
+// NodeImage constructs name of image based on tag and updates Image
 func (pd *PlatformDescription) NodeImage(baseImage *components.Image) *components.Image {
 	var taggedImage = components.Image{}
 
@@ -55,7 +64,7 @@ func findPlatform(kernelVersion *semver.Version) string {
 		}
 	}
 
-	return "default"
+	return defaultPlatform
 }
 
 func createNameWithTag(name, tag string) string {

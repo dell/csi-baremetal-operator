@@ -2,6 +2,9 @@ package pkg
 
 import (
 	"context"
+	"fmt"
+	"strings"
+
 	"github.com/dell/csi-baremetal-operator/pkg/noderemoval"
 
 	"github.com/go-logr/logr"
@@ -12,17 +15,20 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/node"
+	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 )
 
+// CSIDeployment contains controllers of CSI resources
 type CSIDeployment struct {
 	node                  *node.Node
 	controller            Controller
 	extender              SchedulerExtender
-	patcher               SchedulerPatcher
+	patcher               patcher.SchedulerPatcher
 	nodeController        NodeController
 	nodeRemovalController *noderemoval.Controller
 }
 
+// NewCSIDeployment creates CSIDeployment
 func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
@@ -30,20 +36,20 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			log.WithValues(constant.CSIName, "node"),
 		),
 		controller: Controller{
-			Clientset: clientSet,
+			Clientset: &clientSet,
 			Logger:    log.WithValues(constant.CSIName, "controller"),
 		},
 		extender: SchedulerExtender{
-			Clientset: clientSet,
+			Clientset: &clientSet,
 			Logger:    log.WithValues(constant.CSIName, "extender"),
 		},
-		patcher: SchedulerPatcher{
-			Clientset: clientSet,
+		patcher: patcher.SchedulerPatcher{
+			Clientset: &clientSet,
 			Client:    client,
 			Logger:    log.WithValues(constant.CSIName, "patcher"),
 		},
 		nodeController: NodeController{
-			Clientset: clientSet,
+			Clientset: &clientSet,
 			Logger:    log.WithValues(constant.CSIName, "nodeController"),
 		},
 		nodeRemovalController: noderemoval.NewNodeRemovalController(
@@ -54,6 +60,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 	}
 }
 
+// Update performs Update functions of contained resources
 func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	if err := c.nodeController.Update(ctx, csi, scheme); err != nil {
 		return err
@@ -71,13 +78,14 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 		return err
 	}
 
-	if err := c.patchPlatform(ctx, csi, scheme); err != nil {
+	if err := c.patcher.Update(ctx, csi, scheme); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+// ReconcileNodes performs node removal procedure
 func (c *CSIDeployment) ReconcileNodes(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	if err := c.nodeRemovalController.Reconcile(ctx, csi); err != nil {
 		return err
@@ -86,25 +94,23 @@ func (c *CSIDeployment) ReconcileNodes(ctx context.Context, csi *csibaremetalv1.
 	return nil
 }
 
-// patchPlatform is patching method for the scheduler depends on the platform
-func (c *CSIDeployment) patchPlatform(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	switch csi.Spec.Platform {
-	case platformOpenshift:
-		return c.patcher.PatchOpenShift(ctx, csi)
-	default:
-		return c.patcher.Update(ctx, csi, scheme)
-	}
-}
+// Uninstall cleans CSI
+func (c *CSIDeployment) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	var errMsgs []string
 
-func (c *CSIDeployment) UninstallPatcher(ctx context.Context, csi csibaremetalv1.Deployment) error {
-	switch csi.Spec.Platform {
-	case platformOpenshift:
-		return c.patcher.UnPatchOpenShift(ctx)
-	default:
-		return nil
+	err := c.patcher.Uninstall(ctx, csi)
+	if err != nil {
+		errMsgs = append(errMsgs, err.Error())
 	}
-}
 
-func (c *CSIDeployment) CleanLabels(ctx context.Context) error {
-	return c.node.CleanLabels(ctx)
+	err = c.node.Uninstall(ctx, csi)
+	if err != nil {
+		errMsgs = append(errMsgs, err.Error())
+	}
+
+	if len(errMsgs) != 0 {
+		return fmt.Errorf(strings.Join(errMsgs, "\n"))
+	}
+
+	return nil
 }

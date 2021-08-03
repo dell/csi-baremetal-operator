@@ -1,0 +1,81 @@
+output:
+  # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
+  format: colored-line-number
+
+linters-settings:
+  lll:
+    line-length: 190
+  funlen:
+    lines: 180
+    statements: 80 # must be 70. ISSUE-431. Need to refactor handleDriveUpdate
+  gocognit:
+    min-complexity: 60
+  golint:
+    # godoc says that one of files from a package should contain package comment.
+    # but golint has constraint that checks package comment in every file of the package.
+    # golint developers mention that this is imperfection. https://github.com/golang/lint/blob/master/lint.go#L376
+    # To prevent this checking set min-confidence level to 0.3
+    min-confidence: 0.3
+
+linters:
+  # please, do not use `enable-all`: it is deprecated and will be removed soon.
+  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
+  disable-all: true
+  enable:
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - errcheck
+    - funlen
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - lll
+    - megacheck
+    - misspell
+    - nakedret
+    - scopelint
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+    - maligned
+    - prealloc
+    - dupl
+    - gosec
+
+  # don't enable:
+  # - gochecknoglobals Because of setupMgr and CrushVolumes // TODO - https://github.com/dell/csi-baremetal/issues/474
+  # - godox CSI now has a lot TODOs in source code
+  # - wsl
+  # - stylecheck because it is similar to golint and there is conflict between them
+
+run:
+  deadline: 15m
+  timeout:  15m
+
+  skip-dirs:
+    - test/
+    - vendor/
+    - api/
+  skip-files:
+    - .*_test.go
+    - .*.pb.go
+
+# golint is disabled by default in golang-ci because of golang community
+issues:
+  exclude-use-default: false

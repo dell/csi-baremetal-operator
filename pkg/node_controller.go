@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -26,11 +25,13 @@ const (
 	nodeControllerServiceAccountName = "csi-node-controller-sa"
 )
 
+// NodeController controls csi-baremetal-node-controller
 type NodeController struct {
-	kubernetes.Clientset
+	Clientset kubernetes.Interface
 	logr.Logger
 }
 
+// Update updates csi-baremetal-node-controller or creates if not found
 func (nc *NodeController) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// create deployment
 	expected := createNodeControllerDeployment(csi)
@@ -38,34 +39,8 @@ func (nc *NodeController) Update(ctx context.Context, csi *csibaremetalv1.Deploy
 		return err
 	}
 
-	namespace := common.GetNamespace(csi)
-	dsClient := nc.AppsV1().Deployments(namespace)
-
-	found, err := dsClient.Get(ctx, nodeControllerName, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			if _, err := dsClient.Create(ctx, expected, metav1.CreateOptions{}); err != nil {
-				nc.Logger.Error(err, "Failed to create deployment")
-				return err
-			}
-
-			nc.Logger.Info("Deployment created successfully")
-			return nil
-		}
-
-		nc.Logger.Error(err, "Failed to get deployment")
+	if err := common.UpdateDeployment(ctx, nc.Clientset, expected, nc.Logger); err != nil {
 		return err
-	}
-
-	if common.DeploymentChanged(expected, found) {
-		found.Spec = expected.Spec
-		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
-			nc.Logger.Error(err, "Failed to update deployment")
-			return err
-		}
-
-		nc.Logger.Info("Deployment updated successfully")
-		return nil
 	}
 
 	return nil
@@ -75,7 +50,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeControllerName,
-			Namespace: common.GetNamespace(csi),
+			Namespace: csi.GetNamespace(),
 		},
 		Spec: v1.DeploymentSpec{
 			Replicas: pointer.Int32Ptr(ncReplicasCount),

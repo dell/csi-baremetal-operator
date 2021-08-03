@@ -4,9 +4,7 @@ import (
 	"context"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
-	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,42 +22,7 @@ import (
 	"github.com/dell/csi-baremetal/api/v1/volumecrd"
 )
 
-func GetNamespace(csi *csibaremetalv1.Deployment) string {
-	if csi.Namespace == "" {
-		return "default"
-	}
-
-	return csi.Namespace
-}
-
-func DeploymentChanged(expected *v1.Deployment, found *v1.Deployment) bool {
-	if !equality.Semantic.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
-		return true
-	}
-
-	if !equality.Semantic.DeepEqual(expected.Spec.Selector, found.Spec.Selector) {
-		return true
-	}
-
-	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
-		return true
-	}
-
-	return false
-}
-
-func DaemonsetChanged(expected *v1.DaemonSet, found *v1.DaemonSet) bool {
-	if !equality.Semantic.DeepEqual(expected.Spec.Selector, found.Spec.Selector) {
-		return true
-	}
-
-	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
-		return true
-	}
-
-	return false
-}
-
+// MatchLogLevel checks if passed logLevel is allowed
 func MatchLogLevel(level components.Level) string {
 	switch level {
 	case components.InfoLevel:
@@ -74,6 +37,7 @@ func MatchLogLevel(level components.Level) string {
 	}
 }
 
+// MatchLogFormat checks if passed logFormat is allowed
 func MatchLogFormat(format components.Format) string {
 	switch format {
 	case components.JSONFormat:
@@ -86,6 +50,7 @@ func MatchLogFormat(format components.Format) string {
 	}
 }
 
+// ConstructFullImageName returns name of image in the following format: <registry>/<image_name>:<image_tag>
 func ConstructFullImageName(image *components.Image, registry string) string {
 	var imageName string
 
@@ -97,6 +62,7 @@ func ConstructFullImageName(image *components.Image, registry string) string {
 	return imageName
 }
 
+// MakeNodeSelectorMap creates map with node selector from csi spec
 func MakeNodeSelectorMap(ns *components.NodeSelector) map[string]string {
 	if ns != nil {
 		return map[string]string{ns.Key: ns.Value}
@@ -122,6 +88,7 @@ func GetSelectedNodes(ctx context.Context, c kubernetes.Interface, selector *com
 	return nodes, nil
 }
 
+// PrepareScheme returns a scheme to manager setup
 func PrepareScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 

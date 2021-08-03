@@ -132,6 +132,9 @@ scheduler:
     restore_on_shutdown: true
     config_map_name: schedulerpatcher-config
 
+    # Patching will be restarted if extenders aren't ready after timeout (mins)
+    readinessTimeout: 20
+
   # extender will be looking for volumes that should be provisioned
   # by storage class with provided provisioner name
   provisioner: csi-baremetal

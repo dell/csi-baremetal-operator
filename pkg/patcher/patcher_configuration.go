@@ -1,4 +1,4 @@
-package pkg
+package patcher
 
 import (
 	"fmt"
@@ -6,12 +6,21 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
 const (
+	// PlatformVanilla - vanilla platform key
+	PlatformVanilla = "vanilla"
+	// PlatformRKE - RKE platform key
+	PlatformRKE = "rke"
+	// PlatformOpenshift - openshift platform key
+	PlatformOpenshift = "openshift"
+
 	rke2ManifestsFolder    = "/var/lib/rancher/rke2/agent/pod-manifests"
 	vanillaManifestsFolder = "/etc/kubernetes/manifests"
+
+	rke2Kubeconfig    = "/var/lib/rancher/rke2/server/cred/scheduler.kubeconfig"
+	vanillaKubeconfig = "/etc/kubernetes/scheduler.conf"
 
 	schedulerFolder = "scheduler"
 
@@ -24,45 +33,46 @@ const (
 	config19Path = schedulerFolder + "/" + config19File
 )
 
-func NewPatcherConfiguration(csi *csibaremetalv1.Deployment) (patcherConfiguration, error) {
+// newPatcherConfiguration creates patcherConfiguration
+func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfiguration, error) {
 	var config patcherConfiguration
 	switch csi.Spec.Platform {
-	case platformVanilla, "":
+	case PlatformVanilla:
 		config = patcherConfiguration{
-			platform:        platformVanilla,
+			platform:        PlatformVanilla,
 			targetConfig:    path.Join(vanillaManifestsFolder, configPath),
 			targetPolicy:    path.Join(vanillaManifestsFolder, policyPath),
 			targetConfig19:  path.Join(vanillaManifestsFolder, config19Path),
 			schedulerFolder: path.Join(vanillaManifestsFolder, schedulerFolder),
 			manifestsFolder: vanillaManifestsFolder,
+			kubeconfig:      vanillaKubeconfig,
 		}
-	case platformRKE:
+	case PlatformRKE:
 		config = patcherConfiguration{
-			platform:        platformRKE,
+			platform:        PlatformRKE,
 			targetConfig:    path.Join(rke2ManifestsFolder, configPath),
 			targetPolicy:    path.Join(rke2ManifestsFolder, policyPath),
 			targetConfig19:  path.Join(rke2ManifestsFolder, config19Path),
 			schedulerFolder: path.Join(rke2ManifestsFolder, schedulerFolder),
 			manifestsFolder: rke2ManifestsFolder,
+			kubeconfig:      rke2Kubeconfig,
 		}
 	default:
-		return config, fmt.Errorf("%s platform is not supported platform for the patcher", csi.Spec.Platform)
+		return nil, fmt.Errorf("%s platform is not supported platform for the patcher", csi.Spec.Platform)
 	}
-	config.enable = csi.Spec.Scheduler.Patcher.Enable
 	config.image = csi.Spec.Scheduler.Patcher.Image
 	config.interval = csi.Spec.Scheduler.Patcher.Interval
 	config.restoreOnShutdown = csi.Spec.Scheduler.Patcher.RestoreOnShutdown
 	config.configMapName = csi.Spec.Scheduler.Patcher.ConfigMapName
-	config.ns = common.GetNamespace(csi)
+	config.ns = csi.GetNamespace()
 	config.globalRegistry = csi.Spec.GlobalRegistry
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level
 	config.configFolder = configurationPath
-	return config, nil
+	return &config, nil
 }
 
 type patcherConfiguration struct {
-	enable            bool
 	ns                string
 	image             *components.Image
 	globalRegistry    string
@@ -79,4 +89,5 @@ type patcherConfiguration struct {
 	manifestsFolder string
 	configMapName   string
 	configFolder    string
+	kubeconfig      string
 }
