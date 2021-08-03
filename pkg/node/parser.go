@@ -63,6 +63,6 @@ func GetKernelVersion(kernelVersion string) (version *semver.Version, err error)
 }
 
 // GetNodeKernelVersion returns kernel version of Node
-func GetNodeKernelVersion(node corev1.Node) (version *semver.Version, err error) {
+func GetNodeKernelVersion(node *corev1.Node) (version *semver.Version, err error) {
 	return GetKernelVersion(node.Status.NodeInfo.KernelVersion)
 }
