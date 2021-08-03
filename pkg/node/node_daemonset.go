@@ -40,6 +40,7 @@ const (
 	alertsConfigVolume = "alert-config"
 )
 
+// GetNodeDaemonsetPodsSelector returns a label-selector to use in the List method
 func GetNodeDaemonsetPodsSelector() labels.Selector {
 	return labels.SelectorFromSet(map[string]string{"app": nodeName})
 }

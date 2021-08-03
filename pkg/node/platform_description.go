@@ -64,7 +64,7 @@ func findPlatform(kernelVersion *semver.Version) string {
 		}
 	}
 
-	return "default"
+	return defaultPlatform
 }
 
 func createNameWithTag(name, tag string) string {

@@ -17,19 +17,19 @@ import (
 func (c *Controller) deleteCSIResources(ctx context.Context, csibmnode *nodecrd.Node) error {
 	var (
 		errors []string
-		nodeId = csibmnode.Spec.UUID
+		nodeID = csibmnode.Spec.UUID
 	)
 
-	if err := c.deleteDrives(ctx, nodeId); err != nil {
+	if err := c.deleteDrives(ctx, nodeID); err != nil {
 		errors = append(errors, err.Error())
 	}
-	if err := c.deleteACs(ctx, nodeId); err != nil {
+	if err := c.deleteACs(ctx, nodeID); err != nil {
 		errors = append(errors, err.Error())
 	}
-	if err := c.deleteLVGs(ctx, nodeId); err != nil {
+	if err := c.deleteLVGs(ctx, nodeID); err != nil {
 		errors = append(errors, err.Error())
 	}
-	if err := c.deleteVolumes(ctx, nodeId); err != nil {
+	if err := c.deleteVolumes(ctx, nodeID); err != nil {
 		errors = append(errors, err.Error())
 	}
 
@@ -47,7 +47,7 @@ func (c *Controller) deleteCSIResources(ctx context.Context, csibmnode *nodecrd.
 
 func (c *Controller) deleteDrives(ctx context.Context, nodeID string) error {
 	// Field selectors for CRDs' spec is not supported https://github.com/kubernetes/kubernetes/issues/53459
-	//fieldSelector := fields.SelectorFromSet(map[string]string{"spec.NodeId": nodeID})
+	// fieldSelector := fields.SelectorFromSet(map[string]string{"spec.NodeId": nodeID})
 
 	drives := &drivecrd.DriveList{}
 	err := c.client.List(ctx, drives)
@@ -57,9 +57,9 @@ func (c *Controller) deleteDrives(ctx context.Context, nodeID string) error {
 
 	var errors []string
 
-	for _, drive := range drives.Items {
+	for i, drive := range drives.Items {
 		if drive.Spec.NodeId == nodeID {
-			if err = c.deleteObject(ctx, &drive, "drive"); err != nil {
+			if err = c.deleteObject(ctx, &drives.Items[i], "drive"); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
@@ -81,9 +81,9 @@ func (c *Controller) deleteACs(ctx context.Context, nodeID string) error {
 
 	var errors []string
 
-	for _, ac := range acs.Items {
+	for i, ac := range acs.Items {
 		if ac.Spec.NodeId == nodeID {
-			if err = c.deleteObject(ctx, &ac, "ac"); err != nil {
+			if err = c.deleteObject(ctx, &acs.Items[i], "ac"); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
@@ -105,9 +105,9 @@ func (c *Controller) deleteLVGs(ctx context.Context, nodeID string) error {
 
 	var errors []string
 
-	for _, lvg := range lvgs.Items {
+	for i, lvg := range lvgs.Items {
 		if lvg.Spec.Node == nodeID {
-			if err = c.deleteObject(ctx, &lvg, "lvg"); err != nil {
+			if err = c.deleteObject(ctx, &lvgs.Items[i], "lvg"); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
@@ -129,9 +129,9 @@ func (c *Controller) deleteVolumes(ctx context.Context, nodeID string) error {
 
 	var errors []string
 
-	for _, volume := range volumes.Items {
+	for i, volume := range volumes.Items {
 		if volume.Spec.NodeId == nodeID {
-			if err = c.deleteObject(ctx, &volume, "volume"); err != nil {
+			if err = c.deleteObject(ctx, &volumes.Items[i], "volume"); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}

@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/masterminds/semver"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -20,11 +18,13 @@ const (
 	platformLabel = "nodes.csi-baremetal.dell.com/platform"
 )
 
+// Node controls csi-baremetal-node
 type Node struct {
 	clientset kubernetes.Interface
 	log       logr.Logger
 }
 
+// NewNode creates a Node object
 func NewNode(clientset kubernetes.Interface, logger logr.Logger) *Node {
 	return &Node{
 		clientset: clientset,
@@ -85,8 +85,8 @@ func (n *Node) updateNodeLabels(ctx context.Context, selector *components.NodeSe
 		return needToDeploy, err
 	}
 
-	for _, node := range nodes.Items {
-		kernelVersion, err := GetNodeKernelVersion(&node)
+	for i, node := range nodes.Items {
+		kernelVersion, err := GetNodeKernelVersion(&nodes.Items[i])
 		if err != nil {
 			n.log.Error(err, "Failed to get kernel version for "+node.Name)
 			resultErr = err
@@ -102,7 +102,7 @@ func (n *Node) updateNodeLabels(ctx context.Context, selector *components.NodeSe
 		}
 
 		node.Labels[platformLabel] = platforms[platformName].labeltag
-		if _, err := n.clientset.CoreV1().Nodes().Update(ctx, &nodeIns, metav1.UpdateOptions{}); err != nil {
+		if _, err := n.clientset.CoreV1().Nodes().Update(ctx, &nodes.Items[i], metav1.UpdateOptions{}); err != nil {
 			n.log.Error(err, "Failed to update label on "+node.Name)
 			resultErr = err
 		}

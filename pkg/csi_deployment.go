@@ -20,11 +20,11 @@ import (
 
 // CSIDeployment contains controllers of CSI resources
 type CSIDeployment struct {
-	node           *node.Node
-	controller     Controller
-	extender       SchedulerExtender
-	patcher        patcher.SchedulerPatcher
-	nodeController NodeController
+	node                  *node.Node
+	controller            Controller
+	extender              SchedulerExtender
+	patcher               patcher.SchedulerPatcher
+	nodeController        NodeController
 	nodeRemovalController *noderemoval.Controller
 }
 
@@ -85,6 +85,7 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 	return nil
 }
 
+// ReconcileNodes performs node removal procedure
 func (c *CSIDeployment) ReconcileNodes(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	if err := c.nodeRemovalController.Reconcile(ctx, csi); err != nil {
 		return err

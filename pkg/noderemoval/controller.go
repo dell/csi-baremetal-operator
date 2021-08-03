@@ -41,13 +41,14 @@ const (
 	nodeRemovalTaintEffect = "NoSchedule"
 )
 
+// Controller performs node removal procedure
 type Controller struct {
 	clientset kubernetes.Interface
 	client    client.Client
 	log       logr.Logger
 }
 
-// NewNodeRemovalController performs node removal procedure
+// NewNodeRemovalController returns Controller object
 func NewNodeRemovalController(clientset kubernetes.Interface, client client.Client, log logr.Logger) *Controller {
 	return &Controller{
 		clientset: clientset,
@@ -97,19 +98,17 @@ func (c *Controller) reconcileNodes(ctx context.Context, csibmnodes []nodecrd.No
 		removingNodes []nodecrd.Node
 	)
 
-	for _, csibmnode := range csibmnodes {
+	for i, csibmnode := range csibmnodes {
 		hasLabel := false
 		hasTaint := false
 		hasNode := false
 		needUpdate := false
 
-		csibmnodeIns := csibmnode
-
-		if value, ok := csibmnodeIns.GetLabels()[nodeRemovalTaintKey]; ok && value == nodeRemovalTaintValue {
+		if value, ok := csibmnode.GetLabels()[nodeRemovalTaintKey]; ok && value == nodeRemovalTaintValue {
 			hasLabel = true
 		}
 
-		hasTaint, hasNode = nodesWithTaint[getNodeName(&csibmnodeIns)]
+		hasTaint, hasNode = nodesWithTaint[getNodeName(&csibmnodes[i])]
 
 		// perform node removal
 		if hasLabel && !hasNode {
@@ -118,19 +117,19 @@ func (c *Controller) reconcileNodes(ctx context.Context, csibmnodes []nodecrd.No
 		}
 
 		if hasNode && !hasLabel && hasTaint {
-			addNodeRemovalLabel(&csibmnodeIns)
-			c.log.Info(fmt.Sprintf("Csibmnode %s has labeled with %s=%s", csibmnodeIns.Name, nodeRemovalTaintKey, nodeRemovalTaintValue))
+			addNodeRemovalLabel(&csibmnodes[i])
+			c.log.Info(fmt.Sprintf("Csibmnode %s has labeled with %s=%s", csibmnode.Name, nodeRemovalTaintKey, nodeRemovalTaintValue))
 			needUpdate = true
 		}
 
 		if hasNode && hasLabel && !hasTaint {
-			deleteNodeRemovalLabel(&csibmnodeIns)
-			c.log.Info(fmt.Sprintf("Csibmnode %s has unlabeled (%s)", csibmnodeIns.Name, nodeRemovalTaintKey))
+			deleteNodeRemovalLabel(&csibmnodes[i])
+			c.log.Info(fmt.Sprintf("Csibmnode %s has unlabeled (%s)", csibmnode.Name, nodeRemovalTaintKey))
 			needUpdate = true
 		}
 
 		if needUpdate {
-			if err := c.client.Update(ctx, &csibmnodeIns, &client.UpdateOptions{}); err != nil {
+			if err := c.client.Update(ctx, &csibmnodes[i], &client.UpdateOptions{}); err != nil {
 				c.log.Error(err, "Failed to update csibmnode")
 				errors = append(errors, err.Error())
 			}
@@ -149,21 +148,21 @@ func (c *Controller) removeNodes(ctx context.Context, csibmnodes []nodecrd.Node)
 		errors []string
 	)
 
-	for _, csibmnode := range csibmnodes {
-		isRunning, err := c.checkDaemonsetPodRunning(ctx, getNodeName(&csibmnode))
+	for i := range csibmnodes {
+		isRunning, err := c.checkDaemonsetPodRunning(ctx, getNodeName(&csibmnodes[i]))
 		if err != nil {
 			c.log.Error(err, "Failed to check running pods on node")
 			errors = append(errors, err.Error())
 			continue
 		}
 		if isRunning {
-			err = fmt.Errorf("csi-baremetal-node pod is still running on node %s", getNodeName(&csibmnode))
+			err = fmt.Errorf("csi-baremetal-node pod is still running on node %s", getNodeName(&csibmnodes[i]))
 			c.log.Error(err, "Failed to clean related resources")
 			errors = append(errors, err.Error())
 			continue
 		}
 
-		if err := c.deleteCSIResources(ctx, &csibmnode); err != nil {
+		if err := c.deleteCSIResources(ctx, &csibmnodes[i]); err != nil {
 			c.log.Error(err, "Failed to clean related resources")
 			errors = append(errors, err.Error())
 		}
