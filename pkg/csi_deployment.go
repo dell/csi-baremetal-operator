@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"github.com/dell/csi-baremetal-operator/pkg/noderemoval"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,11 +15,12 @@ import (
 )
 
 type CSIDeployment struct {
-	node           *node.Node
-	controller     Controller
-	extender       SchedulerExtender
-	patcher        SchedulerPatcher
-	nodeController NodeController
+	node                  *node.Node
+	controller            Controller
+	extender              SchedulerExtender
+	patcher               SchedulerPatcher
+	nodeController        NodeController
+	nodeRemovalController *noderemoval.Controller
 }
 
 func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
@@ -44,6 +46,11 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			Clientset: clientSet,
 			Logger:    log.WithValues(constant.CSIName, "nodeController"),
 		},
+		nodeRemovalController: noderemoval.NewNodeRemovalController(
+			&clientSet,
+			client,
+			log.WithValues(constant.CSIName, "nodeRemovalController"),
+		),
 	}
 }
 
@@ -65,6 +72,14 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 	}
 
 	if err := c.patchPlatform(ctx, csi, scheme); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *CSIDeployment) ReconcileNodes(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	if err := c.nodeRemovalController.Reconcile(ctx, csi); err != nil {
 		return err
 	}
 

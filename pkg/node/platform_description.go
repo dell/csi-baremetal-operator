@@ -46,6 +46,18 @@ func (pd *PlatformDescription) NodeImage(baseImage *components.Image) *component
 	return &taggedImage
 }
 
+// findPlatform calls checkVersion for all platforms in list,
+// returns first found platform-name or "default" if no one passed
+func findPlatform(kernelVersion *semver.Version) string {
+	for key, value := range platforms {
+		if value.checkVersion(kernelVersion) {
+			return key
+		}
+	}
+
+	return "default"
+}
+
 func createNameWithTag(name, tag string) string {
 	if tag != "" {
 		return name + "-" + tag

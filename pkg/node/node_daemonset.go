@@ -7,6 +7,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 
@@ -38,6 +39,10 @@ const (
 	alertsConfigName   = "csi-baremetal-alerts"
 	alertsConfigVolume = "alert-config"
 )
+
+func GetNodeDaemonsetPodsSelector() labels.Selector {
+	return labels.SelectorFromSet(map[string]string{"app": nodeName})
+}
 
 func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescription) *v1.DaemonSet {
 	var nodeSelectors = common.MakeNodeSelectorMap(csi.Spec.NodeSelector)
