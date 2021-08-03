@@ -15,6 +15,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
+// TODO import from csi-baremetal - https://github.com/dell/csi-baremetal/issues/475
 const (
 	// ExtenderConfigMapName - the configmap, which contains statuses of kube-scheduler restart
 	ExtenderConfigMapName = "extender-readiness"
@@ -35,6 +36,8 @@ type ExtenderReadinessOptions struct {
 
 	kubeSchedulerLabel string
 }
+
+// TODO import from csi-baremetal - https://github.com/dell/csi-baremetal/issues/475
 
 // ReadinessStatus contains restart status of one kube-scheduler
 type ReadinessStatus struct {

@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"path"
 	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
@@ -127,12 +126,12 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 
 func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
-		statusFile   = ""
-		volumeMounts = []corev1.VolumeMount{constant.CrashMountVolume}
+		isPatchingEnabled = false
+		volumeMounts      = []corev1.VolumeMount{constant.CrashMountVolume}
 	)
 
 	if patcher.IsPatchingEnabled(csi) {
-		statusFile = path.Join(patcher.ExtenderConfigMapPath, patcher.ExtenderConfigMapFile)
+		isPatchingEnabled = true
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      patcher.ExtenderConfigMapName,
 			MountPath: patcher.ExtenderConfigMapPath,
@@ -155,8 +154,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container
 				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
 				"--metrics-path=/metrics",
 				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
-				"--statusFile=" + statusFile,
-				"--nodeName=$(KUBE_NODE_NAME)",
+				"--isPatchingEnabled=" + strconv.FormatBool(isPatchingEnabled),
 			},
 			Env: []corev1.EnvVar{
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{
