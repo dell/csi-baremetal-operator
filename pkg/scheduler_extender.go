@@ -103,6 +103,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					ServiceAccountName:            extenderServiceAccountName,
 					DeprecatedServiceAccount:      extenderServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
+					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 					HostNetwork:                   true,
 					Tolerations: []corev1.Toleration{

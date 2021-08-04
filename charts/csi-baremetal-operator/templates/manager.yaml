@@ -18,6 +18,10 @@ spec:
         release: {{ .Release.Name }}
     spec:
       serviceAccount: csi-baremetal-operator-sa
+      {{ - if .Values.global.registrySecret }}
+      imagePullSecrets:
+        - name: {{ .Values.global.registrySecret }}
+      {{ - end }}
       containers:
       - command:
         - /manager

@@ -66,6 +66,7 @@ func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 	config.configMapName = csi.Spec.Scheduler.Patcher.ConfigMapName
 	config.ns = csi.GetNamespace()
 	config.globalRegistry = csi.Spec.GlobalRegistry
+	config.registrySecret = csi.Spec.RegistrySecret
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level
 	config.configFolder = configurationPath
@@ -76,6 +77,7 @@ type patcherConfiguration struct {
 	ns                string
 	image             *components.Image
 	globalRegistry    string
+	registrySecret    string
 	pullPolicy        string
 	loglevel          components.Level
 	interval          int

@@ -71,6 +71,15 @@ func MakeNodeSelectorMap(ns *components.NodeSelector) map[string]string {
 	return map[string]string{}
 }
 
+// MakeImagePullSecrets creates list with imagePullSecret from csi spec
+func MakeImagePullSecrets(rs string) []corev1.LocalObjectReference {
+	if len(rs) != 0 {
+		return []corev1.LocalObjectReference{{Name: rs}}
+	}
+
+	return []corev1.LocalObjectReference{}
+}
+
 // GetSelectedNodes returns a list of nodes filtered with NodeSelector
 func GetSelectedNodes(ctx context.Context, c kubernetes.Interface, selector *components.NodeSelector) (*corev1.NodeList, error) {
 	var listOptions = metav1.ListOptions{}

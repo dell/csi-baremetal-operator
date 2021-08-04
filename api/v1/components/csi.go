@@ -22,6 +22,7 @@ type DeploymentSpec struct {
 	NodeController   *NodeController `json:"nodeController,omitempty"`
 	Scheduler        *Scheduler      `json:"scheduler,omitempty"`
 	GlobalRegistry   string          `json:"globalRegistry,omitempty"`
+	RegistrySecret   string          `json:"registrySecret,omitempty"`
 	PullPolicy       string          `json:"pullPolicy,omitempty"`
 	NodeSelector     *NodeSelector   `json:"nodeSelector,omitempty"`
 	NodeIDAnnotation bool            `json:"nodeIDAnnotation,omitempty"`

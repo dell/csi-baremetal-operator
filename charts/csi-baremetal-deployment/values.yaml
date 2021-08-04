@@ -1,6 +1,7 @@
 # Docker registry to pull images
 global:
   registry:
+  registrySecret:
 
 # Image pull settings
 image:

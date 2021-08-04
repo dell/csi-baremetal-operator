@@ -87,6 +87,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 					ServiceAccountName:            nodeServiceAccountName,
 					DeprecatedServiceAccount:      nodeServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
+					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 					HostIPC:                       true,
 				},

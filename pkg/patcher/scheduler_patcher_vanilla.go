@@ -193,6 +193,7 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					SecurityContext:               &corev1.PodSecurityContext{},
+					ImagePullSecrets:              common.MakeImagePullSecrets(p.registrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 					// todo https://github.com/dell/csi-baremetal/issues/329
 					Tolerations: []corev1.Toleration{
