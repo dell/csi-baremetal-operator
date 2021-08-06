@@ -103,6 +103,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 					ServiceAccountName:            controllerServiceAccountName,
 					DeprecatedServiceAccount:      controllerServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
+					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 				},
 			},

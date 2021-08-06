@@ -76,6 +76,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 					ServiceAccountName:            nodeControllerServiceAccountName,
 					DeprecatedServiceAccount:      nodeControllerServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
+					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 					Volumes:                       []corev1.Volume{constant.CrashVolume},
 				},

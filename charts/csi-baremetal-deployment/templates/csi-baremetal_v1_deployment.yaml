@@ -10,6 +10,7 @@ metadata:
 spec:
   platform: {{ .Values.platform }}
   globalRegistry: {{ .Values.global.registry }}
+  registrySecret: {{ .Values.global.registrySecret }}
   pullPolicy: {{ .Values.image.pullPolicy }}
   nodeIDAnnotation: {{ .Values.feature.usenodeannotation }}
   {{- if and (.Values.nodeSelector.key) (.Values.nodeSelector.value)}}
