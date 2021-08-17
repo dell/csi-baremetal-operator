@@ -18,7 +18,7 @@ spec:
     key: {{.Values.nodeSelector.key}}
     value: {{.Values.nodeSelector.value}}
   {{- end }}
-  consistentLVGReservation: {{ .Values.feature.consistentLVGReservation }}
+  sequentialLVGReservation: {{ .Values.feature.sequentialLVGReservation }}
   driver:
     controller:
       image:

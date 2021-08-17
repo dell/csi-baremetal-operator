@@ -26,6 +26,6 @@ type DeploymentSpec struct {
 	PullPolicy               string          `json:"pullPolicy,omitempty"`
 	NodeSelector             *NodeSelector   `json:"nodeSelector,omitempty"`
 	NodeIDAnnotation         bool            `json:"nodeIDAnnotation,omitempty"`
-	ConsistentLVGReservation bool            `json:"consistentLVGReservation,omitempty"`
+	SequentialLVGReservation bool            `json:"sequentialLVGReservation,omitempty"`
 	Platform                 string          `json:"platform,omitempty"`
 }

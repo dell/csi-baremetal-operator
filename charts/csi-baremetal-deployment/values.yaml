@@ -18,7 +18,7 @@ feature:
   extender: true
   # reserve place only for one pod at the same time
   # the option improves place planning for LVG volumes, but decreases CSI performance on the scheduling phase!
-  consistentLVGReservation: true
+  sequentialLVGReservation: true
   # enable node-controller
   # need for node replacement and node removal features
   usenodeannotation: true
