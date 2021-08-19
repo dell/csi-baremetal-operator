@@ -69,6 +69,7 @@ jobs:
 
     - name: Upload coverage report to codecov
       uses: codecov/codecov-action@v1.0.2
+      continue-on-error: true  #added here to workaround PR's from forked repositories validation failure caused by CODECOV_TOKEN access
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.out
