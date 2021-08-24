@@ -53,7 +53,7 @@ spec:
   subresources: {}
   validation:
     openAPIV3Schema:
-      description: Drive is the Schema for the drives API kubebuilder:object:generate=false
+      description: Drive is the Schema for the drives API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
