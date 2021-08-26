@@ -14,7 +14,13 @@ storageClass:
 
 # Feature settings
 feature:
+  # enable scheduler-extender and use ACR to improve selecting nodes for pods with provisioned volumes
   extender: true
+  # reserve place only for one pod at the same time
+  # the option improves place planning for LVG volumes, but decreases CSI performance on the scheduling phase!
+  sequentialLVGReservation: true
+  # enable node-controller
+  # need for node replacement and node removal features
   usenodeannotation: true
   useexternalannotation: false
   nodeIDAnnotation:

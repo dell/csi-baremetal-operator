@@ -131,6 +131,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				"--healthport=" + strconv.Itoa(healthPort),
 				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
 				"--metrics-path=/metrics",
+				"--sequential-lvg-reservation=" + strconv.FormatBool(csi.Spec.SequentialLVGReservation),
 			},
 			Env: []corev1.EnvVar{
 				{Name: "POD_IP", ValueFrom: &corev1.EnvVarSource{
