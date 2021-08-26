@@ -34,10 +34,6 @@ const (
 	mountPointDirVolume   = "mountpoint-dir"
 	csiPathVolume         = "csi-path"
 	driveConfigVolume     = "drive-config"
-
-	// alerts
-	alertsConfigName   = "csi-baremetal-alerts"
-	alertsConfigVolume = "alert-config"
 )
 
 // GetNodeDaemonsetPodsSelector returns a label-selector to use in the List method
