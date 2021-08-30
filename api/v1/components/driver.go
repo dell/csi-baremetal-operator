@@ -16,13 +16,12 @@ limitations under the License.
 
 package components
 
-// Drive represent CSI driver with all necessary CSI components
+// Driver represent CSI driver with all necessary CSI components
 type Driver struct {
-	Controller        *Controller  `json:"controller,omitempty"`
-	Node              *Node        `json:"node,omitempty"`
-	Metrics           *Metrics     `json:"metrics,omitempty"`
-	LogReceiver       *LogReceiver `json:"logReceiver,omitempty"`
-	MountAlertsConfig bool         `json:"mountAlertsConfig"`
+	Controller  *Controller  `json:"controller,omitempty"`
+	Node        *Node        `json:"node,omitempty"`
+	Metrics     *Metrics     `json:"metrics,omitempty"`
+	LogReceiver *LogReceiver `json:"logReceiver,omitempty"`
 	// todo need to implement this
 	MountRootHost bool `json:"mountRootHost"`
 }
