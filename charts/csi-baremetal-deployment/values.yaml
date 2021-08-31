@@ -1,6 +1,6 @@
 # Docker registry to pull images
 global:
-  registry:
+  registry: docker.io/objectscale
   registrySecret:
 
 # Image pull settings
@@ -43,7 +43,7 @@ driver:
       tag:
 
   drivemgr:
-    type: basemgr
+    type: halmgr
     image:
       tag:
     grpc:
@@ -132,7 +132,7 @@ scheduler:
     # option to enable Kubernetes scheduler configuration patching to use csi extender
     # platform field must be also set to the one of supported from pkg/constant/platforms.go
     # NOTE: use with caution - will overwrite existing configuration
-    enable: false
+    enable: true
 
     image:
       tag:
