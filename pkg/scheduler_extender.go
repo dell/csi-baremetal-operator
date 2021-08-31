@@ -57,7 +57,6 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 	)
 
 	if isPatchingEnabled {
-		n.Logger.Info("Kubernetes scheduler configuration patching enabled")
 		volumes = append(volumes, corev1.Volume{
 			Name: patcher.ExtenderConfigMapName,
 			VolumeSource: corev1.VolumeSource{
@@ -67,9 +66,6 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 					Optional:             pointer.BoolPtr(true),
 				},
 			}})
-	} else {
-		// todo make it warning once https://github.com/dell/csi-baremetal/issues/351 is implemented
-		n.Logger.Info("Kubernetes scheduler configuration patching not enabled. Please update configuration manually")
 	}
 
 	return &v1.DaemonSet{

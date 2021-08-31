@@ -23,6 +23,7 @@ type SchedulerPatcher struct {
 // patches Kube-Scheduler on Openshift
 func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	if !IsPatchingEnabled(csi) {
+		// todo change severity to warning once https://github.com/dell/csi-baremetal/issues/371 is addressed
 		p.Logger.Info("Kubernetes scheduler configuration patching not enabled. Please update configuration manually")
 		return nil
 	}
