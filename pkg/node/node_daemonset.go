@@ -34,10 +34,6 @@ const (
 	mountPointDirVolume   = "mountpoint-dir"
 	csiPathVolume         = "csi-path"
 	driveConfigVolume     = "drive-config"
-
-	// alerts
-	alertsConfigName   = "csi-baremetal-alerts"
-	alertsConfigVolume = "alert-config"
 )
 
 // GetNodeDaemonsetPodsSelector returns a label-selector to use in the List method
@@ -153,19 +149,7 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 				},
 			}})
 	}
-	// mount config for alerts
-	if csi.Spec.Driver.MountAlertsConfig {
-		configMapMode := corev1.ConfigMapVolumeSourceDefaultMode
-		volumes = append(volumes, corev1.Volume{
-			Name: alertsConfigVolume,
-			VolumeSource: corev1.VolumeSource{
-				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: alertsConfigName},
-					DefaultMode:          &configMapMode,
-					Optional:             pointer.BoolPtr(true),
-				},
-			}})
-	}
+
 	return volumes
 }
 
@@ -208,10 +192,6 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
 		{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
 		constant.CrashMountVolume,
-	}
-	// mount volume
-	if csi.Spec.Driver.MountAlertsConfig {
-		nodeMounts = append(nodeMounts, corev1.VolumeMount{Name: alertsConfigVolume, MountPath: "/etc/config"})
 	}
 	return []corev1.Container{
 		{
