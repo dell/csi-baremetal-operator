@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 // SchedulerPatcher performs pacthing procedure depends on platform
@@ -24,9 +25,9 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 	var err error
 
 	switch csi.Spec.Platform {
-	case PlatformOpenshift:
+	case constant.PlatformOpenShift:
 		err = p.patchOpenShift(ctx, csi)
-	case PlatformVanilla, PlatformRKE:
+	case constant.PlatformVanilla, constant.PlatformRKE:
 		err = p.updateVanilla(ctx, csi, scheme)
 	default:
 		p.Logger.Info("Platform is unavailable or not set. Patching disabled")
@@ -42,7 +43,7 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 // Uninstall unpatch Openshift Scheduler
 func (p *SchedulerPatcher) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	switch csi.Spec.Platform {
-	case PlatformOpenshift:
+	case constant.PlatformOpenShift:
 		return p.unPatchOpenShift(ctx)
 	default:
 		return nil

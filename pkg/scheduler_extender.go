@@ -37,7 +37,7 @@ type SchedulerExtender struct {
 // Update updates csi-baremetal-se or creates if not found
 func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// create daemonset
-	expected := createExtenderDaemonSet(csi)
+	expected := n.createExtenderDaemonSet(csi)
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 		return err
 	}
@@ -49,13 +49,15 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 	return nil
 }
 
-func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
+func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	var (
 		extenderConfigMapMode = corev1.ConfigMapVolumeSourceDefaultMode
 		volumes               = []corev1.Volume{constant.CrashVolume}
+		isPatchingEnabled     = patcher.IsPatchingEnabled(csi)
 	)
 
-	if patcher.IsPatchingEnabled(csi) {
+	if isPatchingEnabled {
+		n.Logger.Info("Kubernetes scheduler configuration patching enabled")
 		volumes = append(volumes, corev1.Volume{
 			Name: patcher.ExtenderConfigMapName,
 			VolumeSource: corev1.VolumeSource{
@@ -65,6 +67,9 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					Optional:             pointer.BoolPtr(true),
 				},
 			}})
+	} else {
+		// todo make it warning once https://github.com/dell/csi-baremetal/issues/351 is implemented
+		n.Logger.Info("Kubernetes scheduler configuration patching not enabled. Please update configuration manually")
 	}
 
 	return &v1.DaemonSet{
@@ -96,7 +101,7 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					Containers:                    createExtenderContainers(csi),
+					Containers:                    createExtenderContainers(csi, isPatchingEnabled),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
@@ -125,14 +130,10 @@ func createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	}
 }
 
-func createExtenderContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
-	var (
-		isPatchingEnabled = false
-		volumeMounts      = []corev1.VolumeMount{constant.CrashMountVolume}
-	)
+func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled bool) []corev1.Container {
+	volumeMounts := []corev1.VolumeMount{constant.CrashMountVolume}
 
-	if patcher.IsPatchingEnabled(csi) {
-		isPatchingEnabled = true
+	if isPatchingEnabled {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      patcher.ExtenderConfigMapName,
 			MountPath: patcher.ExtenderConfigMapPath,

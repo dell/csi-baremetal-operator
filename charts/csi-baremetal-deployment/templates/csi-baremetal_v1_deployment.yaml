@@ -87,6 +87,7 @@ spec:
       port: {{ .Values.scheduler.metrics.port }}
     extenderPort: {{ .Values.scheduler.extender.port | quote }}
     patcher:
+      enable: {{ .Values.scheduler.patcher.enable }}
       image:
         name: csi-baremetal-scheduler-patcher
         tag: {{ .Values.scheduler.patcher.image.tag | default .Values.image.tag }}

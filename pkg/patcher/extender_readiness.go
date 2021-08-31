@@ -13,6 +13,7 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 // TODO import from csi-baremetal - https://github.com/dell/csi-baremetal/issues/475
@@ -56,12 +57,12 @@ func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadi
 	options := &ExtenderReadinessOptions{}
 
 	switch csi.Spec.Platform {
-	case PlatformOpenshift:
+	case constant.PlatformOpenShift:
 		{
 			options.watchedConfigMapName = openshiftConfig
 			options.watchedConfigMapNamespace = openshiftNS
 		}
-	case PlatformVanilla, PlatformRKE:
+	case constant.PlatformVanilla, constant.PlatformRKE:
 		{
 			options.watchedConfigMapName = csi.Spec.Scheduler.Patcher.ConfigMapName
 			options.watchedConfigMapNamespace = csi.GetNamespace()
@@ -97,19 +98,26 @@ func ChooseKubeSchedulerLabel(csi *csibaremetalv1.Deployment) (string, string, e
 	)
 
 	switch csi.Spec.Platform {
-	case PlatformOpenshift:
+	case constant.PlatformOpenShift:
 		return OpenshiftKubeSchedulerLabelKey, OpenshiftKubeSchedulerLabelValue, nil
-	case PlatformVanilla, PlatformRKE:
+	case constant.PlatformVanilla, constant.PlatformRKE:
 		return VanillaKubeSchedulerLabelKey, VanillaKubeSchedulerLabelValue, nil
 	default:
 		return "", "", fmt.Errorf("%s platform is not supported platform for the patcher", csi.Spec.Platform)
 	}
 }
 
-// IsPatchingEnabled checks platform filed and returns true if platform is allowed
+// IsPatchingEnabled checks enable flag and platform field
+// Returns true if patcher enabled and platform is allowed, false otherwise
 func IsPatchingEnabled(csi *csibaremetalv1.Deployment) bool {
-	switch csi.Spec.Platform {
-	case PlatformOpenshift, PlatformVanilla, PlatformRKE:
+	spec := csi.Spec
+	return spec.Scheduler.Patcher.Enable && isPlatformSupported(spec.Platform)
+}
+
+// isPlatformSupported checks for supported platforms
+func isPlatformSupported(platform string) bool {
+	switch platform {
+	case constant.PlatformOpenShift, constant.PlatformVanilla, constant.PlatformRKE:
 		return true
 	default:
 		return false
@@ -152,10 +160,10 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	if !isAllReady(readinessStatuses) && isTimeoutPassed {
 		p.Logger.Info("Retry patching")
 		switch csi.Spec.Platform {
-		case PlatformOpenshift:
+		case constant.PlatformOpenShift:
 			err = p.retryPatchOpenshift(ctx, csi)
 			return err
-		case PlatformVanilla, PlatformRKE:
+		case constant.PlatformVanilla, constant.PlatformRKE:
 			err = p.retryPatchVanilla(ctx, csi, scheme)
 			return err
 		default:
