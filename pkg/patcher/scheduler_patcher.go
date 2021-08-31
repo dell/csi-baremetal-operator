@@ -22,16 +22,17 @@ type SchedulerPatcher struct {
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla
 // patches Kube-Scheduler on Openshift
 func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	var err error
+	if !IsPatchingEnabled(csi) {
+		p.Logger.Info("Kubernetes scheduler configuration patching not enabled. Please update configuration manually")
+		return nil
+	}
 
+	var err error
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
 		err = p.patchOpenShift(ctx, csi)
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		err = p.updateVanilla(ctx, csi, scheme)
-	default:
-		p.Logger.Info("Platform is unavailable or not set. Patching disabled")
-		return nil
 	}
 	if err != nil {
 		return err
@@ -42,10 +43,8 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 
 // Uninstall unpatch Openshift Scheduler
 func (p *SchedulerPatcher) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	switch csi.Spec.Platform {
-	case constant.PlatformOpenShift:
+	if IsPatchingEnabled(csi) && csi.Spec.Platform == constant.PlatformOpenShift {
 		return p.unPatchOpenShift(ctx)
-	default:
-		return nil
 	}
+	return nil
 }
