@@ -32,7 +32,7 @@ helm install csi-baremetal-operator csi/csi-baremetal-operator --devel
       ```
       helm install csi-baremetal csi/csi-baremetal-deployment --devel --set platform=openshift
       ```
-    * Not supported platform or/and system with third party Kubernetes scheduler extender - refer [documentation](MANUAL_SCHEDULER_CONFIGURATION.md) for manual patching of Kubernetes scheduler configuration
+    * Not supported platform or system with third party Kubernetes scheduler extender - refer [documentation](MANUAL_SCHEDULER_CONFIGURATION.md) for manual patching of Kubernetes scheduler configuration
       ```
       helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=false
       ```
