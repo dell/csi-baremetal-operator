@@ -4,16 +4,16 @@ metadata:
   name: csi-baremetal-operator
   namespace: {{ .Release.Namespace }}
   labels:
-    control-plane: controller-manager
+    app: csi-baremetal-operator
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app: csi-baremetal-operator
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        app: csi-baremetal-operator
         # release label used by fluentbit to make "release" folder
         release: {{ .Release.Name }}
     spec:

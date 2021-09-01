@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/dell/csi-baremetal-operator/pkg/csiwebhook"
 	"os"
 
 	"k8s.io/client-go/kubernetes"
@@ -73,6 +74,18 @@ func main() {
 	}
 
 	ctx := context.Background()
+
+	ws := &csiwebhook.WebhookServer{
+		Client:    mgr.GetClient(),
+		Clientset: *clientSet,
+		Logger:    ctrl.Log.WithName("csi-webhook"),
+	}
+
+	err = ws.Generate(ctx)
+	if err != nil {
+		setupLog.Error(err, "unable to setup webhook server")
+		os.Exit(1)
+	}
 
 	if err = (&controllers.DeploymentReconciler{
 		Client:        mgr.GetClient(),

@@ -18,12 +18,27 @@ rules:
   - events
   - nodes
   - pods
+  - secrets
   verbs:
   - "*"
 - apiGroups:
   - coordination.k8s.io
   resources:
   - leases
+  verbs:
+  - "*"
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  - certificatesigningrequests/approval
+  - signers
+  verbs:
+  - "*"
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
   verbs:
   - "*"
 - apiGroups:

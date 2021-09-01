@@ -8,10 +8,18 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"io/ioutil"
+	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver"
+	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -38,6 +46,7 @@ const (
 
 type WebhookServer struct {
 	Clientset kubernetes.Clientset
+	Client    client.Client
 	logr.Logger
 }
 
@@ -99,6 +108,8 @@ func (ws *WebhookServer) Generate(ctx context.Context) error {
 		}
 	}
 
+	ws.Logger.Info("csr")
+
 	csr.Status.Conditions = append(csr.Status.Conditions, certificates.CertificateSigningRequestCondition{
 		Type:           certificates.CertificateApproved,
 		Message:        "This CSR was approved by csi-baremetal-operator",
@@ -110,18 +121,27 @@ func (ws *WebhookServer) Generate(ctx context.Context) error {
 		return err
 	}
 
-	for i := 0; i < 10; i++ {
-		csr, err := csrClient.Get(ctx, csrName, v1.GetOptions{})
+	gottenCert := false
+	for i := 0; i < 20; i++ {
+		csr, err = csrClient.Get(ctx, csrName, v1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
 		if csr.Status.Certificate != nil {
+			ws.Logger.Info(fmt.Sprintf("%+v", csr.Status.Certificate))
+			gottenCert = true
 			break
 		}
 
 		time.Sleep(1 * time.Second)
 	}
+
+	if !gottenCert {
+		return errors.New("no csr certificate")
+	}
+
+	ws.Logger.Info("csr-approved")
 
 	keyPEM := new(bytes.Buffer)
 	_ = pem.Encode(keyPEM, &pem.Block{
@@ -141,6 +161,8 @@ func (ws *WebhookServer) Generate(ctx context.Context) error {
 			"tls.crt": cert,
 		},
 	}
+
+	ws.Logger.Info("secret")
 
 	secretClient := ws.Clientset.CoreV1().Secrets(namespace)
 	_, err = secretClient.Update(ctx, tlsSecret, v1.UpdateOptions{})
@@ -191,7 +213,7 @@ func (ws *WebhookServer) Generate(ctx context.Context) error {
 	}
 
 	cfgClient := ws.Clientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
-	_, err = cfgClient.Update(ctx, mutateconfig, v1.UpdateOptions{})
+	_, err = cfgClient.Create(ctx, mutateconfig, v1.CreateOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
@@ -202,13 +224,22 @@ func (ws *WebhookServer) Generate(ctx context.Context) error {
 		}
 	}
 
+	ws.Logger.Info("cfg")
+
 	pair, err := tls.X509KeyPair(cert, keyPEM.Bytes())
 	if err != nil {
+		ws.Logger.Info("cert")
+		ws.Logger.Info(string(cert))
+		ws.Logger.Info("key")
+		ws.Logger.Info(string(keyPEM.Bytes()))
 		return err
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(path, &WebhookHandler{ws.Logger})
+	mux.Handle(path, &WebhookHandler{
+		Client: ws.Client,
+		Logger: ws.Logger,
+	})
 	server := &http.Server{
 		Addr:    ":8443",
 		Handler: mux,
@@ -218,6 +249,7 @@ func (ws *WebhookServer) Generate(ctx context.Context) error {
 	}
 
 	go func() {
+		ws.Logger.Info("start server")
 		err := server.ListenAndServeTLS("", "")
 		if err != nil {
 			ws.Logger.Error(err, "webhook server failed")
@@ -229,10 +261,62 @@ func (ws *WebhookServer) Generate(ctx context.Context) error {
 }
 
 type WebhookHandler struct {
+	Client client.Client
 	logr.Logger
 }
 
 func (wh *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	wh.Logger.Info("HANDLER")
 	wh.Logger.Info(fmt.Sprintf("%+v", w))
 	wh.Logger.Info(fmt.Sprintf("%+v", r))
+
+	var body []byte
+	if r.Body != nil {
+		if data, err := ioutil.ReadAll(r.Body); err == nil {
+			body = data
+		}
+	}
+
+	ar := admissionv1.AdmissionReview{}
+	deserializer := apiserver.Codecs.UniversalDeserializer()
+	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
+		wh.Logger.Error(err, "")
+	}
+
+	wh.Logger.Info(fmt.Sprintf("%+v", ar))
+
+	reviewResponse := &admissionv1.AdmissionResponse{}
+	reviewResponse.Allowed = true
+
+	ctx := context.Background()
+
+	deployments := &csibaremetalv1.DeploymentList{}
+	err := wh.Client.List(ctx, deployments)
+	if err != nil {
+		wh.Logger.Error(err, "")
+	} else {
+		if len(deployments.Items) > 0 {
+			reviewResponse.Allowed = false
+			reviewResponse.Result = &v1.Status{
+				Reason: "deployment ... already exists",
+			}
+		}
+	}
+
+	response := ar
+	if reviewResponse != nil {
+		response.Response = reviewResponse
+		response.Response.UID = ar.Request.UID
+	}
+	// reset the Object and OldObject, they are not needed in a response.
+	ar.Request.Object = runtime.RawExtension{}
+	ar.Request.OldObject = runtime.RawExtension{}
+
+	resp, err := json.Marshal(response)
+	if err != nil {
+		wh.Logger.Error(err, "")
+	}
+	if _, err := w.Write(resp); err != nil {
+		wh.Logger.Error(err, "")
+	}
 }
