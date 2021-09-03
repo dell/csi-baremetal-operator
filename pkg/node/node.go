@@ -12,6 +12,8 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
+
+	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
 )
 
 const (
@@ -119,8 +121,23 @@ func (n *Node) cleanNodeLabels(ctx context.Context) error {
 
 	for _, node := range nodes.Items {
 		nodeIns := node
+		toUpdate := false
+
+		// delete platform label
 		if _, ok := node.Labels[platformLabel]; ok {
 			delete(node.Labels, platformLabel)
+			toUpdate = true
+		}
+
+		// delete label with NodeID
+		// workaround to work with csi-node-driver-registrar sidecar internal logic
+		// implemented in this method to decrease Kubernetes API calls
+		if _, ok := node.Labels[nodeconst.NodeIDTopologyLabelKey]; ok {
+			delete(node.Labels, nodeconst.NodeIDTopologyLabelKey)
+			toUpdate = true
+		}
+
+		if toUpdate {
 			if _, err := n.clientset.CoreV1().Nodes().Update(ctx, &nodeIns, metav1.UpdateOptions{}); err != nil {
 				n.log.Error(err, "Failed to delete label on "+node.Name)
 			}
