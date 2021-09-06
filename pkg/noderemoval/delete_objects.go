@@ -59,7 +59,7 @@ func (c *Controller) deleteDrives(ctx context.Context, nodeID string) error {
 
 	for i, drive := range drives.Items {
 		if drive.Spec.NodeId == nodeID {
-			if err = c.deleteObject(ctx, &drives.Items[i], "drive", true); err != nil {
+			if err = c.deleteObject(ctx, &drives.Items[i], "drive", false); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
@@ -83,7 +83,7 @@ func (c *Controller) deleteACs(ctx context.Context, nodeID string) error {
 
 	for i, ac := range acs.Items {
 		if ac.Spec.NodeId == nodeID {
-			if err = c.deleteObject(ctx, &acs.Items[i], "ac", true); err != nil {
+			if err = c.deleteObject(ctx, &acs.Items[i], "ac", false); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
