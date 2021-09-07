@@ -5,7 +5,7 @@ entries:
     appVersion: 0.4.0
     created: "2021-09-07T17:12:50.245259878+03:00"
     description: Bare-metal CSI Deployment
-    digest: 6d33f6dc3c15fc6532e89106c8e957754e25d376e380f4041ef1e5ad58598019
+    digest: 7afa470fee07fc392d198c4054bdc4aa64ec66aa7ed65529a333900a06e2e138
     name: csi-baremetal-deployment
     urls:
     - https://github.com/dell/csi-baremetal-operator/releases/download/v0.4.0-alpha/csi-baremetal-deployment-0.4.0-50.35bb135.tgz
@@ -42,7 +42,7 @@ entries:
     appVersion: 0.4.0
     created: "2021-09-07T17:12:50.24560495+03:00"
     description: Bare-metal CSI Operator
-    digest: 6e991cf8127e40827663f73c88358fe3630f7498e7cd1b1f2559955076b7379b
+    digest: 667d2d34fac2641dea730ea09ecff2131d82590accc18f4ece1021b9af7ed054
     name: csi-baremetal-operator
     urls:
     - https://github.com/dell/csi-baremetal-operator/releases/download/v0.4.0-alpha/csi-baremetal-operator-0.4.0-50.35bb135.tgz
