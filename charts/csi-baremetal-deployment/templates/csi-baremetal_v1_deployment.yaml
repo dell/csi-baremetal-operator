@@ -98,7 +98,7 @@ spec:
   nodeController:
     enable: {{ .Values.nodeController.enable }}
     image:
-      name: csi-baremetal-operator
+      name: csi-baremetal-node-controller
       tag: {{ .Values.nodeController.image.tag | default .Values.image.tag }}
     log:
       format: {{ .Values.nodeController.log.format }}

@@ -38,7 +38,7 @@ func (c *Controller) deleteCSIResources(ctx context.Context, csibmnode *nodecrd.
 		return fmt.Errorf(strings.Join(errors, "\n"))
 	}
 
-	if err := c.deleteObject(ctx, csibmnode, "csibmnode"); err != nil {
+	if err := c.deleteObject(ctx, csibmnode, "csibmnode", false); err != nil {
 		return err
 	}
 
@@ -59,7 +59,7 @@ func (c *Controller) deleteDrives(ctx context.Context, nodeID string) error {
 
 	for i, drive := range drives.Items {
 		if drive.Spec.NodeId == nodeID {
-			if err = c.deleteObject(ctx, &drives.Items[i], "drive"); err != nil {
+			if err = c.deleteObject(ctx, &drives.Items[i], "drive", false); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
@@ -83,7 +83,7 @@ func (c *Controller) deleteACs(ctx context.Context, nodeID string) error {
 
 	for i, ac := range acs.Items {
 		if ac.Spec.NodeId == nodeID {
-			if err = c.deleteObject(ctx, &acs.Items[i], "ac"); err != nil {
+			if err = c.deleteObject(ctx, &acs.Items[i], "ac", false); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
@@ -107,7 +107,7 @@ func (c *Controller) deleteLVGs(ctx context.Context, nodeID string) error {
 
 	for i, lvg := range lvgs.Items {
 		if lvg.Spec.Node == nodeID {
-			if err = c.deleteObject(ctx, &lvgs.Items[i], "lvg"); err != nil {
+			if err = c.deleteObject(ctx, &lvgs.Items[i], "lvg", true); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
@@ -131,7 +131,7 @@ func (c *Controller) deleteVolumes(ctx context.Context, nodeID string) error {
 
 	for i, volume := range volumes.Items {
 		if volume.Spec.NodeId == nodeID {
-			if err = c.deleteObject(ctx, &volumes.Items[i], "volume"); err != nil {
+			if err = c.deleteObject(ctx, &volumes.Items[i], "volume", true); err != nil {
 				errors = append(errors, err.Error())
 			}
 		}
@@ -144,20 +144,21 @@ func (c *Controller) deleteVolumes(ctx context.Context, nodeID string) error {
 	return nil
 }
 
-func (c *Controller) deleteObject(ctx context.Context, obj client.Object, objType string) error {
+func (c *Controller) deleteObject(ctx context.Context, obj client.Object, objType string, patchFinalizer bool) error {
 	var errors []string
 
-	// patch finalizers
-	if len(obj.GetFinalizers()) != 0 {
-		obj.SetFinalizers([]string{})
-		if err := c.client.Update(ctx, obj); err != nil {
-			c.log.Error(err, fmt.Sprintf("Failed to update obj, type: %s, name: %s", objType, obj.GetName()))
-			errors = append(errors, err.Error())
-		}
+	if patchFinalizer {
+		if len(obj.GetFinalizers()) != 0 {
+			obj.SetFinalizers([]string{})
+			if err := c.client.Update(ctx, obj); err != nil {
+				c.log.Error(err, fmt.Sprintf("Failed to update obj, type: %s, name: %s", objType, obj.GetName()))
+				errors = append(errors, err.Error())
+			}
 
-		if err := c.client.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
-			c.log.Error(err, fmt.Sprintf("Failed to get obj, type: %s, name: %s", objType, obj.GetName()))
-			errors = append(errors, err.Error())
+			if err := c.client.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
+				c.log.Error(err, fmt.Sprintf("Failed to get obj, type: %s, name: %s", objType, obj.GetName()))
+				errors = append(errors, err.Error())
+			}
 		}
 	}
 
