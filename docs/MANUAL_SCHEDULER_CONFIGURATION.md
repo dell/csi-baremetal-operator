@@ -123,7 +123,22 @@ following manual steps are required
                - --config=/etc/kubernetes/manifests/scheduler/config-19.yaml
             ```
 * RKE2
+    * Follow instructions for vanilla Kubernetes, but use the following path to the scheduler configuration file `/var/lib/rancher/rke2/agent/pod-manifests/`
     
 * OpenShift
+    * _TBD_
 
 * Other
+    * Follow instructions provided by vendor. Use the following parameters:
+    ```
+    extenders:
+    ...
+      - urlPrefix: "http://127.0.0.1:8889"
+        filterVerb: filter
+        prioritizeVerb: prioritize
+        weight: 1
+        enableHTTPS: false
+        nodeCacheCapable: false
+        ignorable: true
+        httpTimeout: 15s
+    ```
