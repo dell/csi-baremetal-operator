@@ -1,6 +1,6 @@
 # Docker registry to pull images
 global:
-  registry: docker.io/objectscale
+  registry:
   registrySecret:
 
 # Image pull settings

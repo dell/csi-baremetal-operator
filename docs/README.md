@@ -22,19 +22,19 @@ helm install csi-baremetal-operator csi/csi-baremetal-operator --devel
 * Install CSI     
     * Vanilla Kubernetes
         ```
-        helm install csi-baremetal csi/csi-baremetal-deployment --devel 
+        helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true
         ```
     * RKE2
         ```
-        helm install csi-baremetal csi/csi-baremetal-deployment --devel --set platform=rke
+        helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true --set platform=rke
         ```
     * OpenShift
       ```
-      helm install csi-baremetal csi/csi-baremetal-deployment --devel --set platform=openshift
+      helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true --set platform=openshift
       ```
     * Not supported platform or system with third party Kubernetes scheduler extender - refer [documentation](MANUAL_SCHEDULER_CONFIGURATION.md) for manual patching of Kubernetes scheduler configuration
       ```
-      helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=false
+      helm install csi-baremetal csi/csi-baremetal-deployment --devel
       ```
         
 Uninstallation process
