@@ -34,19 +34,18 @@ following manual steps are required
         ```
         * Create configuration file _/etc/kubernetes/manifests/scheduler/config.yaml_
         ```
-         /etc/kubernetes/manifests/scheduler/config.yaml
-           apiVersion: kubescheduler.config.k8s.io/v1alpha1
-           kind: KubeSchedulerConfiguration
-           schedulerName: default-scheduler
-           algorithmSource:
-             policy:
-               file:
-                 path: /etc/kubernetes/manifests/scheduler/policy.yaml
-           leaderElection:
-             leaderElect: true
-           clientConnection:
-             kubeconfig: /etc/kubernetes/scheduler.conf
-         ```
+        apiVersion: kubescheduler.config.k8s.io/v1alpha1
+        kind: KubeSchedulerConfiguration
+        schedulerName: default-scheduler
+        algorithmSource:
+          policy:
+            file:
+              path: /etc/kubernetes/manifests/scheduler/policy.yaml
+        leaderElection:
+          leaderElect: true
+        clientConnection:
+          kubeconfig: /etc/kubernetes/scheduler.conf
+        ```
         *  Add the following sections to the _/etc/kubernetes/manifests/kube-scheduler.yaml_ configuration file
             * Volumes
             ```
