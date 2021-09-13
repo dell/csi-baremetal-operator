@@ -124,10 +124,12 @@ pods to restart after configuration change.
                - --config=/etc/kubernetes/manifests/scheduler/config-19.yaml
             ```
 * RKE2
-    * Follow instructions for vanilla Kubernetes, but use the following path to the scheduler configuration file `/var/lib/rancher/rke2/agent/pod-manifests/`
+    * Follow instructions for vanilla Kubernetes, but use the following path to the scheduler configuration file
+    `/var/lib/rancher/rke2/agent/pod-manifests/`
     
 * OpenShift
-    * If you have third party scheduler extender deployed add the following section to the _scheduler-policy_ config map in _openshift-config_ namespace
+    * If you have third party scheduler extender deployed add the following section to the config map specified in the
+    cluster custom resource of scheduler CRD `oc describe scheduler cluster`
     ```json
     {
       "urlPrefix": "http://127.0.0.1:8889",
@@ -160,6 +162,10 @@ pods to restart after configuration change.
     * Create _scheduler-policy_ config map in _openshift-config_ namespace:
     ```shell script
     oc create configmap -n openshift-config --from-file=policy.cfg scheduler-policy
+    ```
+    * Patch scheduler
+    ```shell script
+    oc patch scheduler cluster --type='merge' -p '{"spec":{"policy":{"name":"scheduler-policy"}}}' --type=merge
     ```
 
 * Other
