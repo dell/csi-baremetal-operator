@@ -2,7 +2,8 @@ Manual Kubernetes Scheduler Configuration
 ---------------------
 To make CSI work correctly we maintain Kubernetes scheduler extender and scheduler extender patcher components.
 If your Kubernetes distributive is not in the list of supported or you have third party scheduler extender deployed the
-following manual steps are required
+following manual steps are required on all master nodes (except OpenShift). Note that user must wait for all scheduler
+pods to restart after configuration change.
 * Vanilla Kubernetes
     * If you have third party scheduler extender deployed add the following sections to your configuration file
     ```yaml
