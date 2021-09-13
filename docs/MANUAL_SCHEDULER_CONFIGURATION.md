@@ -165,7 +165,7 @@ pods to restart after configuration change.
     ```
     * Patch scheduler
     ```shell script
-    oc patch scheduler cluster --type='merge' -p '{"spec":{"policy":{"name":"scheduler-policy"}}}' --type=merge
+    oc patch scheduler cluster -p '{"spec":{"policy":{"name":"scheduler-policy"}}}' --type=merge
     ```
 
 * Other
