@@ -2,20 +2,21 @@ package patcher
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/fake"
 	"reflect"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 const (
@@ -276,6 +277,39 @@ func Test_updateReadinessStatuses(t *testing.T) {
 			}
 		}
 	})
+}
+
+func Test_IsPatchingEnabled(t *testing.T) {
+	csi := &csibaremetalv1.Deployment{
+		Spec: components.DeploymentSpec{
+			Platform: constant.PlatformVanilla,
+			Scheduler: &components.Scheduler{
+				Patcher: &components.Patcher{
+					Enable: true,
+				},
+			},
+		},
+	}
+	// check vanilla
+	result := IsPatchingEnabled(csi)
+	assert.True(t, result)
+	// check OpenShift
+	csi.Spec.Platform = constant.PlatformOpenShift
+	result = IsPatchingEnabled(csi)
+	assert.True(t, result)
+	// check RKE
+	csi.Spec.Platform = constant.PlatformRKE
+	result = IsPatchingEnabled(csi)
+	assert.True(t, result)
+	// check not supported
+	csi.Spec.Platform = "other"
+	result = IsPatchingEnabled(csi)
+	assert.False(t, result)
+	// check not set
+	csi.Spec.Platform = constant.PlatformVanilla
+	csi.Spec.Scheduler.Patcher.Enable = false
+	result = IsPatchingEnabled(csi)
+	assert.False(t, result)
 }
 
 func prepareSchedulerPatcher(objects ...runtime.Object) *SchedulerPatcher {

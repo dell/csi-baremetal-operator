@@ -6,16 +6,10 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 const (
-	// PlatformVanilla - vanilla platform key
-	PlatformVanilla = "vanilla"
-	// PlatformRKE - RKE platform key
-	PlatformRKE = "rke"
-	// PlatformOpenshift - openshift platform key
-	PlatformOpenshift = "openshift"
-
 	rke2ManifestsFolder    = "/var/lib/rancher/rke2/agent/pod-manifests"
 	vanillaManifestsFolder = "/etc/kubernetes/manifests"
 
@@ -37,9 +31,9 @@ const (
 func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfiguration, error) {
 	var config patcherConfiguration
 	switch csi.Spec.Platform {
-	case PlatformVanilla:
+	case constant.PlatformVanilla:
 		config = patcherConfiguration{
-			platform:        PlatformVanilla,
+			platform:        constant.PlatformVanilla,
 			targetConfig:    path.Join(vanillaManifestsFolder, configPath),
 			targetPolicy:    path.Join(vanillaManifestsFolder, policyPath),
 			targetConfig19:  path.Join(vanillaManifestsFolder, config19Path),
@@ -47,9 +41,9 @@ func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 			manifestsFolder: vanillaManifestsFolder,
 			kubeconfig:      vanillaKubeconfig,
 		}
-	case PlatformRKE:
+	case constant.PlatformRKE:
 		config = patcherConfiguration{
-			platform:        PlatformRKE,
+			platform:        constant.PlatformRKE,
 			targetConfig:    path.Join(rke2ManifestsFolder, configPath),
 			targetPolicy:    path.Join(rke2ManifestsFolder, policyPath),
 			targetConfig19:  path.Join(rke2ManifestsFolder, config19Path),

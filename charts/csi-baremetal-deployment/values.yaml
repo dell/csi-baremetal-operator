@@ -129,6 +129,9 @@ scheduler:
 
   # Patcher settings
   patcher:
+    # option to enable Kubernetes scheduler configuration patching to use csi extender
+    # platform field must be also set to the one of supported from pkg/constant/platforms.go
+    # NOTE: use with caution - will overwrite existing configuration
     enable: false
 
     image:
@@ -165,4 +168,5 @@ nodeController:
     port: 8787
 
 # TODO Move parameter to Operator chart - https://github.com/dell/csi-baremetal/issues/422
+# platform field must be set to the one of supported from pkg/constant/platforms.go
 platform: "vanilla"

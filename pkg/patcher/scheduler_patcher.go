@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 // SchedulerPatcher performs pacthing procedure depends on platform
@@ -21,16 +22,18 @@ type SchedulerPatcher struct {
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla
 // patches Kube-Scheduler on Openshift
 func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	var err error
-
-	switch csi.Spec.Platform {
-	case PlatformOpenshift:
-		err = p.patchOpenShift(ctx, csi)
-	case PlatformVanilla, PlatformRKE:
-		err = p.updateVanilla(ctx, csi, scheme)
-	default:
-		p.Logger.Info("Platform is unavailable or not set. Patching disabled")
+	if !IsPatchingEnabled(csi) {
+		// todo change severity to warning once https://github.com/dell/csi-baremetal/issues/371 is addressed
+		p.Logger.Info("Kubernetes scheduler configuration patching not enabled. Please update configuration manually")
 		return nil
+	}
+
+	var err error
+	switch csi.Spec.Platform {
+	case constant.PlatformOpenShift:
+		err = p.patchOpenShift(ctx, csi)
+	case constant.PlatformVanilla, constant.PlatformRKE:
+		err = p.updateVanilla(ctx, csi, scheme)
 	}
 	if err != nil {
 		return err
@@ -41,10 +44,8 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 
 // Uninstall unpatch Openshift Scheduler
 func (p *SchedulerPatcher) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	switch csi.Spec.Platform {
-	case PlatformOpenshift:
+	if IsPatchingEnabled(csi) && csi.Spec.Platform == constant.PlatformOpenShift {
 		return p.unPatchOpenShift(ctx)
-	default:
-		return nil
 	}
+	return nil
 }
