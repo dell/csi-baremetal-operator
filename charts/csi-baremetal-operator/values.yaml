@@ -6,5 +6,5 @@ global:
 # Image pull settings
 image:
   name: csi-baremetal-operator
-  tag: latest
-  pullPolicy: IfNotPresent
+  tag: green
+  pullPolicy: Always
