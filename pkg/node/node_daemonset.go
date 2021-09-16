@@ -53,19 +53,14 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 		Spec: v1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": nodeName},
+				MatchLabels: common.ConstructSelectorMap(nodeName),
 			},
 			// template
 			Template: corev1.PodTemplateSpec{
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{
-						"app":                    nodeName,
-						"app.kubernetes.io/name": constant.CSIName,
-						// release label used by fluentbit to make "release" folder
-						"release": nodeName,
-					},
+					Labels: common.ConstructLabelMap(nodeName),
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",

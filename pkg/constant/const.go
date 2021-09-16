@@ -50,6 +50,18 @@ const (
 	DriverRegistrarName = "csi-node-driver-registrar"
 	// LivenessProbeName - name of livenessprobe sidecar
 	LivenessProbeName = "livenessprobe"
+
+	// AppLabelKey matches CSI CRs with csi-baremetal app
+	AppLabelKey = "app.kubernetes.io/name"
+	// AppLabelShortKey matches CSI CRs with csi-baremetal app
+	AppLabelShortKey = "app"
+	// AppLabelValue matches CSI CRs with csi-baremetal app
+	AppLabelValue = CSIName
+
+	// SelectorKey is a key for Deployments/Daemonsets selector
+	SelectorKey = "name"
+	// FluentbitLabelKey is key for label used by fluentbit to make "release" folder
+	FluentbitLabelKey = "release"
 )
 
 var (

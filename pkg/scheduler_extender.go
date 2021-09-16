@@ -76,19 +76,14 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 		Spec: v1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": extenderName},
+				MatchLabels: common.ConstructSelectorMap(extenderName),
 			},
 			// template
 			Template: corev1.PodTemplateSpec{
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{
-						"app":                    extenderName,
-						"app.kubernetes.io/name": constant.CSIName,
-						// release label used by fluentbit to make "release" folder
-						"release": extenderName,
-					},
+					Labels: common.ConstructLabelMap(extenderName),
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",
