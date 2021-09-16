@@ -72,6 +72,7 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      extenderName,
 			Namespace: csi.GetNamespace(),
+			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector

@@ -138,11 +138,17 @@ func PrepareScheme() (*runtime.Scheme, error) {
 
 // ConstructLabelMap creates the map contains pod labels
 func ConstructLabelMap(appName string) map[string]string {
+	labels := ConstructLabelAppMap()
+	labels[constant.SelectorKey] = appName
+	labels[constant.FluentbitLabelKey] = appName
+	return labels
+}
+
+// ConstructLabelAppMap creates the map contains app labels
+func ConstructLabelAppMap() map[string]string {
 	return map[string]string{
-		constant.AppLabelKey:       constant.AppLabelValue,
-		constant.AppLabelShortKey:  constant.AppLabelValue,
-		constant.SelectorKey:       appName,
-		constant.FluentbitLabelKey: appName,
+		constant.AppLabelKey:      constant.AppLabelValue,
+		constant.AppLabelShortKey: constant.AppLabelValue,
 	}
 }
 

@@ -67,6 +67,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      controllerName,
 			Namespace: csi.GetNamespace(),
+			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DeploymentSpec{
 			Replicas: pointer.Int32Ptr(replicasCount),

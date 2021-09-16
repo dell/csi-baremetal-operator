@@ -169,6 +169,7 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      patcherName,
 			Namespace: p.ns,
+			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector
