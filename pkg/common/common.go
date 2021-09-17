@@ -13,6 +13,7 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 
 	acrcrd "github.com/dell/csi-baremetal/api/v1/acreservationcrd"
 	accrd "github.com/dell/csi-baremetal/api/v1/availablecapacitycrd"
@@ -133,4 +134,27 @@ func PrepareScheme() (*runtime.Scheme, error) {
 	}
 
 	return scheme, nil
+}
+
+// ConstructLabelMap creates the map contains pod labels
+func ConstructLabelMap(appName string) map[string]string {
+	labels := ConstructLabelAppMap()
+	labels[constant.SelectorKey] = appName
+	labels[constant.FluentbitLabelKey] = appName
+	return labels
+}
+
+// ConstructLabelAppMap creates the map contains app labels
+func ConstructLabelAppMap() map[string]string {
+	return map[string]string{
+		constant.AppLabelKey:      constant.AppLabelValue,
+		constant.AppLabelShortKey: constant.AppLabelValue,
+	}
+}
+
+// ConstructSelectorMap creates the map contains deployment/daemonset selectors
+func ConstructSelectorMap(appName string) map[string]string {
+	return map[string]string{
+		constant.SelectorKey: appName,
+	}
 }

@@ -55,29 +55,32 @@ func (c *Controller) Update(ctx context.Context, csi *csibaremetalv1.Deployment,
 }
 
 func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
+	var (
+		selectors = common.ConstructSelectorMap(controllerName)
+		labels    = common.ConstructLabelMap(controllerName)
+	)
+
+	selectors["role"] = controllerRoleKey
+	labels["role"] = controllerRoleKey
+
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      controllerName,
 			Namespace: csi.GetNamespace(),
+			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DeploymentSpec{
 			Replicas: pointer.Int32Ptr(replicasCount),
 			// selector
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": controllerName, "role": controllerRoleKey},
+				MatchLabels: selectors,
 			},
 			// template
 			Template: corev1.PodTemplateSpec{
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{
-						"app":                    controllerName,
-						"app.kubernetes.io/name": constant.CSIName,
-						"role":                   controllerRoleKey,
-						// release label used by fluentbit to make "release" folder
-						"release": controllerName,
-					},
+					Labels: labels,
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",

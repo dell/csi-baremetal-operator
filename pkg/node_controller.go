@@ -51,22 +51,19 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeControllerName,
 			Namespace: csi.GetNamespace(),
+			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DeploymentSpec{
 			Replicas: pointer.Int32Ptr(ncReplicasCount),
 			// selector
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": nodeControllerName},
+				MatchLabels: common.ConstructSelectorMap(nodeControllerName),
 			},
 			// template
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{
-						"app": nodeControllerName,
-						// release label used by fluentbit to make "release" folder
-						"release": nodeControllerName,
-					},
+					Labels: common.ConstructLabelMap(nodeControllerName),
 				},
 				Spec: corev1.PodSpec{
 					Containers:                    createNodeControllerContainers(csi),

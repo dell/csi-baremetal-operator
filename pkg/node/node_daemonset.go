@@ -38,7 +38,7 @@ const (
 
 // GetNodeDaemonsetPodsSelector returns a label-selector to use in the List method
 func GetNodeDaemonsetPodsSelector() labels.Selector {
-	return labels.SelectorFromSet(map[string]string{"app": nodeName})
+	return labels.SelectorFromSet(common.ConstructSelectorMap(nodeName))
 }
 
 func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescription) *v1.DaemonSet {
@@ -49,23 +49,19 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      platform.DaemonsetName(nodeName),
 			Namespace: csi.GetNamespace(),
+			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": nodeName},
+				MatchLabels: common.ConstructSelectorMap(nodeName),
 			},
 			// template
 			Template: corev1.PodTemplateSpec{
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{
-						"app":                    nodeName,
-						"app.kubernetes.io/name": constant.CSIName,
-						// release label used by fluentbit to make "release" folder
-						"release": nodeName,
-					},
+					Labels: common.ConstructLabelMap(nodeName),
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",

@@ -169,22 +169,19 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      patcherName,
 			Namespace: p.ns,
+			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": patcherName},
+				MatchLabels: common.ConstructSelectorMap(patcherName),
 			},
 			// template
 			Template: corev1.PodTemplateSpec{
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: map[string]string{
-						"app": patcherName,
-						// release label used by fluentbit to make "release" folder
-						"release": patcherName,
-					},
+					Labels: common.ConstructLabelMap(patcherName),
 				},
 				Spec: corev1.PodSpec{
 					Containers:                    p.createPatcherContainers(),
