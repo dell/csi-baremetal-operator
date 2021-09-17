@@ -222,7 +222,7 @@ func Test_removeNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod1",
 					Namespace: "csi-namespace",
-					Labels:    map[string]string{"app": "csi-baremetal-node"},
+					Labels:    map[string]string{"name": "csi-baremetal-node"},
 				},
 				Spec: corev1.PodSpec{
 					NodeName: getNodeName(csibmnode1),
