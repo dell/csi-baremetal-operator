@@ -38,7 +38,7 @@ const (
 
 // GetNodeDaemonsetPodsSelector returns a label-selector to use in the List method
 func GetNodeDaemonsetPodsSelector() labels.Selector {
-	return labels.SelectorFromSet(map[string]string{"app": nodeName})
+	return labels.SelectorFromSet(common.ConstructSelectorMap(nodeName))
 }
 
 func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescription) *v1.DaemonSet {

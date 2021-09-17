@@ -4,7 +4,7 @@ metadata:
   name: csi-baremetal-operator
   namespace: {{ .Release.Namespace }}
   labels:
-    app: csi-baremtal
+    app: csi-baremetal
     app.kubernetes.io/name: csi-baremetal
 spec:
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         name: {{ .Release.Name }}
-        app: csi-baremtal
+        app: csi-baremetal
         app.kubernetes.io/name: csi-baremetal
         # release label used by fluentbit to make "release" folder
         release: {{ .Release.Name }}
