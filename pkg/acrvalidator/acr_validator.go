@@ -19,10 +19,12 @@ const (
 	validationTimeout = 60 * time.Second
 )
 
-// This package implements a watcher, which has to check
+// acrvalidator package implements a watcher, which has to check
 // all existing ACRs and remove ones, if they are outdated
-// (pods for these ACRs were removed). It's the workaround
-// until we use scheduler-extender
+// (pods for these ACRs were removed). Stacked volumes may
+// lead to races, if they are in RESERVED state (block other
+// reservations) or new created pods have the same name.
+// It's the workaround until we use scheduler-extender
 
 // ACRValidator is the watcher to remove outdated ACRs
 type ACRValidator struct {
