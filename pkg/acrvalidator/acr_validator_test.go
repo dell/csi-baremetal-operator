@@ -2,9 +2,8 @@ package acrvalidator
 
 import (
 	"context"
-	"github.com/dell/csi-baremetal-operator/pkg/common"
-	api "github.com/dell/csi-baremetal/api/generated/v1"
-	acrcrd "github.com/dell/csi-baremetal/api/v1/acreservationcrd"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -12,7 +11,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
+
+	"github.com/dell/csi-baremetal-operator/pkg/common"
+
+	api "github.com/dell/csi-baremetal/api/generated/v1"
+	acrcrd "github.com/dell/csi-baremetal/api/v1/acreservationcrd"
 )
 
 const (
