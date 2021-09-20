@@ -28,6 +28,7 @@ import (
 
 	"github.com/dell/csi-baremetal-operator/controllers"
 	"github.com/dell/csi-baremetal-operator/pkg"
+	"github.com/dell/csi-baremetal-operator/pkg/acrvalidator"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	// +kubebuilder:scaffold:imports
 )
@@ -71,6 +72,8 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
+	acrvalidator.LauncACRValidation(mgr.GetClient(), ctrl.Log.WithName("controllers").WithName("acr_validator"))
 
 	ctx := context.Background()
 
