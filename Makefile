@@ -2,7 +2,7 @@ include variables.mk
 
 # Image URL to use all building/pushing image targets
 IMG ?= ${REGISTRY}/csi-baremetal-operator:${TAG}
-
+CONTROLLER_GEN ?= ./bin/controller-gen
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -57,7 +57,7 @@ resources:
 	kubectl apply -f deploy/csidriver
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen
+manifests: install-controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 # Run go fmt against code
@@ -70,8 +70,8 @@ vet:
 
 # Generate code
 generate:
-	controller-gen object paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:dir=api/v1
-	controller-gen crd:trivialVersions=true paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=config/crd
+	$(CONTROLLER_GEN) object paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:dir=api/v1
+	$(CONTROLLER_GEN) crd:trivialVersions=true paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=config/crd
 
 # Build the docker image
 docker-build:
@@ -85,22 +85,9 @@ kind-load:
 docker-push:
 	docker push ${IMG}
 
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
-	}
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
+install-controller-gen:
+    # Build a binary of controller-gen from go.mod
+	go build -o ./bin/ -mod='' sigs.k8s.io/controller-tools/cmd/controller-gen
 
 lint:
 	${GO_ENV_VARS} golangci-lint -v run ./...
