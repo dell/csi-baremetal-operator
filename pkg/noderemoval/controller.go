@@ -39,6 +39,7 @@ const (
 	nodeRemovalTaintKey    = "node.dell.com/drain"
 	nodeRemovalTaintValue  = "drain"
 	nodeRemovalTaintEffect = "NoSchedule"
+	mmTaintValue           = "planned-downtime"
 )
 
 // Controller performs node removal procedure
@@ -78,7 +79,7 @@ func (c *Controller) Reconcile(ctx context.Context, csi *csibaremetalv1.Deployme
 
 	nodesWithTaint := getTaintedNodes(nodes.Items)
 
-	removingNodes, err := c.reconcileNodes(ctx, csibmnodes.Items, nodesWithTaint)
+	removingNodes, err := c.reconcileNodesMM(ctx, csibmnodes.Items, nodesWithTaint)
 	if err != nil {
 		return err
 	}
@@ -143,6 +144,38 @@ func (c *Controller) reconcileNodes(ctx context.Context, csibmnodes []nodecrd.No
 	return removingNodes, nil
 }
 
+func (c *Controller) reconcileNodesMM(ctx context.Context, csibmnodes []nodecrd.Node, nodesWithTaint map[string]bool) ([]nodecrd.Node, error) {
+	var (
+		errors        []string
+		removingNodes []nodecrd.Node
+	)
+
+	for i, csibmnode := range csibmnodes {
+		hasLabel := false
+		hasTaint := false
+		hasNode := false
+		needUpdate := false
+
+		if value, ok := csibmnode.GetLabels()[nodeRemovalTaintKey]; ok && value == mmTaintValue {
+			hasLabel = true
+		}
+
+		hasTaint, hasNode = nodesWithTaint[getNodeName(&csibmnodes[i])]
+
+		// perform node removal
+		if hasLabel && !hasNode {
+			removingNodes = append(removingNodes, csibmnode)
+			continue
+		}
+	}
+
+	if len(errors) != 0 {
+		return removingNodes, fmt.Errorf(strings.Join(errors, "\n"))
+	}
+
+	return removingNodes, nil
+}
+
 func (c *Controller) removeNodes(ctx context.Context, csibmnodes []nodecrd.Node) error {
 	var (
 		errors []string
@@ -189,6 +222,32 @@ func getTaintedNodes(nodes []corev1.Node) map[string]bool {
 		for _, taint := range taints {
 			if taint.Key == nodeRemovalTaintKey &&
 				taint.Value == nodeRemovalTaintValue &&
+				taint.Effect == nodeRemovalTaintEffect {
+				hasTaint = true
+				continue
+			}
+		}
+
+		nodesWithTaint[node.Name] = hasTaint
+	}
+
+	return nodesWithTaint
+}
+
+func getTaintedNodes(nodes []corev1.Node) map[string]bool {
+	nodesWithTaint := map[string]bool{}
+
+	for _, node := range nodes {
+		taints := node.Spec.Taints
+		if len(taints) == 0 {
+			nodesWithTaint[node.Name] = false
+			continue
+		}
+
+		hasTaint := false
+		for _, taint := range taints {
+			if taint.Key == nodeRemovalTaintKey &&
+				taint.Value == mmTaintValue &&
 				taint.Effect == nodeRemovalTaintEffect {
 				hasTaint = true
 				continue
