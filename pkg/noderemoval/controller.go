@@ -77,7 +77,7 @@ func (c *Controller) Reconcile(ctx context.Context, csi *csibaremetalv1.Deployme
 		return nil
 	}
 
-	nodesWithTaint := getTaintedNodes(nodes.Items)
+	nodesWithTaint := getTaintedNodesMM(nodes.Items)
 
 	removingNodes, err := c.reconcileNodesMM(ctx, csibmnodes.Items, nodesWithTaint)
 	if err != nil {
@@ -234,7 +234,7 @@ func getTaintedNodes(nodes []corev1.Node) map[string]bool {
 	return nodesWithTaint
 }
 
-func getTaintedNodes(nodes []corev1.Node) map[string]bool {
+func getTaintedNodesMM(nodes []corev1.Node) map[string]bool {
 	nodesWithTaint := map[string]bool{}
 
 	for _, node := range nodes {
