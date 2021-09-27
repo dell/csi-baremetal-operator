@@ -154,7 +154,6 @@ func (c *Controller) reconcileNodesMM(ctx context.Context, csibmnodes []nodecrd.
 		hasLabel := false
 		hasTaint := false
 		hasNode := false
-		needUpdate := false
 
 		if value, ok := csibmnode.GetLabels()[nodeRemovalTaintKey]; ok && value == mmTaintValue {
 			hasLabel = true
@@ -163,7 +162,7 @@ func (c *Controller) reconcileNodesMM(ctx context.Context, csibmnodes []nodecrd.
 		hasTaint, hasNode = nodesWithTaint[getNodeName(&csibmnodes[i])]
 
 		// perform node removal
-		if hasLabel && !hasNode {
+		if hasLabel && !hasNode && hasTaint {
 			removingNodes = append(removingNodes, csibmnode)
 			continue
 		}
