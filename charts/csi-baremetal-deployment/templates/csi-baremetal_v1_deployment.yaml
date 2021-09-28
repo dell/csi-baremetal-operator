@@ -36,10 +36,6 @@ spec:
           image:
             name: csi-provisioner
             tag: {{ .Values.driver.provisioner.image.tag }}
-       csi-attacher:
-          image:
-            name: csi-attacher
-            tag: {{ .Values.driver.attacher.image.tag }}
        csi-resizer:
           image:
             name: csi-resizer
