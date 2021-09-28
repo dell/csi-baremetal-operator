@@ -1,58 +1,13 @@
 
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.2
+    controller-gen.kubebuilder.io/version: v0.5.0
   creationTimestamp: null
   name: drives.csi-baremetal.dell.com
 spec:
-  additionalPrinterColumns:
-  - JSONPath: .spec.Size
-    description: Drive capacity
-    name: SIZE
-    type: string
-  - JSONPath: .spec.Type
-    description: Drive type (HDD/LVG/NVME)
-    name: TYPE
-    type: string
-  - JSONPath: .spec.Health
-    description: Drive health status
-    name: HEALTH
-    type: string
-  - JSONPath: .spec.Status
-    description: Drive status online/offline
-    name: STATUS
-    priority: 1
-    type: string
-  - JSONPath: .spec.Usage
-    description: Drive usage
-    name: USAGE
-    priority: 1
-    type: string
-  - JSONPath: .spec.IsSystem
-    description: Is system disk
-    name: SYSTEM
-    priority: 1
-    type: string
-  - JSONPath: .spec.Path
-    description: Drive path
-    name: PATH
-    priority: 1
-    type: string
-  - JSONPath: .spec.SerialNumber
-    description: Drive serial number
-    name: SERIAL NUMBER
-    type: string
-  - JSONPath: .spec.Slot
-    description: Drive slot
-    name: SLOT
-    type: string
-  - JSONPath: .spec.NodeId
-    description: Drive node location
-    name: NODE
-    type: string
   group: csi-baremetal.dell.com
   names:
     kind: Drive
@@ -60,74 +15,118 @@ spec:
     plural: drives
     singular: drive
   scope: Cluster
-  subresources: {}
-  validation:
-    openAPIV3Schema:
-      description: Drive is the Schema for the drives API
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          properties:
-            Bay:
-              type: string
-            Enclosure:
-              type: string
-            Endurance:
-              format: int64
-              type: integer
-            Firmware:
-              type: string
-            Health:
-              type: string
-            IsClean:
-              type: boolean
-            IsSystem:
-              type: boolean
-            LEDState:
-              type: string
-            NodeId:
-              type: string
-            PID:
-              type: string
-            Path:
-              description: path to the device. may not be set by drivemgr.
-              type: string
-            SerialNumber:
-              type: string
-            Size:
-              description: size in bytes
-              format: int64
-              type: integer
-            Slot:
-              type: string
-            Status:
-              type: string
-            Type:
-              type: string
-            UUID:
-              type: string
-            Usage:
-              type: string
-            VID:
-              type: string
-          type: object
-      type: object
-  version: v1
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - description: Drive capacity
+      jsonPath: .spec.Size
+      name: SIZE
+      type: string
+    - description: Drive type (HDD/LVG/NVME)
+      jsonPath: .spec.Type
+      name: TYPE
+      type: string
+    - description: Drive health status
+      jsonPath: .spec.Health
+      name: HEALTH
+      type: string
+    - description: Drive status online/offline
+      jsonPath: .spec.Status
+      name: STATUS
+      priority: 1
+      type: string
+    - description: Drive usage
+      jsonPath: .spec.Usage
+      name: USAGE
+      priority: 1
+      type: string
+    - description: Is system disk
+      jsonPath: .spec.IsSystem
+      name: SYSTEM
+      priority: 1
+      type: string
+    - description: Drive path
+      jsonPath: .spec.Path
+      name: PATH
+      priority: 1
+      type: string
+    - description: Drive serial number
+      jsonPath: .spec.SerialNumber
+      name: SERIAL NUMBER
+      type: string
+    - description: Drive node location
+      jsonPath: .spec.NodeId
+      name: NODE
+      type: string
+    - description: Drive slot
+      jsonPath: .spec.Slot
+      name: SLOT
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: Drive is the Schema for the drives API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              Bay:
+                type: string
+              Enclosure:
+                type: string
+              Endurance:
+                format: int64
+                type: integer
+              Firmware:
+                type: string
+              Health:
+                type: string
+              IsClean:
+                type: boolean
+              IsSystem:
+                type: boolean
+              LEDState:
+                type: string
+              NodeId:
+                type: string
+              PID:
+                type: string
+              Path:
+                description: path to the device. may not be set by drivemgr.
+                type: string
+              SerialNumber:
+                type: string
+              Size:
+                description: size in bytes
+                format: int64
+                type: integer
+              Slot:
+                type: string
+              Status:
+                type: string
+              Type:
+                type: string
+              UUID:
+                type: string
+              Usage:
+                type: string
+              VID:
+                type: string
+            type: object
+        type: object
     served: true
     storage: true
+    subresources: {}
 status:
   acceptedNames:
     kind: ""
