@@ -251,7 +251,7 @@ func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.N
 }
 
 func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
-	c.log.Info("Starting to delete CSI pods for on node %s", nodeName)
+	c.log.Info(fmt.Sprintf("Starting to delete CSI pods for on node %s", nodeName))
 
 	fieldSelector := fields.SelectorFromSet(map[string]string{"spec.nodeName": nodeName})
 	labelSelector := labels.SelectorFromSet(common.ConstructLabelAppMap())
