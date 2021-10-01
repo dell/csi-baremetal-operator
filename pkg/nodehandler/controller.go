@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package noderemoval
+package nodehandler
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -35,11 +36,19 @@ import (
 	"github.com/dell/csi-baremetal/api/v1/nodecrd"
 )
 
-const (
-	nodeRemovalTaintKey    = "node.dell.com/drain"
-	nodeRemovalTaintValue  = "drain"
-	nodeRemovalTaintEffect = "NoSchedule"
-	mmTaintValue           = "planned-downtime"
+var (
+	// Node Maintenance Taint
+	mTaint = corev1.Taint{
+		Key:    "node.dell.com/drain",
+		Value:  "planned-downtime",
+		Effect: "NoSchedule",
+	}
+	// Node Removal Taint
+	rTaint = corev1.Taint{
+		Key:    "node.dell.com/drain",
+		Value:  "drain",
+		Effect: "NoSchedule",
+	}
 )
 
 // Controller performs node removal procedure
@@ -49,8 +58,8 @@ type Controller struct {
 	log       logr.Logger
 }
 
-// NewNodeRemovalController returns Controller object
-func NewNodeRemovalController(clientset kubernetes.Interface, client client.Client, log logr.Logger) *Controller {
+// NewNodeHandlerController returns Controller object
+func NewNodeHandlerController(clientset kubernetes.Interface, client client.Client, log logr.Logger) *Controller {
 	return &Controller{
 		clientset: clientset,
 		client:    client,
@@ -77,27 +86,24 @@ func (c *Controller) Reconcile(ctx context.Context, csi *csibaremetalv1.Deployme
 		return nil
 	}
 
-	nodesWithTaint := getTaintedNodesMM(nodes.Items)
-
-	removingNodes, err := c.reconcileNodesMM(ctx, csibmnodes.Items, nodesWithTaint)
-	if err != nil {
+	if err := c.handleNodeRemoval(ctx, csibmnodes.Items, nodes.Items); err != nil {
 		return err
 	}
 
-	if len(removingNodes) != 0 {
-		if err := c.removeNodes(ctx, removingNodes); err != nil {
-			return err
-		}
+	if err := c.handleNodeMaintenance(ctx, nodes.Items); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (c *Controller) reconcileNodes(ctx context.Context, csibmnodes []nodecrd.Node, nodesWithTaint map[string]bool) ([]nodecrd.Node, error) {
+func (c *Controller) handleNodeRemoval(ctx context.Context, csibmnodes []nodecrd.Node, nodes []corev1.Node) error {
 	var (
 		errors        []string
 		removingNodes []nodecrd.Node
 	)
+
+	isNodesWithTaint := getMapIsNodesTainted(nodes, rTaint)
 
 	for i, csibmnode := range csibmnodes {
 		hasLabel := false
@@ -105,11 +111,11 @@ func (c *Controller) reconcileNodes(ctx context.Context, csibmnodes []nodecrd.No
 		hasNode := false
 		needUpdate := false
 
-		if value, ok := csibmnode.GetLabels()[nodeRemovalTaintKey]; ok && value == nodeRemovalTaintValue {
+		if value, ok := csibmnode.GetLabels()[rTaint.Key]; ok && value == rTaint.Value {
 			hasLabel = true
 		}
 
-		hasTaint, hasNode = nodesWithTaint[getNodeName(&csibmnodes[i])]
+		hasTaint, hasNode = isNodesWithTaint[getNodeName(&csibmnodes[i])]
 
 		// perform node removal
 		if hasLabel && !hasNode {
@@ -119,13 +125,13 @@ func (c *Controller) reconcileNodes(ctx context.Context, csibmnodes []nodecrd.No
 
 		if hasNode && !hasLabel && hasTaint {
 			addNodeRemovalLabel(&csibmnodes[i])
-			c.log.Info(fmt.Sprintf("Csibmnode %s has labeled with %s=%s", csibmnode.Name, nodeRemovalTaintKey, nodeRemovalTaintValue))
+			c.log.Info(fmt.Sprintf("Csibmnode %s has labeled with %s=%s", csibmnode.Name, rTaint.Key, rTaint.Value))
 			needUpdate = true
 		}
 
 		if hasNode && hasLabel && !hasTaint {
 			deleteNodeRemovalLabel(&csibmnodes[i])
-			c.log.Info(fmt.Sprintf("Csibmnode %s has unlabeled (%s)", csibmnode.Name, nodeRemovalTaintKey))
+			c.log.Info(fmt.Sprintf("Csibmnode %s has unlabeled (%s)", csibmnode.Name, rTaint.Key))
 			needUpdate = true
 		}
 
@@ -138,41 +144,14 @@ func (c *Controller) reconcileNodes(ctx context.Context, csibmnodes []nodecrd.No
 	}
 
 	if len(errors) != 0 {
-		return removingNodes, fmt.Errorf(strings.Join(errors, "\n"))
+		return fmt.Errorf(strings.Join(errors, "\n"))
 	}
 
-	return removingNodes, nil
-}
-
-func (c *Controller) reconcileNodesMM(ctx context.Context, csibmnodes []nodecrd.Node, nodesWithTaint map[string]bool) ([]nodecrd.Node, error) {
-	var (
-		errors        []string
-		removingNodes []nodecrd.Node
-	)
-
-	for i, csibmnode := range csibmnodes {
-		hasLabel := false
-		hasTaint := false
-		hasNode := false
-
-		if value, ok := csibmnode.GetLabels()[nodeRemovalTaintKey]; ok && value == mmTaintValue {
-			hasLabel = true
-		}
-
-		hasTaint, hasNode = nodesWithTaint[getNodeName(&csibmnodes[i])]
-
-		// perform node removal
-		if hasLabel && !hasNode && hasTaint {
-			removingNodes = append(removingNodes, csibmnode)
-			continue
-		}
+	if err := c.removeNodes(ctx, removingNodes); err != nil {
+		return err
 	}
 
-	if len(errors) != 0 {
-		return removingNodes, fmt.Errorf(strings.Join(errors, "\n"))
-	}
-
-	return removingNodes, nil
+	return nil
 }
 
 func (c *Controller) removeNodes(ctx context.Context, csibmnodes []nodecrd.Node) error {
@@ -207,56 +186,26 @@ func (c *Controller) removeNodes(ctx context.Context, csibmnodes []nodecrd.Node)
 	return nil
 }
 
-func getTaintedNodes(nodes []corev1.Node) map[string]bool {
+func getMapIsNodesTainted(nodes []corev1.Node, taintToFind corev1.Taint) map[string]bool {
 	nodesWithTaint := map[string]bool{}
 
-	for _, node := range nodes {
-		taints := node.Spec.Taints
-		if len(taints) == 0 {
-			nodesWithTaint[node.Name] = false
-			continue
-		}
-
-		hasTaint := false
-		for _, taint := range taints {
-			if taint.Key == nodeRemovalTaintKey &&
-				taint.Value == nodeRemovalTaintValue &&
-				taint.Effect == nodeRemovalTaintEffect {
-				hasTaint = true
-				continue
-			}
-		}
-
-		nodesWithTaint[node.Name] = hasTaint
+	for i := range nodes {
+		nodesWithTaint[nodes[i].Name] = hasTaint(&nodes[i], taintToFind)
 	}
 
 	return nodesWithTaint
 }
 
-func getTaintedNodesMM(nodes []corev1.Node) map[string]bool {
-	nodesWithTaint := map[string]bool{}
-
-	for _, node := range nodes {
-		taints := node.Spec.Taints
-		if len(taints) == 0 {
-			nodesWithTaint[node.Name] = false
-			continue
-		}
-
-		hasTaint := false
-		for _, taint := range taints {
-			if taint.Key == nodeRemovalTaintKey &&
-				taint.Value == mmTaintValue &&
-				taint.Effect == nodeRemovalTaintEffect {
-				hasTaint = true
-				continue
-			}
-		}
-
-		nodesWithTaint[node.Name] = hasTaint
+func hasTaint(node *corev1.Node, taintToFind corev1.Taint) bool {
+	if node == nil {
+		return false
 	}
-
-	return nodesWithTaint
+	for _, taint := range node.Spec.Taints {
+		if taint.Key == taintToFind.Key && taint.Value == taintToFind.Value {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Controller) checkDaemonsetPodRunning(ctx context.Context, nodeName string) (bool, error) {
@@ -268,7 +217,6 @@ func (c *Controller) checkDaemonsetPodRunning(ctx context.Context, nodeName stri
 	if err != nil {
 		return false, err
 	}
-
 	if len(pods.Items) != 0 {
 		for _, pod := range pods.Items {
 			c.log.Info(fmt.Sprintf("%s is still running", pod.Name))
@@ -287,9 +235,47 @@ func addNodeRemovalLabel(csibmnode *nodecrd.Node) {
 	if csibmnode.Labels == nil {
 		csibmnode.Labels = map[string]string{}
 	}
-	csibmnode.Labels[nodeRemovalTaintKey] = nodeRemovalTaintValue
+	csibmnode.Labels[rTaint.Key] = rTaint.Value
 }
 
 func deleteNodeRemovalLabel(csibmnode *nodecrd.Node) {
-	delete(csibmnode.Labels, nodeRemovalTaintKey)
+	delete(csibmnode.Labels, rTaint.Key)
+}
+
+func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.Node) error {
+	for i := range nodes {
+		if hasTaint(&nodes[i], mTaint) {
+			if err := c.deleteCSIPods(ctx, nodes[i].Name); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
+	c.log.Info("Starting to delete CSI pods for on node %s", nodeName)
+
+	fieldSelector := fields.SelectorFromSet(map[string]string{"spec.nodeName": nodeName})
+	labelSelector := labels.SelectorFromSet(common.ConstructLabelAppMap())
+
+	var pods corev1.PodList
+	err := c.client.List(ctx, &pods, &client.ListOptions{FieldSelector: fieldSelector, LabelSelector: labelSelector})
+	if err != nil {
+		return err
+	}
+
+	if len(pods.Items) == 0 {
+		c.log.Info("There are no CSI pods on the node %s", nodeName)
+	}
+
+	for _, pod := range pods.Items {
+		c.log.Info("Going to remove %s", pod.Name)
+		// Remove Pod
+		if err := c.client.Delete(ctx, pod.DeepCopy()); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dell/csi-baremetal-operator/pkg/noderemoval"
+	"github.com/dell/csi-baremetal-operator/pkg/nodehandler"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,7 +25,7 @@ type CSIDeployment struct {
 	extender              SchedulerExtender
 	patcher               patcher.SchedulerPatcher
 	nodeController        NodeController
-	nodeRemovalController *noderemoval.Controller
+	nodeHandlerController *nodehandler.Controller
 }
 
 // NewCSIDeployment creates CSIDeployment
@@ -52,10 +52,10 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			Clientset: &clientSet,
 			Logger:    log.WithValues(constant.CSIName, "nodeController"),
 		},
-		nodeRemovalController: noderemoval.NewNodeRemovalController(
+		nodeHandlerController: nodehandler.NewNodeHandlerController(
 			&clientSet,
 			client,
-			log.WithValues(constant.CSIName, "nodeRemovalController"),
+			log.WithValues(constant.CSIName, "nodeHandlerController"),
 		),
 	}
 }
@@ -87,7 +87,7 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 
 // ReconcileNodes performs node removal procedure
 func (c *CSIDeployment) ReconcileNodes(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	if err := c.nodeRemovalController.Reconcile(ctx, csi); err != nil {
+	if err := c.nodeHandlerController.Reconcile(ctx, csi); err != nil {
 		return err
 	}
 
