@@ -147,11 +147,7 @@ func (c *Controller) handleNodeRemoval(ctx context.Context, csibmnodes []nodecrd
 		return fmt.Errorf(strings.Join(errors, "\n"))
 	}
 
-	if err := c.removeNodes(ctx, removingNodes); err != nil {
-		return err
-	}
-
-	return nil
+	return c.removeNodes(ctx, removingNodes)
 }
 
 func (c *Controller) removeNodes(ctx context.Context, csibmnodes []nodecrd.Node) error {
@@ -189,8 +185,8 @@ func (c *Controller) removeNodes(ctx context.Context, csibmnodes []nodecrd.Node)
 func getMapIsNodesTainted(nodes []corev1.Node, taintToFind corev1.Taint) map[string]bool {
 	nodesWithTaint := map[string]bool{}
 
-	for i := range nodes {
-		nodesWithTaint[nodes[i].Name] = hasTaint(&nodes[i], taintToFind)
+	for i, node := range nodes {
+		nodesWithTaint[node.Name] = hasTaint(&nodes[i], taintToFind)
 	}
 
 	return nodesWithTaint
@@ -243,9 +239,9 @@ func deleteNodeRemovalLabel(csibmnode *nodecrd.Node) {
 }
 
 func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.Node) error {
-	for i := range nodes {
+	for i, node := range nodes {
 		if hasTaint(&nodes[i], mTaint) {
-			if err := c.deleteCSIPods(ctx, &nodes[i].Name); err != nil {
+			if err := c.deleteCSIPods(ctx, node.Name); err != nil {
 				return err
 			}
 		}
