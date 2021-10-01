@@ -263,11 +263,11 @@ func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
 	}
 
 	if len(pods.Items) == 0 {
-		c.log.Info("There are no CSI pods on the node %s", nodeName)
+		c.log.Info(fmt.Sprintf("There are no CSI pods on the node %s", nodeName))
 	}
 
 	for _, pod := range pods.Items {
-		c.log.Info("Going to remove %s", pod.Name)
+		c.log.Info(fmt.Sprintf("Going to remove %s", pod.Name))
 		// Remove Pod
 		if err := c.client.Delete(ctx, pod.DeepCopy()); err != nil {
 			return err
