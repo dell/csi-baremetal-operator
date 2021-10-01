@@ -245,7 +245,7 @@ func deleteNodeRemovalLabel(csibmnode *nodecrd.Node) {
 func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.Node) error {
 	for i := range nodes {
 		if hasTaint(&nodes[i], mTaint) {
-			if err := c.deleteCSIPods(ctx, nodes[i].Name); err != nil {
+			if err := c.deleteCSIPods(ctx, &nodes[i].Name); err != nil {
 				return err
 			}
 		}
