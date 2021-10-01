@@ -144,6 +144,7 @@ func Test_getTaintedNodes(t *testing.T) {
 // 	})
 // }
 
+
 func Test_removeNodes(t *testing.T) {
 	t.Run("Should delete resources", func(t *testing.T) {
 		var (
