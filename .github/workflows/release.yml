@@ -1,9 +1,9 @@
-name: Release
+name: Release Charts
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
 
 env:
   builds_url: http://asdrepo.isus.emc.com/artifactory/atlantic-helm-build
@@ -15,6 +15,7 @@ jobs:
     steps:
       - name: Calculate version
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
       - name: Download Binary
         uses: wei/wget@v1
         with:
@@ -23,16 +24,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Github Release create, update, and upload assets
-        uses: meeDamian/github-release@v2.0
+      - name: Create release
+        uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }}
           name: Release ${{ github.ref }}
           prerelease: true
           files: ./csi-baremetal-operator-${{ env.RELEASE_VERSION }}.tgz
@@ -48,7 +43,7 @@ jobs:
         with:
           version: v3.4.0
 
-      - name: Run chart-releaser
+      - name: Update helm repository
         uses: helm/chart-releaser-action@v1.2.1
-        with:
-          charts_dir: /tmp/v${{github.ref}}
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"          
