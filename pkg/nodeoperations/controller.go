@@ -249,20 +249,31 @@ func deleteNodeRemovalLabel(csibmnode *nodecrd.Node) {
 }
 
 func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.Node) error {
+	var (
+		errors []string
+	)
+
 	c.log.Info("Starting Node Maintenance")
 
 	for i, node := range nodes {
 		if hasTaint(&nodes[i], mTaint) {
 			if err := c.deleteCSIPods(ctx, node.Name); err != nil {
-				return err
+				errors = append(errors, err.Error())
 			}
 		}
 	}
 
+	if len(errors) != 0 {
+		return fmt.Errorf(strings.Join(errors, "\n"))
+	}
 	return nil
 }
 
 func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
+	var (
+		errors []string
+	)
+
 	c.log.Info(fmt.Sprintf("Starting to delete CSI pods for on node %s", nodeName))
 
 	labelSelector := labels.SelectorFromSet(common.ConstructLabelAppMap())
@@ -285,8 +296,12 @@ func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
 		c.log.Info(fmt.Sprintf("Going to remove %s", pod.Name))
 		// Remove Pod
 		if err := c.client.Delete(ctx, pod.DeepCopy()); err != nil {
-			return err
+			errors = append(errors, err.Error())
 		}
+	}
+
+	if len(errors) != 0 {
+		return fmt.Errorf(strings.Join(errors, "\n"))
 	}
 	return nil
 }
