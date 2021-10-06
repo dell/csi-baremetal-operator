@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Calculate version
         id: version
-        run: echo ${{ github.ref.split('-')[0][1:] }}${{ github.sha }}
+        run: echo "${{ github.ref.split('-')[0][1:] }}${{ github.sha }}"
 
       - name: Download Binary
         uses: wei/wget@v1
