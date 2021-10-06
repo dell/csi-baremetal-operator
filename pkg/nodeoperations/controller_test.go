@@ -8,6 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -31,9 +32,8 @@ var (
 	lvg1, lvg2             lvgcrd.LogicalVolumeGroup
 	volume1, volume2       volumecrd.Volume
 	pod                    corev1.Pod
-	podDaemonSet           corev1.Pod
-	podDeployment          corev1.Pod
-	podNotCSI              corev1.Pod
+	podnode1, podnode2     corev1.Pod
+	podcontroller          corev1.Pod
 )
 
 func Init() {
@@ -125,6 +125,48 @@ func Init() {
 	volume2 = volumecrd.Volume{
 		ObjectMeta: metav1.ObjectMeta{Name: "volume2"},
 		Spec:       api.Volume{NodeId: csibmnode2.Spec.UUID},
+	}
+
+	podnode1 = corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "csi-baremetal-node-1",
+			Namespace: "csi-namespace",
+			Labels:    common.ConstructLabelAppMap(),
+			OwnerReferences: []metav1.OwnerReference{
+				{Name: "pod", Kind: "DaemonSet"},
+			},
+		},
+		Spec: corev1.PodSpec{
+			NodeName: node1.Name,
+		},
+	}
+
+	podnode2 = corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "csi-baremetal-node-2",
+			Namespace: "csi-namespace",
+			Labels:    common.ConstructLabelAppMap(),
+			OwnerReferences: []metav1.OwnerReference{
+				{Name: "pod", Kind: "DaemonSet"},
+			},
+		},
+		Spec: corev1.PodSpec{
+			NodeName: node2.Name,
+		},
+	}
+
+	podcontroller = corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "csi-baremetal-controller",
+			Namespace: "csi-namespace",
+			Labels:    common.ConstructLabelAppMap(),
+			OwnerReferences: []metav1.OwnerReference{
+				{Name: "pod", Kind: "Deployment"},
+			},
+		},
+		Spec: corev1.PodSpec{
+			NodeName: node1.Name,
+		},
 	}
 }
 
@@ -233,11 +275,34 @@ func Test_handleNodeRemoval(t *testing.T) {
 	})
 }
 
-func prepareController(objects ...client.Object) *Controller {
+func Test_handleNodeMaintenance(t *testing.T) {
+	t.Run("Should remove csi pods from tainted nodes (ecxept DaemonSets)", func(t *testing.T) {
+		Init()
+
+		node1.Spec.Taints = []corev1.Taint{mTaint}
+
+		c := prepareController(&csibmnode1, &csibmnode2, &podnode1, &podnode2, &podcontroller)
+
+		err := c.handleNodeMaintenance(ctx, []corev1.Node{node1, node2})
+		assert.Nil(t, err)
+
+		// Expected Deployment pod was deleted from tainted node
+		err = c.client.Get(ctx, client.ObjectKey{Namespace: podcontroller.Namespace, Name: podcontroller.Name}, &podcontroller)
+		assert.True(t, k8serrors.IsNotFound(err))
+
+		// Expected not tainted node wasn't affected: Deployment pod still alive
+		err = c.client.Get(ctx, client.ObjectKey{Namespace: podnode1.Namespace, Name: podnode1.Name}, &podnode1)
+		assert.Nil(t, err)
+
+		// Expected DaemonSet pod wasn't deleted from tainted node
+		err = c.client.Get(ctx, client.ObjectKey{Namespace: podnode2.Namespace, Name: podnode2.Name}, &podnode2)
+		assert.Nil(t, err)
+	})
+}
+
+func prepareController(objects ...runtime.Object) *Controller {
 	scheme, _ := common.PrepareScheme()
-	builder := fake.ClientBuilder{}
-	builderWithScheme := builder.WithScheme(scheme)
-	client := builderWithScheme.WithObjects(objects...).Build()
+	client := fake.NewFakeClientWithScheme(scheme, objects...)
 	controller := NewNodeOperationsController(
 		nil,
 		client,
