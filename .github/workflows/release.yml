@@ -5,22 +5,17 @@ on:
     tags:
       - v*
 
-env:
-  builds_url: http://asdrepo.isus.emc.com/artifactory/atlantic-helm-build
-
 jobs:
   build:
     name: Release
     runs-on: ubuntu-latest
     steps:
-      - name: Calculate version
+      - name: Make version
         id: version
-        run: echo "${{ github.ref.split('-')[0][1:] }}${{ github.sha }}"
+        run: make version
 
-      - name: Download Binary
-        uses: wei/wget@v1
-        with:
-          args: ${{ env.builds_url }}/csi-operator/${{ steps.version.outputs }}/csi-baremetal-operator-${{ steps.version.outputs }}.tgz
+      - name: Create asset
+        run: tar -czvf csi-baremetal-operator-${{ steps.version.outputs }}.tgz charts
 
       - name: Checkout code
         uses: actions/checkout@v2
