@@ -279,7 +279,7 @@ func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
 	labelSelector := labels.SelectorFromSet(common.ConstructLabelAppMap())
 	fieldSelector := fields.AndSelectors(
 		fields.OneTermEqualSelector("spec.nodeName", nodeName),
-		fields.OneTermNotEqualSelector("Kind", "DaemonSet"),
+		fields.OneTermNotEqualSelector("OwnerReferences.Kind", "DaemonSet"),
 	)
 
 	var pods corev1.PodList
@@ -293,10 +293,19 @@ func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
 	}
 
 	for _, pod := range pods.Items {
-		c.log.Info(fmt.Sprintf("Going to remove %s", pod.Name))
-		// Remove Pod
-		if err := c.client.Delete(ctx, pod.DeepCopy()); err != nil {
-			errors = append(errors, err.Error())
+		// Expected pod.OwnerReferences has only one managing controller
+		if len(pod.OwnerReferences) > 1 {
+			c.log.Info(fmt.Sprintf("Skip deleting pod %s, pod.OwnerReferences number more than one.", pod.Name))
+			continue
+		}
+
+		// Delete all CSI pods ecxept DaemonSets
+		if pod.OwnerReferences[0].Kind != "DaemonSet" {
+			c.log.Info(fmt.Sprintf("Going to remove %s", pod.Name))
+			// Remove Pod
+			if err := c.client.Delete(ctx, pod.DeepCopy()); err != nil {
+				errors = append(errors, err.Error())
+			}
 		}
 	}
 

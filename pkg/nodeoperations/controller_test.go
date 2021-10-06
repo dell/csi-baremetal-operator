@@ -126,48 +126,6 @@ func Init() {
 		ObjectMeta: metav1.ObjectMeta{Name: "volume2"},
 		Spec:       api.Volume{NodeId: csibmnode2.Spec.UUID},
 	}
-
-	podDaemonSet = corev1.Pod{
-	    TypeMeta: metav1.TypeMeta{
-    	    Kind:       "DaemonSet",
-    	    APIVersion: "v1",
-    	},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod1",
-			Namespace: "csi-namespace",
-			Labels:    map[string]string{"name": "csi-baremetal-node"},
-		},
-		Spec: corev1.PodSpec{
-			NodeName: node1.Name,
-		},
-	}
-
-	podDeployment = corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod2",
-			Namespace: "csi-namespace",
-			Labels:    map[string]string{"name": "csi-baremetal-node"},
-			OwnerReferences: []metav1.OwnerReference{
-				{Name: "pod2", Kind: "Deployment"},
-			},
-		},
-		Spec: corev1.PodSpec{
-			NodeName: node1.Name,
-		},
-	}
-	podNotCSI = corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod3",
-			Namespace: "default",
-			Labels:    map[string]string{"name": "nginx"},
-			OwnerReferences: []metav1.OwnerReference{
-				{Name: "pod3", Kind: "Pod"},
-			},
-		},
-		Spec: corev1.PodSpec{
-			NodeName: node1.Name,
-		},
-	}
 }
 
 func Test_getMapIsNodesTainted(t *testing.T) {
@@ -272,27 +230,6 @@ func Test_handleNodeRemoval(t *testing.T) {
 
 		err = c.client.Get(ctx, client.ObjectKey{Name: csibmnode1.Name}, &csibmnode1)
 		assert.True(t, k8serrors.IsNotFound(err))
-	})
-}
-
-func Test_deleteCSIPods(t *testing.T) {
-
-	t.Run("Should remove CSI pods (except DaemonSet)", func(t *testing.T) {
-		Init()
-
-		c := prepareController(&csibmnode1, &podDaemonSet, &podDeployment, &podNotCSI)
-
-		//         err:= c.deleteCSIPods(ctx, node1.Name)
-		// 		assert.Nil(t, err)
-
-		err := c.client.Get(ctx, client.ObjectKey{Name: podDaemonSet.Name}, &podDaemonSet)
-		assert.Nil(t, err)
-
-		err = c.client.Get(ctx, client.ObjectKey{Name: podDeployment.Name}, &podDeployment)
-		assert.True(t, k8serrors.IsNotFound(err))
-
-		err = c.client.Get(ctx, client.ObjectKey{Name: podNotCSI.Name}, &podNotCSI)
-		assert.Nil(t, err)
 	})
 }
 
