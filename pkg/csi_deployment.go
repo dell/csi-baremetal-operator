@@ -54,7 +54,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 		nodeOperationsController: nodeoperations.NewNodeOperationsController(
 			&clientSet,
 			client,
-			log.WithValues(constant.CSIName, "nodeHandlerController"),
+			log.WithValues(constant.CSIName, "nodeOperationsController"),
 		),
 	}
 }

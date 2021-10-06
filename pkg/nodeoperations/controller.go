@@ -274,13 +274,10 @@ func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
 		errors []string
 	)
 
-	c.log.Info(fmt.Sprintf("Starting to delete CSI pods for on node %s", nodeName))
+	c.log.Info(fmt.Sprintf("Starting to delete CSI pods on node %s", nodeName))
 
+	fieldSelector := fields.SelectorFromSet(map[string]string{"spec.nodeName": nodeName})
 	labelSelector := labels.SelectorFromSet(common.ConstructLabelAppMap())
-	fieldSelector := fields.AndSelectors(
-		fields.OneTermEqualSelector("spec.nodeName", nodeName),
-		fields.OneTermNotEqualSelector("OwnerReferences.Kind", "DaemonSet"),
-	)
 
 	var pods corev1.PodList
 	err := c.client.List(ctx, &pods, &client.ListOptions{FieldSelector: fieldSelector, LabelSelector: labelSelector})
@@ -300,7 +297,9 @@ func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
 		}
 
 		// Delete all CSI pods ecxept DaemonSets
-		if pod.OwnerReferences[0].Kind != "DaemonSet" {
+		if pod.OwnerReferences[0].Kind == "DaemonSet" {
+			c.log.Info(fmt.Sprintf("Skip deleting DaemonSet pod %s", pod.Name))
+		} else {
 			c.log.Info(fmt.Sprintf("Going to remove %s", pod.Name))
 			// Remove Pod
 			if err := c.client.Delete(ctx, pod.DeepCopy()); err != nil {
