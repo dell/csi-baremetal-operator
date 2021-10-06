@@ -279,7 +279,7 @@ func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
 	labelSelector := labels.SelectorFromSet(common.ConstructLabelAppMap())
 	fieldSelector := fields.AndSelectors(
 		fields.OneTermEqualSelector("spec.nodeName", nodeName),
-		fields.OneTermNotEqualSelector("OwnerReferences.Kind", "DaemonSet"),
+		fields.OneTermNotEqualSelector("Kind", "DaemonSet"),
 	)
 
 	var pods corev1.PodList

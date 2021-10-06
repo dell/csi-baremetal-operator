@@ -128,13 +128,14 @@ func Init() {
 	}
 
 	podDaemonSet = corev1.Pod{
+	    TypeMeta: metav1.TypeMeta{
+    	    Kind:       "DaemonSet",
+    	    APIVersion: "v1",
+    	},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod1",
 			Namespace: "csi-namespace",
 			Labels:    map[string]string{"name": "csi-baremetal-node"},
-			OwnerReferences: []metav1.OwnerReference{
-				{Name: "pod1", Kind: "Daemonset"},
-			},
 		},
 		Spec: corev1.PodSpec{
 			NodeName: node1.Name,
