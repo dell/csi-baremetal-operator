@@ -3,26 +3,22 @@ name: Release Charts
 on:
   push:
     tags:
-      - 'v*.*.*'
-
-env:
-  builds_url: http://asdrepo.isus.emc.com/artifactory/atlantic-helm-build
+      - v*
 
 jobs:
   build:
     name: Release
     runs-on: ubuntu-latest
     steps:
-      - name: Calculate version
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-
-      - name: Download Binary
-        uses: wei/wget@v1
-        with:
-          args: ${{ env.builds_url }}/csi-operator/${{ env.RELEASE_VERSION }}/csi-baremetal-operator-${{ env.RELEASE_VERSION }}.tgz
-
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Make version
+        id: version
+        run: make version
+
+      - name: Create asset
+        run: tar -czvf csi-baremetal-operator-${{ steps.version.outputs }}.tgz charts
 
       - name: Create release
         uses: softprops/action-gh-release@v1
@@ -30,7 +26,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: Release ${{ github.ref }}
           prerelease: true
-          files: ./csi-baremetal-operator-${{ env.RELEASE_VERSION }}.tgz
+          files: ./csi-baremetal-operator-${{ steps.version.outputs }}.tgz
         if: startsWith(github.ref, 'refs/tags/')
 
       - name: Configure Git
