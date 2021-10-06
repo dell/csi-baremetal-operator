@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-    k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,9 +32,8 @@ var (
 	volume1, volume2       volumecrd.Volume
 	pod                    corev1.Pod
 	podDaemonSet           corev1.Pod
-    podDeployment          corev1.Pod
-    podNotCSI              corev1.Pod
-
+	podDeployment          corev1.Pod
+	podNotCSI              corev1.Pod
 )
 
 func Init() {
@@ -89,87 +88,86 @@ func Init() {
 	}
 
 	drive1 = drivecrd.Drive{
-        ObjectMeta: metav1.ObjectMeta{Name: "drive1"},
-    	Spec:       api.Drive{NodeId: csibmnode1.Spec.UUID},
-    }
+		ObjectMeta: metav1.ObjectMeta{Name: "drive1"},
+		Spec:       api.Drive{NodeId: csibmnode1.Spec.UUID},
+	}
 
-    drive2 = drivecrd.Drive{
-        ObjectMeta: metav1.ObjectMeta{Name: "drive2"},
-    	Spec:       api.Drive{NodeId: csibmnode2.Spec.UUID},
-    }
+	drive2 = drivecrd.Drive{
+		ObjectMeta: metav1.ObjectMeta{Name: "drive2"},
+		Spec:       api.Drive{NodeId: csibmnode2.Spec.UUID},
+	}
 
-    ac1 = accrd.AvailableCapacity{
-        ObjectMeta: metav1.ObjectMeta{Name: "ac1"},
-    	Spec:       api.AvailableCapacity{NodeId: csibmnode1.Spec.UUID},
-    }
+	ac1 = accrd.AvailableCapacity{
+		ObjectMeta: metav1.ObjectMeta{Name: "ac1"},
+		Spec:       api.AvailableCapacity{NodeId: csibmnode1.Spec.UUID},
+	}
 
-    ac2 = accrd.AvailableCapacity{
-        ObjectMeta: metav1.ObjectMeta{Name: "ac2"},
-    	Spec:       api.AvailableCapacity{NodeId: csibmnode2.Spec.UUID},
-    }
+	ac2 = accrd.AvailableCapacity{
+		ObjectMeta: metav1.ObjectMeta{Name: "ac2"},
+		Spec:       api.AvailableCapacity{NodeId: csibmnode2.Spec.UUID},
+	}
 
-    lvg1 = lvgcrd.LogicalVolumeGroup{
-        ObjectMeta: metav1.ObjectMeta{Name: "lvg1"},
-    	Spec:       api.LogicalVolumeGroup{Node: csibmnode1.Spec.UUID},
-    }
+	lvg1 = lvgcrd.LogicalVolumeGroup{
+		ObjectMeta: metav1.ObjectMeta{Name: "lvg1"},
+		Spec:       api.LogicalVolumeGroup{Node: csibmnode1.Spec.UUID},
+	}
 
-    lvg2 = lvgcrd.LogicalVolumeGroup{
-        ObjectMeta: metav1.ObjectMeta{Name: "lvg2"},
-    	Spec:       api.LogicalVolumeGroup{Node: csibmnode2.Spec.UUID},
-    }
+	lvg2 = lvgcrd.LogicalVolumeGroup{
+		ObjectMeta: metav1.ObjectMeta{Name: "lvg2"},
+		Spec:       api.LogicalVolumeGroup{Node: csibmnode2.Spec.UUID},
+	}
 
-    volume1 = volumecrd.Volume{
-    	ObjectMeta: metav1.ObjectMeta{Name: "volume1"},
-        Spec:       api.Volume{NodeId: csibmnode1.Spec.UUID},
-    }
+	volume1 = volumecrd.Volume{
+		ObjectMeta: metav1.ObjectMeta{Name: "volume1"},
+		Spec:       api.Volume{NodeId: csibmnode1.Spec.UUID},
+	}
 
-    volume2 = volumecrd.Volume{
-        ObjectMeta: metav1.ObjectMeta{Name: "volume2"},
-    	Spec:       api.Volume{NodeId: csibmnode2.Spec.UUID},
-    }
+	volume2 = volumecrd.Volume{
+		ObjectMeta: metav1.ObjectMeta{Name: "volume2"},
+		Spec:       api.Volume{NodeId: csibmnode2.Spec.UUID},
+	}
 
-    podDaemonSet = corev1.Pod{
-        ObjectMeta: metav1.ObjectMeta{
-    	    Name:      "pod1",
-    		Namespace: "csi-namespace",
-    		Labels:    map[string]string{"name": "csi-baremetal-node"},
-    		OwnerReferences: []metav1.OwnerReference{
-                {Name: "pod1", Kind: "Daemonset"},
-            },
-    	},
-    	Spec: corev1.PodSpec{
-    	    NodeName: node1.Name,
-        },
-    }
+	podDaemonSet = corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "csi-namespace",
+			Labels:    map[string]string{"name": "csi-baremetal-node"},
+			OwnerReferences: []metav1.OwnerReference{
+				{Name: "pod1", Kind: "Daemonset"},
+			},
+		},
+		Spec: corev1.PodSpec{
+			NodeName: node1.Name,
+		},
+	}
 
-    podDeployment = corev1.Pod{
-        ObjectMeta: metav1.ObjectMeta{
-    	    Name:      "pod2",
-    		Namespace: "csi-namespace",
-    		Labels:    map[string]string{"name": "csi-baremetal-node"},
-    		OwnerReferences: []metav1.OwnerReference{
-                {Name: "pod2", Kind: "Deployment"},
-            },
-        },
-    	Spec: corev1.PodSpec{
-    	    NodeName: node1.Name,
-    	},
-    }
-    podNotCSI = corev1.Pod{
-        ObjectMeta: metav1.ObjectMeta{
-    	    Name:      "pod3",
-    		Namespace: "default",
-    		Labels:    map[string]string{"name": "nginx"},
-    		OwnerReferences: []metav1.OwnerReference{
-                {Name: "pod3", Kind: "Pod"},
-            },
-        },
-    	Spec: corev1.PodSpec{
-    	    NodeName: node1.Name,
-    	},
-    }
+	podDeployment = corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod2",
+			Namespace: "csi-namespace",
+			Labels:    map[string]string{"name": "csi-baremetal-node"},
+			OwnerReferences: []metav1.OwnerReference{
+				{Name: "pod2", Kind: "Deployment"},
+			},
+		},
+		Spec: corev1.PodSpec{
+			NodeName: node1.Name,
+		},
+	}
+	podNotCSI = corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod3",
+			Namespace: "default",
+			Labels:    map[string]string{"name": "nginx"},
+			OwnerReferences: []metav1.OwnerReference{
+				{Name: "pod3", Kind: "Pod"},
+			},
+		},
+		Spec: corev1.PodSpec{
+			NodeName: node1.Name,
+		},
+	}
 }
-
 
 func Test_getMapIsNodesTainted(t *testing.T) {
 	t.Run("Should return info about nodes with taint", func(t *testing.T) {
@@ -185,12 +183,11 @@ func Test_getMapIsNodesTainted(t *testing.T) {
 
 func Test_removeNodes(t *testing.T) {
 	t.Run("Should delete resources", func(t *testing.T) {
-	    Init()
+		Init()
 		c := prepareController(&csibmnode1, &csibmnode2, &drive1, &drive2, &ac1, &ac2, &lvg1, &lvg2, &volume1, &volume2)
 
 		err := c.removeNodes(ctx, []nodecrd.Node{csibmnode1})
 		assert.Nil(t, err)
-
 
 		err = c.client.Get(ctx, client.ObjectKey{Name: csibmnode1.Name}, &csibmnode1)
 		assert.True(t, k8serrors.IsNotFound(err))
@@ -216,7 +213,7 @@ func Test_removeNodes(t *testing.T) {
 	})
 
 	t.Run("Should wait running pod", func(t *testing.T) {
-	    Init()
+		Init()
 
 		c := prepareController(&csibmnode1, &csibmnode2, &pod)
 
@@ -227,7 +224,7 @@ func Test_removeNodes(t *testing.T) {
 
 func Test_handleNodeRemoval(t *testing.T) {
 	t.Run("Should label csibmnode", func(t *testing.T) {
-	    Init()
+		Init()
 
 		node1.Spec.Taints = []corev1.Taint{rTaint}
 
@@ -236,8 +233,8 @@ func Test_handleNodeRemoval(t *testing.T) {
 		err := c.handleNodeRemoval(ctx, []nodecrd.Node{csibmnode1}, []corev1.Node{node1})
 		assert.Nil(t, err)
 
-        err = c.client.Get(ctx, client.ObjectKey{Name: csibmnode1.Name}, &csibmnode1)
-        assert.Nil(t, err)
+		err = c.client.Get(ctx, client.ObjectKey{Name: csibmnode1.Name}, &csibmnode1)
+		assert.Nil(t, err)
 
 		value := csibmnode1.GetLabels()[rTaint.Key]
 		assert.Equal(t, rTaint.Value, value)
@@ -250,7 +247,7 @@ func Test_handleNodeRemoval(t *testing.T) {
 
 		c := prepareController(&csibmnode1)
 
-        err := c.handleNodeRemoval(ctx, []nodecrd.Node{csibmnode1}, []corev1.Node{node1})
+		err := c.handleNodeRemoval(ctx, []nodecrd.Node{csibmnode1}, []corev1.Node{node1})
 		assert.Nil(t, err)
 
 		err = c.client.Get(ctx, client.ObjectKey{Name: csibmnode1.Name}, &csibmnode1)
@@ -264,37 +261,37 @@ func Test_handleNodeRemoval(t *testing.T) {
 	t.Run("Should remove node", func(t *testing.T) {
 		Init()
 
-        node1.Spec.Taints = []corev1.Taint{rTaint}
+		node1.Spec.Taints = []corev1.Taint{rTaint}
 		csibmnode1.Labels = map[string]string{rTaint.Key: rTaint.Value}
 
-        c := prepareController(&csibmnode1)
+		c := prepareController(&csibmnode1)
 
-        err := c.handleNodeRemoval(ctx, []nodecrd.Node{csibmnode1}, []corev1.Node{})
+		err := c.handleNodeRemoval(ctx, []nodecrd.Node{csibmnode1}, []corev1.Node{})
 		assert.Nil(t, err)
 
 		err = c.client.Get(ctx, client.ObjectKey{Name: csibmnode1.Name}, &csibmnode1)
-        assert.True(t, k8serrors.IsNotFound(err))
+		assert.True(t, k8serrors.IsNotFound(err))
 	})
 }
 
 func Test_deleteCSIPods(t *testing.T) {
 
-    t.Run("Should remove CSI pods (except DaemonSet)", func(t *testing.T) {
+	t.Run("Should remove CSI pods (except DaemonSet)", func(t *testing.T) {
 		Init()
 
-        c := prepareController(&csibmnode1, &podDaemonSet, &podDeployment, &podNotCSI)
+		c := prepareController(&csibmnode1, &podDaemonSet, &podDeployment, &podNotCSI)
 
-//         err:= c.deleteCSIPods(ctx, node1.Name)
-// 		assert.Nil(t, err)
+		//         err:= c.deleteCSIPods(ctx, node1.Name)
+		// 		assert.Nil(t, err)
 
 		err := c.client.Get(ctx, client.ObjectKey{Name: podDaemonSet.Name}, &podDaemonSet)
 		assert.Nil(t, err)
 
 		err = c.client.Get(ctx, client.ObjectKey{Name: podDeployment.Name}, &podDeployment)
-        assert.True(t, k8serrors.IsNotFound(err))
+		assert.True(t, k8serrors.IsNotFound(err))
 
-        err = c.client.Get(ctx, client.ObjectKey{Name: podNotCSI.Name}, &podNotCSI)
-        assert.Nil(t, err)
+		err = c.client.Get(ctx, client.ObjectKey{Name: podNotCSI.Name}, &podNotCSI)
+		assert.Nil(t, err)
 	})
 }
 
