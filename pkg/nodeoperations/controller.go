@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nodehandler
+package nodeoperations
 
 import (
 	"context"
@@ -36,18 +36,20 @@ import (
 	"github.com/dell/csi-baremetal/api/v1/nodecrd"
 )
 
+const (
+	nodeOperationalTaintKey = "node.dell.com/drain"
+)
+
 var (
 	// Node Maintenance Taint
 	mTaint = corev1.Taint{
-		Key:    "node.dell.com/drain",
-		Value:  "planned-downtime",
-		Effect: "NoSchedule",
+		Key:   nodeOperationalTaintKey,
+		Value: "planned-downtime",
 	}
 	// Node Removal Taint
 	rTaint = corev1.Taint{
-		Key:    "node.dell.com/drain",
-		Value:  "drain",
-		Effect: "NoSchedule",
+		Key:   nodeOperationalTaintKey,
+		Value: "drain",
 	}
 )
 
@@ -58,8 +60,8 @@ type Controller struct {
 	log       logr.Logger
 }
 
-// NewNodeHandlerController returns Controller object
-func NewNodeHandlerController(clientset kubernetes.Interface, client client.Client, log logr.Logger) *Controller {
+// NewNodeOperationsController returns Controller object
+func NewNodeOperationsController(clientset kubernetes.Interface, client client.Client, log logr.Logger) *Controller {
 	return &Controller{
 		clientset: clientset,
 		client:    client,
@@ -69,7 +71,10 @@ func NewNodeHandlerController(clientset kubernetes.Interface, client client.Clie
 
 // Reconcile checks node removal conditions and deletes CSI resources if csibmnode is labeled and k8sNode is deleted
 func (c *Controller) Reconcile(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	var nodeSelector *components.NodeSelector
+	var (
+		nodeSelector *components.NodeSelector
+		errors       []string
+	)
 
 	if csi != nil {
 		nodeSelector = csi.Spec.NodeSelector
@@ -87,11 +92,15 @@ func (c *Controller) Reconcile(ctx context.Context, csi *csibaremetalv1.Deployme
 	}
 
 	if err := c.handleNodeRemoval(ctx, csibmnodes.Items, nodes.Items); err != nil {
-		return err
+		errors = append(errors, err.Error())
 	}
 
 	if err := c.handleNodeMaintenance(ctx, nodes.Items); err != nil {
-		return err
+		errors = append(errors, err.Error())
+	}
+
+	if len(errors) != 0 {
+		return fmt.Errorf(strings.Join(errors, "\n"))
 	}
 
 	return nil
@@ -102,8 +111,9 @@ func (c *Controller) handleNodeRemoval(ctx context.Context, csibmnodes []nodecrd
 		errors        []string
 		removingNodes []nodecrd.Node
 	)
+	c.log.Info("Starting Node Removal")
 
-	isNodesWithTaint := getMapIsNodesTainted(nodes, rTaint)
+	isNodesTainted := getMapIsNodesTainted(nodes, rTaint)
 
 	for i, csibmnode := range csibmnodes {
 		hasLabel := false
@@ -115,7 +125,7 @@ func (c *Controller) handleNodeRemoval(ctx context.Context, csibmnodes []nodecrd
 			hasLabel = true
 		}
 
-		hasTaint, hasNode = isNodesWithTaint[getNodeName(&csibmnodes[i])]
+		hasTaint, hasNode = isNodesTainted[getNodeName(&csibmnodes[i])]
 
 		// perform node removal
 		if hasLabel && !hasNode {
@@ -239,6 +249,8 @@ func deleteNodeRemovalLabel(csibmnode *nodecrd.Node) {
 }
 
 func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.Node) error {
+	c.log.Info("Starting Node Maintenance")
+
 	for i, node := range nodes {
 		if hasTaint(&nodes[i], mTaint) {
 			if err := c.deleteCSIPods(ctx, node.Name); err != nil {
@@ -253,8 +265,11 @@ func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.N
 func (c *Controller) deleteCSIPods(ctx context.Context, nodeName string) error {
 	c.log.Info(fmt.Sprintf("Starting to delete CSI pods for on node %s", nodeName))
 
-	fieldSelector := fields.SelectorFromSet(map[string]string{"spec.nodeName": nodeName})
 	labelSelector := labels.SelectorFromSet(common.ConstructLabelAppMap())
+	fieldSelector := fields.AndSelectors(
+		fields.OneTermEqualSelector("spec.nodeName", nodeName),
+		fields.OneTermNotEqualSelector("OwnerReferences.Kind", "DaemonSet"),
+	)
 
 	var pods corev1.PodList
 	err := c.client.List(ctx, &pods, &client.ListOptions{FieldSelector: fieldSelector, LabelSelector: labelSelector})

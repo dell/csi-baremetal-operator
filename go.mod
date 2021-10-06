@@ -7,6 +7,8 @@ require (
 	github.com/dell/csi-baremetal v0.2.2-beta
 	github.com/go-logr/logr v0.3.0
 	github.com/masterminds/semver v1.5.0
+	github.com/onsi/ginkgo v1.14.1
+	github.com/onsi/gomega v1.10.2
 	github.com/openshift/api v0.0.0-20200618202633-7192180f496a
 	github.com/stretchr/testify v1.5.1
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
