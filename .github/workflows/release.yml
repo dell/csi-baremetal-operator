@@ -12,21 +12,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
+      
       - name: Make version
         id: version
-        run: make version
+        run: echo "::set-output name=version::$(make version)"
 
       - name: Create asset
-        run: tar -czvf csi-baremetal-operator-${{ steps.version.outputs }}.tgz charts
+        run: tar -czvf /tmp/csi-baremetal-operator-${{ steps.version.outputs.version }}.tgz charts
 
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: Release ${{ github.ref }}
           prerelease: true
-          files: ./csi-baremetal-operator-${{ steps.version.outputs }}.tgz
+          files: /tmp/csi-baremetal-operator-${{ steps.version.outputs.version }}.tgz
         if: startsWith(github.ref, 'refs/tags/')
 
       - name: Configure Git
