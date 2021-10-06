@@ -4,21 +4,23 @@ on:
   push:
     tags:
       - v*
+    branches:
+      - master
 
 jobs:
   build:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
       - name: Make version
         id: version
         run: make version
 
       - name: Create asset
         run: tar -czvf csi-baremetal-operator-${{ steps.version.outputs }}.tgz charts
-
-      - name: Checkout code
-        uses: actions/checkout@v2
 
       - name: Create release
         uses: softprops/action-gh-release@v1
