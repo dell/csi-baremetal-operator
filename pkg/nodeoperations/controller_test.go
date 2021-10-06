@@ -173,7 +173,6 @@ func Init() {
 func Test_getMapIsNodesTainted(t *testing.T) {
 	t.Run("Should return info about nodes with taint", func(t *testing.T) {
 		Init()
-
 		node1.Spec.Taints = []corev1.Taint{rTaint}
 
 		taintedNodes := getMapIsNodesTainted([]corev1.Node{node1, node2}, rTaint)
@@ -215,7 +214,6 @@ func Test_removeNodes(t *testing.T) {
 
 	t.Run("Should wait running pod", func(t *testing.T) {
 		Init()
-
 		c := prepareController(&csibmnode1, &csibmnode2, &pod)
 
 		err := c.removeNodes(ctx, []nodecrd.Node{csibmnode1, csibmnode2})
@@ -226,9 +224,7 @@ func Test_removeNodes(t *testing.T) {
 func Test_handleNodeRemoval(t *testing.T) {
 	t.Run("Should label csibmnode", func(t *testing.T) {
 		Init()
-
 		node1.Spec.Taints = []corev1.Taint{rTaint}
-
 		c := prepareController(&csibmnode1, &csibmnode2)
 
 		err := c.handleNodeRemoval(ctx, []nodecrd.Node{csibmnode1}, []corev1.Node{node1})
@@ -243,9 +239,7 @@ func Test_handleNodeRemoval(t *testing.T) {
 
 	t.Run("Should remove label on csibmnode", func(t *testing.T) {
 		Init()
-
 		csibmnode1.Labels = map[string]string{rTaint.Key: rTaint.Value}
-
 		c := prepareController(&csibmnode1)
 
 		err := c.handleNodeRemoval(ctx, []nodecrd.Node{csibmnode1}, []corev1.Node{node1})
@@ -261,10 +255,8 @@ func Test_handleNodeRemoval(t *testing.T) {
 
 	t.Run("Should remove node", func(t *testing.T) {
 		Init()
-
 		node1.Spec.Taints = []corev1.Taint{rTaint}
 		csibmnode1.Labels = map[string]string{rTaint.Key: rTaint.Value}
-
 		c := prepareController(&csibmnode1)
 
 		err := c.handleNodeRemoval(ctx, []nodecrd.Node{csibmnode1}, []corev1.Node{})
@@ -278,9 +270,7 @@ func Test_handleNodeRemoval(t *testing.T) {
 func Test_handleNodeMaintenance(t *testing.T) {
 	t.Run("Should remove csi pods from tainted nodes (ecxept DaemonSets)", func(t *testing.T) {
 		Init()
-
 		node1.Spec.Taints = []corev1.Taint{mTaint}
-
 		c := prepareController(&csibmnode1, &csibmnode2, &podnode1, &podnode2, &podcontroller)
 
 		err := c.handleNodeMaintenance(ctx, []corev1.Node{node1, node2})
