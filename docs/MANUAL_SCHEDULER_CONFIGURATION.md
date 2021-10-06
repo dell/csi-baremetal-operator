@@ -2,8 +2,7 @@ Manual Kubernetes Scheduler Configuration
 ---------------------
 To make CSI work correctly we maintain Kubernetes scheduler extender and scheduler extender patcher components.
 If your Kubernetes distributive is not in the list of supported or you have third party scheduler extender deployed the
-following manual steps are required on all master nodes (except OpenShift). Note that user must wait for all scheduler
-pods to restart after configuration change.
+following manual steps are required. Note that user must wait for all scheduler pods to restart after configuration change.
 * Vanilla Kubernetes
     * If you have third party scheduler extender deployed add the following sections to your configuration file
     ```yaml
@@ -18,7 +17,7 @@ pods to restart after configuration change.
         ignorable: true
         httpTimeout: 15s
     ```
-    * To manually patch version 1.18 and below
+    * To manually patch version 1.18 and below perform the following steps on all master nodes of your cluster
         * Create configuration policy file _/etc/kubernetes/manifests/scheduler/policy.yaml_
         ```yaml
         apiVersion: v1
@@ -79,7 +78,7 @@ pods to restart after configuration change.
                ...
                - --config=/etc/kubernetes/manifests/scheduler/config.yaml
             ```
-    * To manually patch version 1.19 and above
+    * To manually patch version 1.19 and above perform the following steps on all master nodes of your cluster
         * Create configuration file _/etc/kubernetes/manifests/scheduler/config-19.yaml_
         ```yaml
         apiVersion: kubescheduler.config.k8s.io/v1beta1
@@ -126,7 +125,7 @@ pods to restart after configuration change.
 * RKE2
     * Follow instructions for vanilla Kubernetes, but use the following path to the scheduler configuration file
     `/var/lib/rancher/rke2/agent/pod-manifests/`
-    
+
 * OpenShift
     * If you have third party scheduler extender deployed add the following section to the config map specified in the
     cluster custom resource of scheduler CRD `oc describe scheduler cluster`
