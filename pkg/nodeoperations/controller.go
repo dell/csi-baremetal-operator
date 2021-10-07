@@ -43,13 +43,15 @@ const (
 var (
 	// Node Maintenance Taint
 	mTaint = corev1.Taint{
-		Key:   nodeOperationalTaintKey,
-		Value: "planned-downtime",
+		Key:    nodeOperationalTaintKey,
+		Value:  "planned-downtime",
+		Effect: "NoSchedule",
 	}
 	// Node Removal Taint
 	rTaint = corev1.Taint{
-		Key:   nodeOperationalTaintKey,
-		Value: "drain",
+		Key:    nodeOperationalTaintKey,
+		Value:  "drain",
+		Effect: "NoSchedule",
 	}
 )
 
@@ -207,7 +209,7 @@ func hasTaint(node *corev1.Node, taintToFind corev1.Taint) bool {
 		return false
 	}
 	for _, taint := range node.Spec.Taints {
-		if taint.Key == taintToFind.Key && taint.Value == taintToFind.Value {
+		if taint.Key == taintToFind.Key && taint.Value == taintToFind.Value && taint.Effect == taintToFind.Effect {
 			return true
 		}
 	}

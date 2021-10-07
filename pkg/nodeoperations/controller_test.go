@@ -173,7 +173,10 @@ func Init() {
 func Test_getMapIsNodesTainted(t *testing.T) {
 	t.Run("Should return info about nodes with taint", func(t *testing.T) {
 		Init()
+		badTaint := rTaint
+		badTaint.Effect = "BadEffect"
 		node1.Spec.Taints = []corev1.Taint{rTaint}
+		node2.Spec.Taints = []corev1.Taint{badTaint}
 
 		taintedNodes := getMapIsNodesTainted([]corev1.Node{node1, node2}, rTaint)
 		assert.True(t, taintedNodes[node1.Name])
