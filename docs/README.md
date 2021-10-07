@@ -60,8 +60,7 @@ Installation process
 
 Upgrade process
 ---------------------
-* Upgrade
-To upgrade please reference to Installation process section but replace `helm install` by `helm upgrade` command
+To upgrade please reference _Installation process_ section but replace `helm install` by `helm upgrade` command
  
 Uninstallation process
 ---------------------
