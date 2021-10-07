@@ -6,8 +6,22 @@ Bare-metal CSI Operator
 
 Kubernetes Operator to deploy and manage lifecycle of [Bare-Metal CSI Driver](https://github.com/dell/csi-baremetal)
 
+Supported environments
+----------------------
+- **Kubernetes**: 1.18, 1.19, 1.20, 1.21
+- **OpenShift**: 4.6
+- **Node OS**:
+  - Ubuntu 18.04 / 20.04 LTS
+  - Red Hat Enterprise Linux 7.7 / CoreOS 4.6
+  - CentOS Linux 7.9
+- **Helm**: 3.0
+
 Installation process
 ---------------------
+* Prerequisites
+    * *lvm2* packet installed on the Kubernetes nodes
+    * *helm v3+*
+    * *kubectl v1.16+*
 
 * Add helm repository
     ```shell script
