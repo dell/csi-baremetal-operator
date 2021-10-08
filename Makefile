@@ -5,6 +5,9 @@ IMG ?= ${REGISTRY}/csi-baremetal-operator:${TAG}
 
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+CSI_BAREMETAL_DRIVER_DIR=../csi-baremetal
+CSI_CHART_CRDS_PATH=charts/csi-baremetal-operator/crds
+CONTROLLER_GEN_BIN=./bin/controller-gen
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -70,8 +73,13 @@ vet:
 
 # Generate code
 generate:
-	controller-gen object paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:dir=api/v1
-	controller-gen crd:trivialVersions=true paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=config/crd
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/availablecapacitycrd/availablecapacity_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/availablecapacitycrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/acreservationcrd/availablecapacityreservation_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/acreservationcrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/volumecrd/volume_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/volumecrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/drivecrd/drive_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/drivecrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/lvgcrd/logicalvolumegroup_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/lvgcrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/nodecrd/node_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/nodecrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
 
 # Build the docker image
 docker-build:
@@ -85,22 +93,9 @@ kind-load:
 docker-push:
 	docker push ${IMG}
 
-# find or download controller-gen
-# download controller-gen if necessary
+# build controller-gen executable
 controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
-	}
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
+	${GO_ENV_VARS} go build -mod='' -o ./bin/ sigs.k8s.io/controller-tools/cmd/controller-gen
 
 lint:
 	${GO_ENV_VARS} golangci-lint -v run ./...
