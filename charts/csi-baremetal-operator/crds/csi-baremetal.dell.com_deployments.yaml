@@ -183,6 +183,7 @@ spec:
                     type: object
                 type: object
               globalRegistry:
+                nullable: true
                 type: string
               nodeController:
                 description: NodeController represent operator for CSI bare-metal nodes
@@ -227,18 +228,21 @@ spec:
                     type: string
                 type: object
               platform:
+                default: vanilla
                 enum:
                 - rke
                 - openshift
                 - vanilla
                 type: string
               pullPolicy:
+                default: IfNotPresent
                 enum:
                 - IfNotPresent
                 - Always
                 - Never
                 type: string
               registrySecret:
+                nullable: true
                 type: string
               scheduler:
                 description: Scheduler encapsulates information to deploy CSI scheduler

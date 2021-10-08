@@ -22,11 +22,14 @@ type DeploymentSpec struct {
 	NodeController *NodeController `json:"nodeController,omitempty"`
 	Scheduler      *Scheduler      `json:"scheduler,omitempty"`
 
+	// +nullable
 	// +optional
 	GlobalRegistry string `json:"globalRegistry"`
+	// +nullable
 	// +optional
 	RegistrySecret string `json:"registrySecret"`
 	// +kubebuilder:validation:Enum=IfNotPresent;Always;Never
+	// +kubebuilder:default:=IfNotPresent
 	PullPolicy string `json:"pullPolicy"`
 
 	NodeSelector             *NodeSelector `json:"nodeSelector,omitempty"`
@@ -34,5 +37,6 @@ type DeploymentSpec struct {
 	SequentialLVGReservation bool          `json:"sequentialLVGReservation,omitempty"`
 
 	// +kubebuilder:validation:Enum=rke;openshift;vanilla
+	// +kubebuilder:default:=vanilla
 	Platform string `json:"platform"`
 }
