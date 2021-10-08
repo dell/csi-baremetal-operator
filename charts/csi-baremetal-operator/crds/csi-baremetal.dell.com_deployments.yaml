@@ -115,7 +115,7 @@ spec:
                     - port
                     type: object
                   mountRootHost:
-                    description: todo need to implement this
+                    description: TODO need to implement this
                     type: boolean
                   node:
                     description: Node encapsulates information for CSI node components
@@ -181,8 +181,6 @@ spec:
                           type: object
                         type: object
                     type: object
-                required:
-                - mountRootHost
                 type: object
               globalRegistry:
                 type: string
@@ -229,8 +227,16 @@ spec:
                     type: string
                 type: object
               platform:
+                enum:
+                - rke
+                - openshift
+                - vanilla
                 type: string
               pullPolicy:
+                enum:
+                - IfNotPresent
+                - Always
+                - Never
                 type: string
               registrySecret:
                 type: string
@@ -312,6 +318,9 @@ spec:
                 type: object
               sequentialLVGReservation:
                 type: boolean
+            required:
+            - platform
+            - pullPolicy
             type: object
           status:
             description: DeploymentStatus defines the observed state of Deployment
