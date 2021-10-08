@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dell/csi-baremetal-operator/pkg/noderemoval"
-
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -15,17 +13,18 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/node"
+	"github.com/dell/csi-baremetal-operator/pkg/nodeoperations"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 )
 
 // CSIDeployment contains controllers of CSI resources
 type CSIDeployment struct {
-	node                  *node.Node
-	controller            Controller
-	extender              SchedulerExtender
-	patcher               patcher.SchedulerPatcher
-	nodeController        NodeController
-	nodeRemovalController *noderemoval.Controller
+	node                     *node.Node
+	controller               Controller
+	extender                 SchedulerExtender
+	patcher                  patcher.SchedulerPatcher
+	nodeController           NodeController
+	nodeOperationsController *nodeoperations.Controller
 }
 
 // NewCSIDeployment creates CSIDeployment
@@ -52,10 +51,10 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 			Clientset: &clientSet,
 			Logger:    log.WithValues(constant.CSIName, "nodeController"),
 		},
-		nodeRemovalController: noderemoval.NewNodeRemovalController(
+		nodeOperationsController: nodeoperations.NewNodeOperationsController(
 			&clientSet,
 			client,
-			log.WithValues(constant.CSIName, "nodeRemovalController"),
+			log.WithValues(constant.CSIName, "nodeOperationsController"),
 		),
 	}
 }
@@ -87,7 +86,7 @@ func (c *CSIDeployment) Update(ctx context.Context, csi *csibaremetalv1.Deployme
 
 // ReconcileNodes performs node removal procedure
 func (c *CSIDeployment) ReconcileNodes(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	if err := c.nodeRemovalController.Reconcile(ctx, csi); err != nil {
+	if err := c.nodeOperationsController.Reconcile(ctx, csi); err != nil {
 		return err
 	}
 
