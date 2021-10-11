@@ -13,7 +13,7 @@ Supported environments
 - **Node OS**:
   - Ubuntu 18.04 / 20.04 LTS
   - Red Hat Enterprise Linux 7.7 / CoreOS 4.6
-  - CentOS Linux 7.9
+  - CentOS Linux 7 / 8
 - **Helm**: 3.0
 
 Installation process
@@ -103,7 +103,7 @@ Uninstallation process
 * Delete custom resources
     ```
     kubectl delete pvc --all
-    kubectl delete volumes --all
+    kubectl delete volumes --all -A
     kubectl delete lvgs --all
     kubectl delete csibmnodes --all
     ```
