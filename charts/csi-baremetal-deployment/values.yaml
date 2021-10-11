@@ -38,10 +38,27 @@ driver:
     image:
       tag:
 
+    resources:
+      requests:
+        memory: 200Mi
+        cpu: 100m
+      limits:
+        memory: 200Mi
+        cpu: 100m
+
   node:
     image:
       tag:
 
+#    resources:
+#      requests:
+#        memory:
+#        cpu:
+#      limits:
+#        memory:
+#        cpu:
+#
+#
   drivemgr:
     type: basemgr
     image:
@@ -53,24 +70,64 @@ driver:
     amountOfLoopDevices: 3
     sizeOfLoopDevices: 101Mi
 
+#    resources:
+#      requests:
+#        memory:
+#        cpu:
+#      limits:
+#        memory:
+#        cpu:
+
   # Sidecars parameters
   provisioner:
     image:
       # if you want to use topology feature (multiple PVCs per pod) you should use v1.2.2
       tag: v1.6.0
 
+#    resources:
+#      requests:
+#        memory:
+#        cpu:
+#      limits:
+#        memory:
+#        cpu:
+#
   resizer:
     image:
       tag: v1.1.0
 
+#    resources:
+#      requests:
+#        memory:
+#        cpu:
+#      limits:
+#        memory:
+#        cpu:
+#
   nodeDriverRegistrar:
     image:
       tag: v1.3.0
 
+#    resources:
+#      requests:
+#        memory:
+#        cpu:
+#      limits:
+#        memory:
+#        cpu:
+#
   livenessProbe:
     image:
       tag: v2.1.0
 
+#    resources:
+#      requests:
+#        memory:
+#        cpu:
+#      limits:
+#        memory:
+#        cpu:
+#
   # Metrics endpoint
   metrics:
     path: /metrics
@@ -110,6 +167,14 @@ scheduler:
   image:
     tag:
 
+#  resources:
+#    requests:
+#      memory:
+#      cpu:
+#    limits:
+#      memory:
+#      cpu:
+
   # Logging settings
   log:
     format: text
@@ -133,6 +198,14 @@ scheduler:
     image:
       tag:
 
+#    resources:
+#      requests:
+#        memory:
+#        cpu:
+#      limits:
+#        memory:
+#        cpu:
+#
     kubeconfig: /etc/kubernetes/scheduler.conf
     interval: 60
     restore_on_shutdown: true
@@ -152,6 +225,14 @@ nodeController:
 
   image:
     tag:
+
+#  resources:
+#    requests:
+#      memory:
+#      cpu:
+#    limits:
+#      memory:
+#      cpu:
 
   # Logging settings
   log:

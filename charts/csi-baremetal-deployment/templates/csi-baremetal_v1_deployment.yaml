@@ -24,6 +24,7 @@ spec:
       image:
         name: csi-baremetal-controller
         tag: {{ .Values.driver.controller.image.tag | default .Values.image.tag }}
+        resources: {{ .Values.driver.controller.resources}}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
