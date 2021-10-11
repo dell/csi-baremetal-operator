@@ -5,8 +5,6 @@ IMG ?= ${REGISTRY}/csi-baremetal-operator:${TAG}
 
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
-CSI_BAREMETAL_DRIVER_DIR=../csi-baremetal
-CSI_CHART_CRDS_PATH=charts/csi-baremetal-operator/crds
 CONTROLLER_GEN_BIN=./bin/controller-gen
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
@@ -70,16 +68,6 @@ fmt:
 # Run go vet against code
 vet:
 	go vet ./...
-
-# Generate code
-generate:
-	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/availablecapacitycrd/availablecapacity_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/availablecapacitycrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
-	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/acreservationcrd/availablecapacityreservation_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/acreservationcrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
-	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/volumecrd/volume_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/volumecrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
-	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/drivecrd/drive_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/drivecrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
-	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/lvgcrd/logicalvolumegroup_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/lvgcrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
-	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/nodecrd/node_types.go paths=$(CSI_BAREMETAL_DRIVER_DIR)/api/v1/nodecrd/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
-	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
 
 # Build the docker image
 docker-build:
