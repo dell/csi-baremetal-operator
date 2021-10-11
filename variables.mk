@@ -1,6 +1,11 @@
 # project name
 PROJECT          := csi-baremetal-operator
 
+# controller-gen related vars
+CSI_CHART_CRDS_PATH=charts/csi-baremetal-operator/crds
+CONTROLLER_GEN_BIN=./bin/controller-gen
+CRD_OPTIONS ?= "crd:trivialVersions=true"
+
 ### version
 MAJOR            := 0
 MINOR            := 5

@@ -3,10 +3,6 @@ include variables.mk
 # Image URL to use all building/pushing image targets
 IMG ?= ${REGISTRY}/csi-baremetal-operator:${TAG}
 
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
-CONTROLLER_GEN_BIN=./bin/controller-gen
-
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -82,8 +78,11 @@ docker-push:
 	docker push ${IMG}
 
 # build controller-gen executable
-controller-gen:
+install-controller-gen:
 	${GO_ENV_VARS} go build -mod='' -o ./bin/ sigs.k8s.io/controller-tools/cmd/controller-gen
 
+# generate crds with controller-gen
+generate-operator-crds: install-controller-gen 
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
 lint:
 	${GO_ENV_VARS} golangci-lint -v run ./...
