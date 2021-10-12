@@ -22,6 +22,7 @@ type Driver struct {
 	Node        *Node        `json:"node,omitempty"`
 	Metrics     *Metrics     `json:"metrics,omitempty"`
 	LogReceiver *LogReceiver `json:"logReceiver,omitempty"`
-	// todo need to implement this
+	// TODO need to implement this
+	// +optional
 	MountRootHost bool `json:"mountRootHost"`
 }

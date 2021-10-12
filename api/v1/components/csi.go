@@ -18,14 +18,25 @@ package components
 
 // DeploymentSpec represent all CSI components need to be deployed by operator
 type DeploymentSpec struct {
-	Driver                   *Driver         `json:"driver,omitempty"`
-	NodeController           *NodeController `json:"nodeController,omitempty"`
-	Scheduler                *Scheduler      `json:"scheduler,omitempty"`
-	GlobalRegistry           string          `json:"globalRegistry,omitempty"`
-	RegistrySecret           string          `json:"registrySecret,omitempty"`
-	PullPolicy               string          `json:"pullPolicy,omitempty"`
-	NodeSelector             *NodeSelector   `json:"nodeSelector,omitempty"`
-	NodeIDAnnotation         bool            `json:"nodeIDAnnotation,omitempty"`
-	SequentialLVGReservation bool            `json:"sequentialLVGReservation,omitempty"`
-	Platform                 string          `json:"platform,omitempty"`
+	Driver         *Driver         `json:"driver,omitempty"`
+	NodeController *NodeController `json:"nodeController,omitempty"`
+	Scheduler      *Scheduler      `json:"scheduler,omitempty"`
+
+	// +nullable
+	// +optional
+	GlobalRegistry string `json:"globalRegistry"`
+	// +nullable
+	// +optional
+	RegistrySecret string `json:"registrySecret"`
+	// +kubebuilder:validation:Enum=IfNotPresent;Always;Never
+	// +kubebuilder:default:=IfNotPresent
+	PullPolicy string `json:"pullPolicy"`
+
+	NodeSelector             *NodeSelector `json:"nodeSelector,omitempty"`
+	NodeIDAnnotation         bool          `json:"nodeIDAnnotation,omitempty"`
+	SequentialLVGReservation bool          `json:"sequentialLVGReservation,omitempty"`
+
+	// +kubebuilder:validation:Enum=rke;openshift;vanilla
+	// +kubebuilder:default:=vanilla
+	Platform string `json:"platform"`
 }
