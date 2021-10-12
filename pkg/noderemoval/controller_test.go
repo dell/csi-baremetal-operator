@@ -2,13 +2,13 @@ package noderemoval
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -245,7 +245,7 @@ func prepareController(objects ...client.Object) *Controller {
 	controller := NewNodeRemovalController(
 		nil,
 		client,
-		ctrl.Log.WithName("NodeRemovalTest"))
+		logrus.WithField("Test name", "NodeRemovalTest"))
 
 	return controller
 }

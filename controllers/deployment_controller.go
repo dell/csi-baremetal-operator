@@ -35,8 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	// TODO change log library - https://github.com/dell/csi-baremetal/issues/351
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg"
@@ -46,7 +45,7 @@ import (
 // DeploymentReconciler reconciles a Deployment object
 type DeploymentReconciler struct {
 	Client client.Client
-	Log    logr.Logger
+	Log    *logrus.Entry
 	Scheme *runtime.Scheme
 	pkg.CSIDeployment
 }
@@ -60,7 +59,7 @@ const (
 
 // Reconcile reconciles a Deployment object
 func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("deployment", req.NamespacedName)
+	log := r.Log.WithField("deployment", req.NamespacedName)
 
 	deployment := new(csibaremetalv1.Deployment)
 	err := r.Client.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)

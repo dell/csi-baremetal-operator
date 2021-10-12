@@ -46,7 +46,7 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 	// 	return err
 	// }
 
-	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Logger)
+	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Entry)
 	if err != nil {
 		return err
 	}

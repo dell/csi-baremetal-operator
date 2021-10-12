@@ -12,7 +12,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
@@ -31,7 +31,7 @@ const (
 // SchedulerExtender controls csi-baremetal-se
 type SchedulerExtender struct {
 	Clientset kubernetes.Interface
-	logr.Logger
+	*logrus.Entry
 }
 
 // Update updates csi-baremetal-se or creates if not found
@@ -42,7 +42,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 		return err
 	}
 
-	if err := common.UpdateDaemonSet(ctx, n.Clientset, expected, n.Logger); err != nil {
+	if err := common.UpdateDaemonSet(ctx, n.Clientset, expected, n.Entry); err != nil {
 		return err
 	}
 

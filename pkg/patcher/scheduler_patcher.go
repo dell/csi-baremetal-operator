@@ -2,8 +2,8 @@ package patcher
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,7 +15,7 @@ import (
 // SchedulerPatcher performs pacthing procedure depends on platform
 type SchedulerPatcher struct {
 	Clientset kubernetes.Interface
-	logr.Logger
+	*logrus.Entry
 	Client client.Client
 }
 

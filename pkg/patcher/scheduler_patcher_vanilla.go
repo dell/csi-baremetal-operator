@@ -51,7 +51,7 @@ func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csib
 		return err
 	}
 
-	if err := common.UpdateDaemonSet(ctx, p.Clientset, expected, p.Logger); err != nil {
+	if err := common.UpdateDaemonSet(ctx, p.Clientset, expected, p.Entry); err != nil {
 		return err
 	}
 
@@ -68,7 +68,7 @@ func (p *SchedulerPatcher) updateVanillaConfigMap(ctx context.Context, csi *csib
 		return err
 	}
 
-	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Logger)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Entry)
 	if err != nil {
 		return err
 	}

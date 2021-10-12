@@ -30,6 +30,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg"
 	"github.com/dell/csi-baremetal-operator/pkg/acrvalidator"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/sirupsen/logrus"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -78,10 +79,11 @@ func main() {
 	ctx := context.Background()
 
 	if err = (&controllers.DeploymentReconciler{
-		Client:        mgr.GetClient(),
-		Log:           ctrl.Log.WithName("controllers").WithName("Deployment"),
+		Client: mgr.GetClient(),
+		Log: logrus.WithFields(logrus.Fields{
+			"module": "controllers", "component": "DeploymentReconciler"}),
 		Scheme:        mgr.GetScheme(),
-		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), ctrl.Log),
+		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), logrus.New()),
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)

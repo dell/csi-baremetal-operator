@@ -19,9 +19,9 @@ package noderemoval
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"strings"
 
-	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -45,11 +45,11 @@ const (
 type Controller struct {
 	clientset kubernetes.Interface
 	client    client.Client
-	log       logr.Logger
+	log       *logrus.Entry
 }
 
 // NewNodeRemovalController returns Controller object
-func NewNodeRemovalController(clientset kubernetes.Interface, client client.Client, log logr.Logger) *Controller {
+func NewNodeRemovalController(clientset kubernetes.Interface, client client.Client, log *logrus.Entry) *Controller {
 	return &Controller{
 		clientset: clientset,
 		client:    client,

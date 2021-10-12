@@ -149,7 +149,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		return err
 	}
 
-	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Logger)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Entry)
 	if err != nil {
 		return err
 	}

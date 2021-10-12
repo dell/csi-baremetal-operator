@@ -3,7 +3,7 @@ package node
 import (
 	"context"
 
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -23,11 +23,11 @@ const (
 // Node controls csi-baremetal-node
 type Node struct {
 	clientset kubernetes.Interface
-	log       logr.Logger
+	log       *logrus.Entry
 }
 
 // NewNode creates a Node object
-func NewNode(clientset kubernetes.Interface, logger logr.Logger) *Node {
+func NewNode(clientset kubernetes.Interface, logger *logrus.Entry) *Node {
 	return &Node{
 		clientset: clientset,
 		log:       logger,
