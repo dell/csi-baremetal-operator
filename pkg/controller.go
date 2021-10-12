@@ -44,7 +44,8 @@ type Controller struct {
 func (c *Controller) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// create deployment
 	expected := createControllerDeployment(csi)
-	c.Logger.Info("Resources: " + expected.Spec.Template.Spec.Containers[0].Name + " " + fmt.Sprintf("%#v", expected.Spec.Template.Spec.Containers[0].Resources))
+	c.Logger.Info("Resources charts: " + fmt.Sprintf("%#v", csi.Spec.Driver.Controller.Resources))
+	c.Logger.Info("Resources deployment: " + expected.Spec.Template.Spec.Containers[0].Name + " " + fmt.Sprintf("%#v", expected.Spec.Template.Spec.Containers[0].Resources))
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 		return err
 	}
