@@ -86,6 +86,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 	var (
 		image = csi.Spec.NodeController.Image
 		log   = csi.Spec.NodeController.Log
+		resources = csi.Spec.NodeController.Resources
 		ns    = csi.Spec.NodeSelector
 	)
 
@@ -112,6 +113,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
+			Resources:                *resources,
 		},
 	}
 }

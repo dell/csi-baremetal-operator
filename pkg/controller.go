@@ -187,7 +187,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			Resources:                c.Resources,
+			Resources:                *c.Resources,
 		},
 		{
 			Name:            constant.ProvisionerName,
@@ -209,6 +209,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
+			Resources:                *provisioner.Resources,
 		},
 		{
 			Name:            constant.ResizerName,
@@ -229,6 +230,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
+			Resources:                *resizer.Resources,
 		},
 		{
 			Name:            constant.LivenessProbeName,
@@ -244,6 +246,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
+			Resources:                *liveness.Resources,
 		},
 	}
 }

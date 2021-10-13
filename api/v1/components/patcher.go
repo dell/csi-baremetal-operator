@@ -24,4 +24,5 @@ type Patcher struct {
 	RestoreOnShutdown bool   `json:"restoreOnShutdown,omitempty"`
 	ConfigMapName     string `json:"configMapName,omitempty"`
 	ReadinessTimeout  int    `json:"readinessTimeout,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
