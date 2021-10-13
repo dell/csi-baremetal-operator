@@ -30,7 +30,7 @@ spec:
           cpu: {{ .Values.driver.controller.resources.requests.cpu }}
         limits:
           memory: {{ .Values.driver.controller.resources.limits.memory }}
-          cpu: {{ .Values.driver.controller.resources.requests.cpu }}
+          cpu: {{ .Values.driver.controller.resources.limits.cpu }}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
@@ -45,7 +45,7 @@ spec:
               cpu: {{ .Values.driver.livenessProbe.resources.requests.cpu }}
             limits:
               memory: {{ .Values.driver.livenessProbe.resources.limits.memory }}
-              cpu: {{ .Values.driver.livenessProbe.resources.requests.cpu }}
+              cpu: {{ .Values.driver.livenessProbe.resources.limits.cpu }}
 
        csi-provisioner:
           image:
@@ -57,7 +57,7 @@ spec:
               cpu: {{  .Values.driver.provisioner.resources.requests.cpu }}
             limits:
               memory: {{  .Values.driver.provisioner.resources.limits.memory }}
-              cpu: {{  .Values.driver.provisioner.resources.requests.cpu }}
+              cpu: {{  .Values.driver.provisioner.resources.limits.cpu }}
        csi-resizer:
           image:
             name: csi-resizer
@@ -68,7 +68,7 @@ spec:
               cpu: {{ .Values.driver.resizer.resources.requests.cpu }}
             limits:
               memory: {{ .Values.driver.resizer.resources.limits.memory }}
-              cpu: {{ .Values.driver.resizer.resources.requests.cpu }}
+              cpu: {{ .Values.driver.resizer.resources.limits.cpu }}
     node:
       driveMgr:
         image:
@@ -80,7 +80,7 @@ spec:
             cpu: {{  .Values.driver.drivemgr.resources.requests.cpu }}
           limits:
             memory: {{  .Values.driver.drivemgr.resources.limits.memory }}
-            cpu: {{  .Values.driver.drivemgr.resources.requests.cpu }}
+            cpu: {{  .Values.driver.drivemgr.resources.limits.cpu }}
         endpoint: {{ .Values.driver.drivemgr.grpc.server.endpoint }}
       image:
         name: csi-baremetal-node
@@ -91,7 +91,7 @@ spec:
           cpu: {{  .Values.driver.node.resources.requests.cpu }}
         limits:
           memory: {{  .Values.driver.node.resources.limits.memory }}
-          cpu: {{  .Values.driver.node.resources.requests.cpu }}
+          cpu: {{  .Values.driver.node.resources.limits.cpu }}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
@@ -106,7 +106,7 @@ spec:
               cpu: {{  .Values.driver.nodeDriverRegistrar.resources.requests.cpu }}
             limits:
               memory: {{  .Values.driver.nodeDriverRegistrar.resources.limits.memory }}
-              cpu: {{  .Values.driver.nodeDriverRegistrar.resources.requests.cpu }}
+              cpu: {{  .Values.driver.nodeDriverRegistrar.resources.limits.cpu }}
         livenessprobe:
           image:
             name: livenessprobe
@@ -117,7 +117,7 @@ spec:
               cpu: {{  .Values.driver.livenessProbe.resources.requests.cpu }}
             limits:
               memory: {{  .Values.driver.livenessProbe.resources.limits.memory }}
-              cpu: {{  .Values.driver.livenessProbe.resources.requests.cpu }}
+              cpu: {{  .Values.driver.livenessProbe.resources.limits.cpu }}
     metrics:
       path: {{ .Values.driver.metrics.path }}
       port: {{ .Values.driver.metrics.port }}
@@ -137,7 +137,7 @@ spec:
         cpu: {{  .Values.scheduler.resources.requests.cpu }}
       limits:
         memory: {{  .Values.scheduler.resources.limits.memory }}
-        cpu: {{  .Values.scheduler.resources.requests.cpu }}
+        cpu: {{  .Values.scheduler.resources.limits.cpu }}
     log:
       format: {{ .Values.scheduler.log.format }}
       level: {{ .Values.scheduler.log.level }}
@@ -156,7 +156,7 @@ spec:
           cpu: {{  .Values.scheduler.patcher.resources.requests.cpu }}
         limits:
           memory: {{  .Values.scheduler.patcher.resources.limits.memory }}
-          cpu: {{  .Values.scheduler.patcher.resources.requests.cpu }}
+          cpu: {{  .Values.scheduler.patcher.resources.limits.cpu }}
       interval: {{ .Values.scheduler.patcher.interval }}
       restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
@@ -173,7 +173,7 @@ spec:
         cpu: {{  .Values.nodeController.resources.requests.cpu }}
       limits:
         memory: {{  .Values.nodeController.resources.limits.memory }}
-        cpu: {{  .Values.nodeController.resources.requests.cpu }}
+        cpu: {{  .Values.nodeController.resources.limits.cpu }}
     log:
       format: {{ .Values.nodeController.log.format }}
       level: {{ .Values.nodeController.log.level }}
