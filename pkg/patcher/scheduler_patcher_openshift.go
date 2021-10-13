@@ -46,7 +46,7 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 	// 	return err
 	// }
 
-	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Entry)
+	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Log)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 	// try to patch
 	err = p.patchScheduler(ctx, openshiftConfig)
 	if err != nil {
-		p.Logger.Error(err, "Failed to patch Scheduler")
+		p.Log.Error(err, "Failed to patch Scheduler")
 		return err
 	}
 
@@ -68,13 +68,13 @@ func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 	cfClient := p.Clientset.CoreV1().ConfigMaps(openshiftNS)
 	err := cfClient.Delete(ctx, openshiftConfig, metav1.DeleteOptions{})
 	if err != nil {
-		p.Logger.Error(err, "Failed to delete Openshift extender ConfigMap")
+		p.Log.Error(err, "Failed to delete Openshift extender ConfigMap")
 		errMsgs = append(errMsgs, err.Error())
 	}
 
 	err = p.unpatchScheduler(ctx, openshiftConfig)
 	if err != nil {
-		p.Logger.Error(err, "Failed to unpatch Scheduler")
+		p.Log.Error(err, "Failed to unpatch Scheduler")
 		errMsgs = append(errMsgs, err.Error())
 	}
 
@@ -88,7 +88,7 @@ func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	err := p.unPatchOpenShift(ctx)
 	if err != nil {
-		p.Logger.Error(err, "Failed to unpatch Openshift Scheduler")
+		p.Log.Error(err, "Failed to unpatch Openshift Scheduler")
 		return err
 	}
 

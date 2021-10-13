@@ -149,7 +149,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		return err
 	}
 
-	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Entry)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Log)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	// 	passed readiness-timeout after configmap creation
 	isTimeoutPassed := cmCreationTime.Time.Before(time.Now().Add(time.Minute * time.Duration(-csi.Spec.Scheduler.Patcher.ReadinessTimeout)))
 	if !isAllReady(readinessStatuses) && isTimeoutPassed {
-		p.Logger.Info("Retry patching")
+		p.Log.Info("Retry patching")
 		switch csi.Spec.Platform {
 		case constant.PlatformOpenShift:
 			err = p.retryPatchOpenshift(ctx, csi)

@@ -65,9 +65,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	err := r.Client.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, deployment)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// TODO set logLevel as Warn after changing log library
-			// https://github.com/dell/csi-baremetal/issues/351
-			log.Info("Custom resource is not found")
+			log.Warn("Custom resource is not found")
 			return ctrl.Result{}, nil
 		}
 
