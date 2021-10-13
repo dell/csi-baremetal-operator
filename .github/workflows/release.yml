@@ -30,14 +30,46 @@ jobs:
         id: vars
         run: |
           echo "::set-output name=version::$(make version)"
-          echo "::set-output name=release_path::/tmp/${github.event.inputs.release_tag}"
+          echo "::set-output name=release_path::/tmp/${{ github.event.inputs.release_tag }}"
           echo "::set-output name=sha::${GITHUB_SHA::7}"
+          echo "::set-output name=release_branch::feature-issue-${{ github.event.inputs.issue_number }}-release-${{ github.event.inputs.release_tag }}"
+          echo "::set-output name=current_branch::${GITHUB_REF#refs/heads/}"
 
-      - name: Retag release with annotation
+      - name: Install python3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10.0'
+
+      - name: Install dependencies for YAML secure parsing
+        run: |
+          sudo apt install jq
+          python -m pip install --upgrade pip
+          pip install yq
+
+      - name: Update csi-baremetal-operator image tag in values
+        uses: mikefarah/yq@master
+        with:
+            cmd: yq eval -i '.image.tag="${{ steps.vars.outputs.version }}"' ./charts/csi-baremetal-operator/values.yaml
+
+      - name: Update csi-baremetal-deployment image tag in values
+        uses: mikefarah/yq@master
+        with:
+            cmd: yq eval -i '.image.tag="${{ github.event.inputs.csi_version }}"' ./charts/csi-baremetal-deployment/values.yaml
+
+      - name: Commit and push changes
+        id: commit
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "[issue#${{ github.event.inputs.issue_number }}] Set image tags values"
+          commit_options: --amend --signoff
+          push_options: --force-with-lease
+          file_pattern: charts/csi-baremetal-operator/values.yaml charts/csi-baremetal-deployment/values.yaml
+          branch: ${{ steps.vars.outputs.current_branch }}
+
+      - name: Tag release with annotation
         run: |
           TAG_NAME=${{ github.event.inputs.release_tag }}
-          git push origin :$TAG_NAME
-          git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME: issue ${{ github.event.inputs.issue_number }}"
+          git tag -a -f $TAG_NAME ${{ steps.commit.outputs.commit_hash }} -m "release $TAG_NAME: issue ${{ github.event.inputs.issue_number }}"
           git push origin $TAG_NAME
 
       - name: Create csi-baremetal-operator asset
@@ -101,19 +133,22 @@ jobs:
 
       - name: Update index.yaml
         run: |
-          git checkout -b feature-issue-${{ github.event.inputs.issue_number }}-release-${{ github.event.inputs.release_tag }}
+          git checkout -b ${{ steps.vars.outputs.release_branch }}
           helm repo index ${{ steps.vars.outputs.release_path }} --url ${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }}/releases/download/${{ github.event.inputs.release_tag }} --merge docs/index.yaml
           cp ${{ steps.vars.outputs.release_path }}/index.yaml -t ./docs
+          git add ./docs/index.yaml
+          git commit -m "[issue#${{ github.event.inputs.issue_number }}] Update Helm repo index" --amend --signoff
+          git push origin ${{ steps.vars.outputs.release_branch }}
 
       - name: Create Pull Request
         id: pr
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.CSI_WF_TOKEN }}
-          branch: feature-issue-${{ github.event.inputs.issue_number }}-release-${{ github.event.inputs.release_tag }}
+          branch: ${{ steps.vars.outputs.release_branch}}
           title: 'Release ${{ github.event.inputs.release_tag }}'
           assignees: misanthropicat
-          reviewers: misanthropicat
+          reviewers: 'CSI Baremetal'
           draft: false
 
       - name: Install Helm
