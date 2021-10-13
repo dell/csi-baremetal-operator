@@ -16,8 +16,12 @@ limitations under the License.
 
 package components
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 // Sidecar represent CSI sidecar containers
 type Sidecar struct {
-	Image *Image `json:"image,omitempty"`
+	Image     *Image                       `json:"image,omitempty"`
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }

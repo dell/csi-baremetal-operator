@@ -7,6 +7,7 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -64,6 +65,7 @@ func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level
 	config.configFolder = configurationPath
+	config.resources = csi.Spec.Scheduler.Patcher.Resources
 	return &config, nil
 }
 
@@ -76,6 +78,7 @@ type patcherConfiguration struct {
 	loglevel          components.Level
 	interval          int
 	restoreOnShutdown bool
+	resources         *corev1.ResourceRequirements
 
 	platform        string
 	targetConfig    string

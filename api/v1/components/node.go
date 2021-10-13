@@ -16,11 +16,15 @@ limitations under the License.
 
 package components
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 // Node encapsulates information for CSI node components
 type Node struct {
-	DriveMgr *DriveMgr           `json:"driveMgr,omitempty"`
-	Image    *Image              `json:"image,omitempty"`
-	Log      *Log                `json:"log,omitempty"`
-	Sidecars map[string]*Sidecar `json:"sidecars,omitempty"`
+	DriveMgr  *DriveMgr                    `json:"driveMgr,omitempty"`
+	Image     *Image                       `json:"image,omitempty"`
+	Log       *Log                         `json:"log,omitempty"`
+	Sidecars  map[string]*Sidecar          `json:"sidecars,omitempty"`
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }

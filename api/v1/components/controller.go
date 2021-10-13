@@ -22,8 +22,8 @@ import (
 
 // Controller encapsulates logic for CSI controller component
 type Controller struct {
-	Image     *Image                      `json:"image,omitempty"`
-	Log       *Log                        `json:"log,omitempty"`
-	Sidecars  map[string]*Sidecar         `json:"sidecars,omitempty"`
+	Image     *Image                       `json:"image,omitempty"`
+	Log       *Log                         `json:"log,omitempty"`
+	Sidecars  map[string]*Sidecar          `json:"sidecars,omitempty"`
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }

@@ -16,13 +16,17 @@ limitations under the License.
 
 package components
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 // Patcher represents scheduler patcher container, which tries to patch Kubernetes scheduler
 type Patcher struct {
-	Enable            bool   `json:"enable"`
-	Image             *Image `json:"image,omitempty"`
-	Interval          int    `json:"interval,omitempty"`
-	RestoreOnShutdown bool   `json:"restoreOnShutdown,omitempty"`
-	ConfigMapName     string `json:"configMapName,omitempty"`
-	ReadinessTimeout  int    `json:"readinessTimeout,omitempty"`
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Enable            bool                         `json:"enable"`
+	Image             *Image                       `json:"image,omitempty"`
+	Interval          int                          `json:"interval,omitempty"`
+	RestoreOnShutdown bool                         `json:"restoreOnShutdown,omitempty"`
+	ConfigMapName     string                       `json:"configMapName,omitempty"`
+	ReadinessTimeout  int                          `json:"readinessTimeout,omitempty"`
+	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
 }

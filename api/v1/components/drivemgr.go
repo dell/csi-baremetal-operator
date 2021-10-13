@@ -16,9 +16,13 @@ limitations under the License.
 
 package components
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 // DriveMgr represents drive manager node component
 type DriveMgr struct {
-	Image    *Image `json:"image,omitempty"`
-	Endpoint string `json:"endpoint"`
+	Image     *Image                       `json:"image,omitempty"`
+	Endpoint  string                       `json:"endpoint"`
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }

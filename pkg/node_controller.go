@@ -84,10 +84,10 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 
 func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
-		image = csi.Spec.NodeController.Image
-		log   = csi.Spec.NodeController.Log
+		image     = csi.Spec.NodeController.Image
+		log       = csi.Spec.NodeController.Log
 		resources = csi.Spec.NodeController.Resources
-		ns    = csi.Spec.NodeSelector
+		ns        = csi.Spec.NodeSelector
 	)
 
 	args := []string{

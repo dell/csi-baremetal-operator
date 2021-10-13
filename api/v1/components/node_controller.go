@@ -16,10 +16,14 @@ limitations under the License.
 
 package components
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 // NodeController represent operator for CSI bare-metal nodes
 type NodeController struct {
-	Enable bool   `json:"enable"`
-	Image  *Image `json:"image,omitempty"`
-	Log    *Log   `json:"log,omitempty"`
+	Enable    bool                         `json:"enable"`
+	Image     *Image                       `json:"image,omitempty"`
+	Log       *Log                         `json:"log,omitempty"`
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
