@@ -1,4 +1,4 @@
-package noderemoval
+package nodeoperations
 
 import (
 	"context"
