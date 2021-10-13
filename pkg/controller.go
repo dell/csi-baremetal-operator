@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/go-logr/logr"
