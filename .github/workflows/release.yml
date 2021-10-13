@@ -114,7 +114,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ github.event.inputs.release_tag }}
           name: Release ${{ github.event.inputs.release_tag }}
-          repository: misanthropicat/csi-baremetal
+          repository: dell/csi-baremetal
           draft: false
           prerelease: true
           files: |
