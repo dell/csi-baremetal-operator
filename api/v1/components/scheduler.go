@@ -29,5 +29,5 @@ type Scheduler struct {
 	Patcher            *Patcher                     `json:"patcher,omitempty"`
 	ExtenderPort       string                       `json:"extenderPort,omitempty"`
 	StorageProvisioner string                       `json:"storageProvisioner"`
-	Resources          *corev1.ResourceRequirements `json:"resources,"`
+	Resources          *corev1.ResourceRequirements `json:"resources"`
 }
