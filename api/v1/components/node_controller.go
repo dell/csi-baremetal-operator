@@ -25,5 +25,5 @@ type NodeController struct {
 	Enable    bool                         `json:"enable"`
 	Image     *Image                       `json:"image,omitempty"`
 	Log       *Log                         `json:"log,omitempty"`
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,"`
 }

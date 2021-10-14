@@ -124,8 +124,12 @@ spec:
                                   description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                   type: object
                               type: object
+                          required:
+                          - resources
                           type: object
                         type: object
+                    required:
+                    - resources
                     type: object
                   logReceiver:
                     description: LogReceiver encapsulates information needed to establish log receiver for components
@@ -204,6 +208,7 @@ spec:
                             type: object
                         required:
                         - endpoint
+                        - resources
                         type: object
                       image:
                         description: Image contain information for components docker images
@@ -288,8 +293,12 @@ spec:
                                   description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                   type: object
                               type: object
+                          required:
+                          - resources
                           type: object
                         type: object
+                    required:
+                    - resources
                     type: object
                 type: object
               globalRegistry:
@@ -348,6 +357,7 @@ spec:
                     type: object
                 required:
                 - enable
+                - resources
                 type: object
               nodeIDAnnotation:
                 type: boolean
@@ -467,6 +477,7 @@ spec:
                         type: boolean
                     required:
                     - enable
+                    - resources
                     type: object
                   resources:
                     description: ResourceRequirements describes the compute resource requirements.
@@ -494,6 +505,7 @@ spec:
                     type: string
                 required:
                 - enable
+                - resources
                 - storageProvisioner
                 type: object
               sequentialLVGReservation:

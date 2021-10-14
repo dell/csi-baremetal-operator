@@ -25,5 +25,5 @@ type Controller struct {
 	Image     *Image                       `json:"image,omitempty"`
 	Log       *Log                         `json:"log,omitempty"`
 	Sidecars  map[string]*Sidecar          `json:"sidecars,omitempty"`
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,"`
 }

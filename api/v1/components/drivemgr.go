@@ -24,5 +24,5 @@ import (
 type DriveMgr struct {
 	Image     *Image                       `json:"image,omitempty"`
 	Endpoint  string                       `json:"endpoint"`
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,"`
 }
