@@ -5,7 +5,7 @@
 *.dll
 *.so
 *.dylib
-bin
+bin/controller-gen
 
 # Test binary, build with `go test -c`
 *.test
