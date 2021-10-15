@@ -3,7 +3,8 @@ package pkg
 import (
 	"context"
 
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,7 @@ const (
 // NodeController controls csi-baremetal-node-controller
 type NodeController struct {
 	Clientset kubernetes.Interface
-	logr.Logger
+	*logrus.Entry
 }
 
 // Update updates csi-baremetal-node-controller or creates if not found
@@ -39,7 +40,7 @@ func (nc *NodeController) Update(ctx context.Context, csi *csibaremetalv1.Deploy
 		return err
 	}
 
-	if err := common.UpdateDeployment(ctx, nc.Clientset, expected, nc.Logger); err != nil {
+	if err := common.UpdateDeployment(ctx, nc.Clientset, expected, nc.Entry); err != nil {
 		return err
 	}
 

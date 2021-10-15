@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -299,7 +299,7 @@ func prepareController(objects ...runtime.Object) *Controller {
 	controller := NewNodeOperationsController(
 		nil,
 		client,
-		ctrl.Log.WithName("NodeOperationsTest"))
+		logrus.WithField("Test name", "NodeRemovalTest"))
 
 	return controller
 }

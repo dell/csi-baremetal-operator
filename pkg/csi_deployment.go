@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,33 +28,33 @@ type CSIDeployment struct {
 }
 
 // NewCSIDeployment creates CSIDeployment
-func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log logr.Logger) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log *logrus.Logger) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
 			&clientSet,
-			log.WithValues(constant.CSIName, "node"),
+			log.WithField(constant.CSIName, "node"),
 		),
 		controller: Controller{
 			Clientset: &clientSet,
-			Logger:    log.WithValues(constant.CSIName, "controller"),
+			Entry:     log.WithField(constant.CSIName, "controller"),
 		},
 		extender: SchedulerExtender{
 			Clientset: &clientSet,
-			Logger:    log.WithValues(constant.CSIName, "extender"),
+			Entry:     log.WithField(constant.CSIName, "extender"),
 		},
 		patcher: patcher.SchedulerPatcher{
 			Clientset: &clientSet,
 			Client:    client,
-			Logger:    log.WithValues(constant.CSIName, "patcher"),
+			Log:       log.WithField(constant.CSIName, "patcher"),
 		},
 		nodeController: NodeController{
 			Clientset: &clientSet,
-			Logger:    log.WithValues(constant.CSIName, "nodeController"),
+			Entry:     log.WithField(constant.CSIName, "nodeController"),
 		},
 		nodeOperationsController: nodeoperations.NewNodeOperationsController(
 			&clientSet,
 			client,
-			log.WithValues(constant.CSIName, "nodeOperationsController"),
+			log.WithField(constant.CSIName, "nodeRemovalController"),
 		),
 	}
 }

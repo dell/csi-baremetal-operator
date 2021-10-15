@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
@@ -316,7 +316,7 @@ func prepareSchedulerPatcher(objects ...runtime.Object) *SchedulerPatcher {
 	clientset := fake.NewSimpleClientset(objects...)
 	sp := &SchedulerPatcher{
 		clientset,
-		ctrl.Log.WithName("SchedulerPatcherTest"),
+		logrus.WithField("Test name", "SchedulerPatcherTest"),
 		nil,
 	}
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -14,7 +14,7 @@ import (
 )
 
 // UpdateConfigMap updates found configmap with Spec from expected, creates one if not found
-func UpdateConfigMap(ctx context.Context, client kubernetes.Interface, expected *coreV1.ConfigMap, log logr.Logger) error {
+func UpdateConfigMap(ctx context.Context, client kubernetes.Interface, expected *coreV1.ConfigMap, log *logrus.Entry) error {
 	cfClient := client.CoreV1().ConfigMaps(expected.Namespace)
 
 	// try to find existing one
@@ -51,7 +51,7 @@ func UpdateConfigMap(ctx context.Context, client kubernetes.Interface, expected 
 
 // UpdateDaemonSet updates found daemonset with Spec from expected, creates one if not found
 // nolint
-func UpdateDaemonSet(ctx context.Context, client kubernetes.Interface, expected *appsv1.DaemonSet, log logr.Logger) error {
+func UpdateDaemonSet(ctx context.Context, client kubernetes.Interface, expected *appsv1.DaemonSet, log *logrus.Entry) error {
 	dsClient := client.AppsV1().DaemonSets(expected.GetNamespace())
 
 	found, err := dsClient.Get(ctx, expected.Name, metav1.GetOptions{})
@@ -84,7 +84,7 @@ func UpdateDaemonSet(ctx context.Context, client kubernetes.Interface, expected 
 
 // UpdateDeployment updates found deployment with Spec from expected, creates one if not found
 // nolint
-func UpdateDeployment(ctx context.Context, client kubernetes.Interface, expected *appsv1.Deployment, log logr.Logger) error {
+func UpdateDeployment(ctx context.Context, client kubernetes.Interface, expected *appsv1.Deployment, log *logrus.Entry) error {
 	dsClient := client.AppsV1().Deployments(expected.GetNamespace())
 
 	found, err := dsClient.Get(ctx, expected.Name, metav1.GetOptions{})
