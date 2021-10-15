@@ -133,12 +133,20 @@ jobs:
 
       - name: Update index.yaml
         run: |
+          git pull
           git checkout -b ${{ steps.vars.outputs.release_branch }}
-          helm repo index ${{ steps.vars.outputs.release_path }} --url ${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }}/releases/download/${{ github.event.inputs.release_tag }} --merge docs/index.yaml
+          helm repo index ${{ steps.vars.outputs.release_path }} --url ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.event.inputs.release_tag }} --merge docs/index.yaml
           cp ${{ steps.vars.outputs.release_path }}/index.yaml -t ./docs
-          git add ./docs/index.yaml
-          git commit -m "[issue#${{ github.event.inputs.issue_number }}] Update Helm repo index" --amend --signoff
-          git push origin ${{ steps.vars.outputs.release_branch }}
+      
+      - name: Commit and push changes
+        id: commit_docs
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "[issue#${{ github.event.inputs.issue_number }}] Update Helm repo index"
+          commit_options: --amend --signoff
+          push_options: --force-with-lease
+          file_pattern: ./docs/index.yaml
+          branch: ${{ steps.vars.outputs.release_branch }}
 
       - name: Create Pull Request
         id: pr
@@ -160,6 +168,19 @@ jobs:
         uses: helm/chart-releaser-action@v1.2.1
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Update release in csi-baremetal repo with assets
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: misanthropicat/csi-baremetal
+          token: ${{ secrets.CSI_WF_TOKEN }}
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: Release ${{ github.event.inputs.release_tag }}
+          draft: false
+          prerelease: true
+          files: |
+            ./${{ steps.asset_1.outputs.archive_name }}
+            ./${{ steps.asset_2.outputs.archive_name }}
 
       # - name: Send slack notification
       #   uses: rtCamp/action-slack-notify@v2
