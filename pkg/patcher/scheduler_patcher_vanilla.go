@@ -243,7 +243,7 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			Resources:                *p.resources,
+			Resources:                corev1.ResourceRequirements(*p.resources),
 		},
 	}
 }

@@ -204,7 +204,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			Resources:                *lp.Resources,
+			Resources:                corev1.ResourceRequirements(*lp.Resources),
 		},
 		{
 			Name:            constant.DriverRegistrarName,
@@ -228,7 +228,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			Resources:                *dr.Resources,
+			Resources:                corev1.ResourceRequirements(*dr.Resources),
 		},
 		{
 			Name:            "node",
@@ -287,7 +287,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 			VolumeMounts:             nodeMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			Resources:                *node.Resources,
+			Resources:                corev1.ResourceRequirements(*node.Resources),
 		},
 		{
 			Name:            "drivemgr",
@@ -304,7 +304,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 			VolumeMounts:             driveMgrMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			Resources:                *driveMgr.Resources,
+			Resources:                corev1.ResourceRequirements(*driveMgr.Resources),
 		},
 	}
 }

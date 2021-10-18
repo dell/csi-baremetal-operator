@@ -7,7 +7,6 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -78,7 +77,7 @@ type patcherConfiguration struct {
 	loglevel          components.Level
 	interval          int
 	restoreOnShutdown bool
-	resources         *corev1.ResourceRequirements
+	resources         *components.ResourceRequirements
 
 	platform        string
 	targetConfig    string

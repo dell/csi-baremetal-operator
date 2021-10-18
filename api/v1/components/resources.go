@@ -13,15 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package components
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
 
-
-// NodeController represent operator for CSI bare-metal nodes
-type NodeController struct {
-	Enable    bool                         `json:"enable"`
-	Image     *Image                       `json:"image,omitempty"`
-	Log       *Log                         `json:"log,omitempty"`
-	Resources *ResourceRequirements `json:"resources"`
+// ResourceRequirements contain information for mem/cpu requirements
+type ResourceRequirements struct {
+    Limits      corev1.ResourceList `json:"limits,omitempty"`
+    Requests    corev1.ResourceList `json:"requests,omitempty"`
 }
