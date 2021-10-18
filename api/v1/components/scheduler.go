@@ -16,16 +16,14 @@ limitations under the License.
 
 package components
 
-
-
 // Scheduler encapsulates information to deploy CSI scheduler
 type Scheduler struct {
-	Enable             bool                         `json:"enable"`
-	Image              *Image                       `json:"image,omitempty"`
-	Log                *Log                         `json:"log,omitempty"`
-	Metrics            *Metrics                     `json:"metrics,omitempty"`
-	Patcher            *Patcher                     `json:"patcher,omitempty"`
-	ExtenderPort       string                       `json:"extenderPort,omitempty"`
-	StorageProvisioner string                       `json:"storageProvisioner"`
+	Enable             bool                  `json:"enable"`
+	Image              *Image                `json:"image,omitempty"`
+	Log                *Log                  `json:"log,omitempty"`
+	Metrics            *Metrics              `json:"metrics,omitempty"`
+	Patcher            *Patcher              `json:"patcher,omitempty"`
+	ExtenderPort       string                `json:"extenderPort,omitempty"`
+	StorageProvisioner string                `json:"storageProvisioner"`
 	Resources          *ResourceRequirements `json:"resources"`
 }

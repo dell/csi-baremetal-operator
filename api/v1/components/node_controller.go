@@ -16,12 +16,10 @@ limitations under the License.
 
 package components
 
-
-
 // NodeController represent operator for CSI bare-metal nodes
 type NodeController struct {
-	Enable    bool                         `json:"enable"`
-	Image     *Image                       `json:"image,omitempty"`
-	Log       *Log                         `json:"log,omitempty"`
+	Enable    bool                  `json:"enable"`
+	Image     *Image                `json:"image,omitempty"`
+	Log       *Log                  `json:"log,omitempty"`
 	Resources *ResourceRequirements `json:"resources"`
 }

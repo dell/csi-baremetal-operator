@@ -16,11 +16,9 @@ limitations under the License.
 
 package components
 
-
-
 // DriveMgr represents drive manager node component
 type DriveMgr struct {
-	Image     *Image                       `json:"image,omitempty"`
-	Endpoint  string                       `json:"endpoint"`
+	Image     *Image                `json:"image,omitempty"`
+	Endpoint  string                `json:"endpoint"`
 	Resources *ResourceRequirements `json:"resources"`
 }

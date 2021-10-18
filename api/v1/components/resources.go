@@ -21,6 +21,10 @@ import (
 
 // ResourceRequirements contain information for mem/cpu requirements
 type ResourceRequirements struct {
-    Limits      corev1.ResourceList `json:"limits,omitempty"`
-    Requests    corev1.ResourceList `json:"requests,omitempty"`
+	// +nullable
+	// +optional
+	Limits corev1.ResourceList `json:"limits,omitempty"`
+	// +nullable
+	// +optional
+	Requests corev1.ResourceList `json:"requests,omitempty"`
 }

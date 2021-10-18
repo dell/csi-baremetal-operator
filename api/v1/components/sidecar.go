@@ -16,10 +16,8 @@ limitations under the License.
 
 package components
 
-
-
 // Sidecar represent CSI sidecar containers
 type Sidecar struct {
-	Image     *Image                       `json:"image,omitempty"`
+	Image     *Image                `json:"image,omitempty"`
 	Resources *ResourceRequirements `json:"resources"`
 }
