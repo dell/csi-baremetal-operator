@@ -67,6 +67,7 @@ spec:
                         type: object
                       resources:
                         description: ResourceRequirements contain information for mem/cpu requirements
+                        nullable: true
                         properties:
                           limits:
                             additionalProperties:
@@ -106,6 +107,7 @@ spec:
                               type: object
                             resources:
                               description: ResourceRequirements contain information for mem/cpu requirements
+                              nullable: true
                               properties:
                                 limits:
                                   additionalProperties:
@@ -128,12 +130,8 @@ spec:
                                   nullable: true
                                   type: object
                               type: object
-                          required:
-                          - resources
                           type: object
                         type: object
-                    required:
-                    - resources
                     type: object
                   logReceiver:
                     description: LogReceiver encapsulates information needed to establish log receiver for components
@@ -190,6 +188,7 @@ spec:
                             type: object
                           resources:
                             description: ResourceRequirements contain information for mem/cpu requirements
+                            nullable: true
                             properties:
                               limits:
                                 additionalProperties:
@@ -214,7 +213,6 @@ spec:
                             type: object
                         required:
                         - endpoint
-                        - resources
                         type: object
                       image:
                         description: Image contain information for components docker images
@@ -242,6 +240,7 @@ spec:
                         type: object
                       resources:
                         description: ResourceRequirements contain information for mem/cpu requirements
+                        nullable: true
                         properties:
                           limits:
                             additionalProperties:
@@ -281,6 +280,7 @@ spec:
                               type: object
                             resources:
                               description: ResourceRequirements contain information for mem/cpu requirements
+                              nullable: true
                               properties:
                                 limits:
                                   additionalProperties:
@@ -303,12 +303,8 @@ spec:
                                   nullable: true
                                   type: object
                               type: object
-                          required:
-                          - resources
                           type: object
                         type: object
-                    required:
-                    - resources
                     type: object
                 type: object
               globalRegistry:
@@ -345,6 +341,7 @@ spec:
                     type: object
                   resources:
                     description: ResourceRequirements contain information for mem/cpu requirements
+                    nullable: true
                     properties:
                       limits:
                         additionalProperties:
@@ -369,7 +366,6 @@ spec:
                     type: object
                 required:
                 - enable
-                - resources
                 type: object
               nodeIDAnnotation:
                 type: boolean
@@ -465,6 +461,7 @@ spec:
                         type: integer
                       resources:
                         description: ResourceRequirements contain information for mem/cpu requirements
+                        nullable: true
                         properties:
                           limits:
                             additionalProperties:
@@ -491,10 +488,10 @@ spec:
                         type: boolean
                     required:
                     - enable
-                    - resources
                     type: object
                   resources:
                     description: ResourceRequirements contain information for mem/cpu requirements
+                    nullable: true
                     properties:
                       limits:
                         additionalProperties:
@@ -521,7 +518,6 @@ spec:
                     type: string
                 required:
                 - enable
-                - resources
                 - storageProvisioner
                 type: object
               sequentialLVGReservation:
