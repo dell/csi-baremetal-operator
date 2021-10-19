@@ -3,9 +3,6 @@ name: Release Charts
 on:
   workflow_dispatch:
     inputs:
-      issue_number:
-        description: 'Issue for release creation number'
-        required: true
       csi_version:
         description: 'csi-baremetal-deployment release version'
         required: true
@@ -131,7 +128,6 @@ jobs:
         run: |
           git pull
           git checkout gh-pages
-          git checkout -b ${{ steps.vars.outputs.release_branch }}
           helm repo index ${{ steps.vars.outputs.release_path }} --url ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.event.inputs.release_tag }} --merge docs/index.yaml
           cp ${{ steps.vars.outputs.release_path }}/index.yaml -t ./docs
       
@@ -148,30 +144,7 @@ jobs:
           commit_options: --amend --signoff
           push_options: --force-with-lease
           file_pattern: ./docs/index.yaml
-          branch: ${{ steps.vars.outputs.release_branch }}
-
-      - run: echo $(git log --oneline)
-
-      - name: Create Pull Request
-        id: pr
-        uses: peter-evans/create-pull-request@v3
-        with:
-          token: ${{ secrets.CSI_WF_TOKEN }}
-          branch: ${{ steps.vars.outputs.release_branch}}
-          base: gh-pages
-          title: '[ISSUE-${{ github.event.inputs.issue_number }}] Release ${{ github.event.inputs.release_tag }}'
-          assignees: misanthropicat
-          reviewers: 'CSI Baremetal'
-          draft: false
-          body: 'Automated PR for release docs updating'
-          signoff: true
-          delete-branch: true
-          labels: 'documentation'
-
-      - name: Result
-        run: |
-          echo "${{ steps.pr.outputs.pull-request-operation }}"
-          echo "${{ steps.pr.outputs.pull-request-url }}"
+          branch: gh-pages
 
       # - name: Send slack notification
       #   uses: rtCamp/action-slack-notify@v2
