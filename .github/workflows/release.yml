@@ -95,11 +95,11 @@ jobs:
       - name: Generate changelog
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.CSI_WF_TOKEN }}
         with:
+          token: ${{ secrets.CSI_WF_TOKEN }}
           fromTag: ${{ steps.previous_tag.outputs.tag }}
           toTag: ${{ github.event.inputs.release_tag }}
+          configuration: "./.github/workflows/changelog_config.json"
 
       - name: Create release
         uses: softprops/action-gh-release@v1
