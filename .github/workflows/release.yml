@@ -140,9 +140,8 @@ jobs:
         id: commit_docs
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "[issue#${{ github.event.inputs.issue_number }}] Update Helm repo index"
+          commit_message: "Update Helm repo index"
           commit_options: --amend --signoff
-          push_options: --force-with-lease
           file_pattern: ./docs/index.yaml
           branch: gh-pages
 
