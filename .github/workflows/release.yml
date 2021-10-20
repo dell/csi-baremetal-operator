@@ -141,7 +141,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Update Helm repo index"
-          commit_options: --amend --signoff
+          commit_options: --signoff
           file_pattern: ./docs/index.yaml
           branch: gh-pages
 
