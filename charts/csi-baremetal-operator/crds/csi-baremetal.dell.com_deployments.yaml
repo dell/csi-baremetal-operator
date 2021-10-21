@@ -107,7 +107,6 @@ spec:
                               type: object
                             resources:
                               description: ResourceRequirements contain information for mem/cpu requirements
-                              nullable: true
                               properties:
                                 limits:
                                   additionalProperties:
@@ -280,7 +279,6 @@ spec:
                               type: object
                             resources:
                               description: ResourceRequirements contain information for mem/cpu requirements
-                              nullable: true
                               properties:
                                 limits:
                                   additionalProperties:
@@ -491,7 +489,6 @@ spec:
                     type: object
                   resources:
                     description: ResourceRequirements contain information for mem/cpu requirements
-                    nullable: true
                     properties:
                       limits:
                         additionalProperties:

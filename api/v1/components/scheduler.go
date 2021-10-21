@@ -25,7 +25,6 @@ type Scheduler struct {
 	Patcher            *Patcher `json:"patcher,omitempty"`
 	ExtenderPort       string   `json:"extenderPort,omitempty"`
 	StorageProvisioner string   `json:"storageProvisioner"`
-	// +nullable
 	// +optional
 	Resources *ResourceRequirements `json:"resources"`
 }
