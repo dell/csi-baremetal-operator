@@ -26,5 +26,5 @@ type Scheduler struct {
 	ExtenderPort       string   `json:"extenderPort,omitempty"`
 	StorageProvisioner string   `json:"storageProvisioner"`
 	// +optional
-	Resources *ResourceRequirements `json:"resources"`
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }

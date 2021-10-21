@@ -23,5 +23,5 @@ type Controller struct {
 	Sidecars map[string]*Sidecar `json:"sidecars,omitempty"`
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources"`
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }

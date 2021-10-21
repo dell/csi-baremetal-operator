@@ -22,5 +22,5 @@ type DriveMgr struct {
 	Endpoint string `json:"endpoint"`
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources"`
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }

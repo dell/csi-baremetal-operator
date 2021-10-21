@@ -23,5 +23,5 @@ type NodeController struct {
 	Log    *Log   `json:"log,omitempty"`
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources"`
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }

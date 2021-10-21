@@ -26,5 +26,5 @@ type Patcher struct {
 	ReadinessTimeout  int    `json:"readinessTimeout,omitempty"`
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources"`
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }

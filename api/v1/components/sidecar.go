@@ -20,5 +20,5 @@ package components
 type Sidecar struct {
 	Image *Image `json:"image,omitempty"`
 	// +optional
-	Resources *ResourceRequirements `json:"resources"`
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }
