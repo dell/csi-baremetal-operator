@@ -95,11 +95,11 @@ jobs:
       - name: Generate changelog
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.CSI_WF_TOKEN }}
         with:
+          token: ${{ secrets.CSI_WF_TOKEN }}
           fromTag: ${{ steps.previous_tag.outputs.tag }}
           toTag: ${{ github.event.inputs.release_tag }}
+          configuration: "./.github/workflows/changelog_config.json"
 
       - name: Create release
         uses: softprops/action-gh-release@v1
@@ -140,9 +140,8 @@ jobs:
         id: commit_docs
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "[issue#${{ github.event.inputs.issue_number }}] Update Helm repo index"
-          commit_options: --amend --signoff
-          push_options: --force-with-lease
+          commit_message: "Update Helm repo index"
+          commit_options: --signoff
           file_pattern: ./docs/index.yaml
           branch: gh-pages
 
