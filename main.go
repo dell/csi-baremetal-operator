@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	acrvalidator.LauncACRValidation(mgr.GetClient(), ctrl.Log.WithName("controllers").WithName("acr_validator"))
+	acrvalidator.LauncACRValidation(mgr.GetClient(), logrus.WithField("component", "acr_validator"))
 
 	ctx := context.Background()
 
