@@ -23,8 +23,8 @@ import (
 type ResourceRequirements struct {
 	// +nullable
 	// +optional
-	Limits corev1.ResourceList `json:"limits"`
+	Limits corev1.ResourceList `json:"limits,omitempty"`
 	// +nullable
 	// +optional
-	Requests corev1.ResourceList `json:"requests"`
+	Requests corev1.ResourceList `json:"requests,omitempty"`
 }
