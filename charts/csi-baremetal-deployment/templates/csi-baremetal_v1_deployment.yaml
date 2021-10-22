@@ -24,13 +24,7 @@ spec:
       image:
         name: csi-baremetal-controller
         tag: {{ .Values.driver.controller.image.tag | default .Values.image.tag }}
-      resources:
-        requests:
-          memory: {{ .Values.driver.controller.resources.requests.memory }}
-          cpu: {{ .Values.driver.controller.resources.requests.cpu }}
-        limits:
-          memory: {{ .Values.driver.controller.resources.limits.memory }}
-          cpu: {{ .Values.driver.controller.resources.limits.cpu }}
+      resources: {{- toYaml .Values.driver.controller.resources | nindent 8}}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}

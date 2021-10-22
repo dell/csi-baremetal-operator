@@ -16,6 +16,10 @@ limitations under the License.
 
 package components
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 // Controller encapsulates logic for CSI controller component
 type Controller struct {
 	Image    *Image              `json:"image,omitempty"`
@@ -23,5 +27,5 @@ type Controller struct {
 	Sidecars map[string]*Sidecar `json:"sidecars,omitempty"`
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
