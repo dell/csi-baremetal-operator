@@ -35,11 +35,7 @@ func Test_validateACRs(t *testing.T) {
 					Namespace: testNS,
 				},
 				Status: corev1.PodStatus{
-					ContainerStatuses: []corev1.ContainerStatus{
-						{
-							Ready: false,
-						},
-					},
+					Phase: corev1.PodPending,
 				},
 			}
 			acr = acrcrd.AvailableCapacityReservation{
@@ -66,7 +62,7 @@ func Test_validateACRs(t *testing.T) {
 		assert.NotNil(t, updatedACR)
 	})
 
-	t.Run("Should not delete ACR if pod ready", func(t *testing.T) {
+	t.Run("Should delete ACR if pod ready", func(t *testing.T) {
 		var (
 			pod = corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -74,11 +70,7 @@ func Test_validateACRs(t *testing.T) {
 					Namespace: testNS,
 				},
 				Status: corev1.PodStatus{
-					ContainerStatuses: []corev1.ContainerStatus{
-						{
-							Ready: true,
-						},
-					},
+					Phase: corev1.PodRunning,
 				},
 			}
 			acr = acrcrd.AvailableCapacityReservation{
