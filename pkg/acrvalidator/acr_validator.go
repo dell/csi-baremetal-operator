@@ -2,11 +2,10 @@ package acrvalidator
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,12 +28,12 @@ const (
 // ACRValidator is the watcher to remove outdated ACRs
 type ACRValidator struct {
 	Client client.Client
-	Log    logr.Logger
+	Log    *logrus.Entry
 }
 
 // LauncACRValidation creates an instance of ACRValidator and
 // start the infinite loop to validate ACRs by timeout
-func LauncACRValidation(client client.Client, log logr.Logger) {
+func LauncACRValidation(client client.Client, log *logrus.Entry) {
 	validator := &ACRValidator{
 		Client: client,
 		Log:    log,
@@ -55,31 +54,46 @@ func (v *ACRValidator) validateACRs() {
 	acrs := &acrcrd.AvailableCapacityReservationList{}
 	err := v.Client.List(ctx, acrs)
 	if err != nil {
-		v.Log.Error(err, fmt.Sprintf("Failed to get ACR List: %s", err.Error()))
+		v.Log.Errorf("failed to get ACR List: %s", err.Error())
 		return
 	}
 
 	for i, acr := range acrs.Items {
-		ns, podName := getPodName(&acrs.Items[i])
-
-		pod := &corev1.Pod{}
-		err := v.Client.Get(ctx, client.ObjectKey{Name: podName, Namespace: ns}, pod)
-		if err != nil && !k8serrors.IsNotFound(err) {
-			v.Log.Error(err, fmt.Sprintf("Failed to get pod %s in %s namespace: %s", podName, ns, err.Error()))
-			continue
-		}
-
-		if k8serrors.IsNotFound(err) {
-			// need to make it warning after log library changed
-			v.Log.Info(fmt.Sprintf("ACR %s is no longer actual. Pod %s in %s ns was removed. Try to delete", acr.GetName(), podName, ns))
+		if v.needToRemoveACR(ctx, &acrs.Items[i]) {
+			v.Log.Infof("Try to delete ACR %s", acr.GetName())
 			err := v.Client.Delete(ctx, &acrs.Items[i])
 			if err != nil {
-				v.Log.Error(err, fmt.Sprintf("Failed to delete ACR %s: %s", acr.GetName(), err.Error()))
+				v.Log.Errorf("failed to delete ACR %s: %s", acr.GetName(), err.Error())
 			} else {
-				v.Log.Info(fmt.Sprintf("ACR %s was successfully deleted", acr.GetName()))
+				v.Log.Infof("ACR %s was successfully deleted", acr.GetName())
 			}
 		}
 	}
+}
+
+func (v *ACRValidator) needToRemoveACR(ctx context.Context, acr *acrcrd.AvailableCapacityReservation) bool {
+	ns, podName := getPodName(acr)
+
+	pod := &corev1.Pod{}
+	err := v.Client.Get(ctx, client.ObjectKey{Name: podName, Namespace: ns}, pod)
+	if err != nil && !k8serrors.IsNotFound(err) {
+		v.Log.Errorf("failed to get pod %s in %s namespace: %s", podName, ns, err.Error())
+		return false
+	}
+
+	// Check if pod was deleted
+	if k8serrors.IsNotFound(err) {
+		v.Log.Warnf("ACR %s is no longer actual. Pod %s in %s ns was removed", acr.GetName(), podName, ns)
+		return true
+	}
+
+	// Check if pod is Running
+	if pod.Status.Phase == corev1.PodRunning {
+		v.Log.Warnf("ACR %s is no longer actual. Pod %s in %s ns is Running", acr.GetName(), podName, ns)
+		return true
+	}
+
+	return false
 }
 
 // getPodName returns namespace and pod names for passed acr
