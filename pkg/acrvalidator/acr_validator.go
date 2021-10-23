@@ -87,16 +87,9 @@ func (v *ACRValidator) needToRemoveACR(ctx context.Context, acr *acrcrd.Availabl
 		return true
 	}
 
-	// Check if pod is Ready
-	containersReady := true
-	for _, status := range pod.Status.ContainerStatuses {
-		if !status.Ready {
-			containersReady = false
-			break
-		}
-	}
-	if containersReady {
-		v.Log.Warnf("ACR %s is no longer actual. Pod %s in %s ns is Ready", acr.GetName(), podName, ns)
+	// Check if pod is Running
+	if pod.Status.Phase == corev1.PodRunning {
+		v.Log.Warnf("ACR %s is no longer actual. Pod %s in %s ns is Running", acr.GetName(), podName, ns)
 		return true
 	}
 
