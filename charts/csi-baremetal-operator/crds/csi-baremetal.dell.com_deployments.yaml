@@ -319,7 +319,7 @@ spec:
                 - storageProvisioner
                 type: object
               selector:
-                description: Selector ...
+                description: Selector is an unused field to passing linters since our CRD is not actual Deployment
                 properties:
                   matchLabels:
                     items:
