@@ -3,7 +3,8 @@ package patcher
 import (
 	"context"
 
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,16 +16,15 @@ import (
 // SchedulerPatcher performs pacthing procedure depends on platform
 type SchedulerPatcher struct {
 	Clientset kubernetes.Interface
-	logr.Logger
-	Client client.Client
+	Log       *logrus.Entry
+	Client    client.Client
 }
 
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla
 // patches Kube-Scheduler on Openshift
 func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	if !IsPatchingEnabled(csi) {
-		// todo change severity to warning once https://github.com/dell/csi-baremetal/issues/371 is addressed
-		p.Logger.Info("Kubernetes scheduler configuration patching not enabled. Please update configuration manually")
+		p.Log.Warn("Kubernetes scheduler configuration patching not enabled. Please update configuration manually")
 		return nil
 	}
 

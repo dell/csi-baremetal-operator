@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 )
@@ -21,6 +21,8 @@ const (
 
 var (
 	nodeSelector *components.NodeSelector
+
+	logEntry = logrus.WithField("Test name", "NodeTest")
 
 	testNode1 = coreV1.Node{
 		ObjectMeta: metav1.ObjectMeta{
@@ -47,9 +49,8 @@ var (
 func TestNewNode(t *testing.T) {
 	t.Run("Create Node", func(t *testing.T) {
 		clientset := fake.NewSimpleClientset()
-		log := ctrl.Log.WithName("NodeTest")
 
-		node := NewNode(clientset, log)
+		node := NewNode(clientset, logEntry)
 		assert.NotNil(t, node.clientset)
 		assert.NotNil(t, node.log)
 	})
@@ -202,7 +203,7 @@ func Test_cleanNodeLabels(t *testing.T) {
 
 func prepareNode(objects ...runtime.Object) *Node {
 	clientset := fake.NewSimpleClientset(objects...)
-	node := NewNode(clientset, ctrl.Log.WithName("NodeTest"))
+	node := NewNode(clientset, logEntry)
 
 	return node
 }

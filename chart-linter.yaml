@@ -1,0 +1,7 @@
+validate-maintainers: false
+chart-dirs:
+  - charts/csi-baremetal-operator
+  - charts/csi-baremetal-deployment
+charts:
+  - charts/csi-baremetal-operator
+  - charts/csi-baremetal-deployment

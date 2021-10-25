@@ -1,0 +1,155 @@
+name: Release Charts
+
+on:
+  workflow_dispatch:
+    inputs:
+      csi_version:
+        description: 'csi-baremetal-deployment release version'
+        required: true
+      csi_operator_version:
+        description: 'csi-baremetal-operator release version'
+        required: true
+      release_tag:
+        description: 'Release tag'
+        required: true
+
+jobs:
+  create_release:
+    name: Create pre-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Determine target version commit
+        id: target
+        uses: jungwinter/split@v2
+        with:
+          msg: ${{ github.event.inputs.csi_operator_version }}
+          separator: '.'
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "::set-output name=release_path::/tmp/${{ github.event.inputs.release_tag }}"
+          echo "::set-output name=sha::${{ steps.target.outputs._3 }}"
+          echo "::set-output name=release_branch::feature-issue-${{ github.event.inputs.issue_number }}-release-${{ github.event.inputs.release_tag }}"
+          echo "::set-output name=current_branch::${GITHUB_REF#refs/heads/}"
+
+      - name: Install python3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10.0'
+
+      - name: Install dependencies for YAML secure parsing
+        run: |
+          sudo apt install jq
+          python -m pip install --upgrade pip
+          pip install yq
+
+      - name: Update csi-baremetal-operator image tag in values
+        uses: mikefarah/yq@master
+        with:
+            cmd: yq eval -i '.image.tag="${{ github.event.inputs.csi_operator_version }}"' ./charts/csi-baremetal-operator/values.yaml
+
+      - name: Update csi-baremetal-deployment image tag in values
+        uses: mikefarah/yq@master
+        with:
+            cmd: yq eval -i '.image.tag="${{ github.event.inputs.csi_version }}"' ./charts/csi-baremetal-deployment/values.yaml
+
+      - name: Tag release with annotation
+        run: |
+          TAG_NAME=${{ github.event.inputs.release_tag }}
+          git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME: issue ${{ github.event.inputs.issue_number }}"
+          git push origin $TAG_NAME
+
+      - name: Create csi-baremetal-operator asset
+        id: asset_1
+        run: |
+          helm package charts/csi-baremetal-operator/ --version ${{ github.event.inputs.csi_operator_version }} --app-version ${{ github.event.inputs.release_tag }} --dependency-update
+          echo "::set-output name=archive_name::csi-baremetal-operator-${{ github.event.inputs.csi_operator_version }}.tgz"
+
+      - name: Upload csi-baremetal-operator asset
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.asset_1.outputs.archive_name }}
+          path: ./${{ steps.asset_1.outputs.archive_name }}
+
+      - name: Create csi-baremetal-deployment asset
+        id: asset_2
+        run: |
+          helm package charts/csi-baremetal-deployment/ --version ${{ github.event.inputs.csi_operator_version }} --app-version ${{ github.event.inputs.release_tag }} --dependency-update
+          echo "::set-output name=archive_name::csi-baremetal-deployment-${{ github.event.inputs.csi_operator_version }}.tgz"
+
+      - name: Upload csi-baremetal-deployment asset
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.asset_2.outputs.archive_name }}
+          path: ./${{ steps.asset_2.outputs.archive_name }}
+
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v1
+        with:
+          token: ${{ secrets.CSI_WF_TOKEN }}
+          fromTag: ${{ steps.previous_tag.outputs.tag }}
+          toTag: ${{ github.event.inputs.release_tag }}
+          configuration: "./.github/workflows/changelog_config.json"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: Release ${{ github.event.inputs.release_tag }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: true
+          files: |
+            ./${{ steps.asset_1.outputs.archive_name }}
+            ./${{ steps.asset_2.outputs.archive_name }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: ${{ steps.vars.outputs.release_path }}
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v2
+        with:
+          ref: gh-pages
+
+      - name: Update index.yaml
+        run: |
+          git pull
+          git checkout gh-pages
+          helm repo index ${{ steps.vars.outputs.release_path }} --url ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.event.inputs.release_tag }} --merge docs/index.yaml
+          cp ${{ steps.vars.outputs.release_path }}/index.yaml -t ./docs
+      
+      # - name: Lint charts
+      #   run: |
+      #     helm lint ./charts/csi-baremetal-deployment/
+      #     helm lint ./charts/csi-baremetal-operator/
+
+      - name: Commit and push changes
+        id: commit_docs
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Update Helm repo index"
+          commit_options: --signoff
+          file_pattern: ./docs/index.yaml
+          branch: gh-pages
+
+      # - name: Send slack notification
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      #     SLACK_CHANNEL: test-private-channel
+      #     SLACK_COLOR: ${{ job.status }}
+      #     SLACK_TITLE: 'Release ${{ github.event.inputs.release_tag }} is ready for review'
+      #     SLACK_MESSAGE: 'Please review this PR: ${{ steps.pr.outputs.pull-request-url }}'

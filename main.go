@@ -21,6 +21,8 @@ import (
 	"flag"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -73,15 +75,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	acrvalidator.LauncACRValidation(mgr.GetClient(), ctrl.Log.WithName("controllers").WithName("acr_validator"))
+	acrvalidator.LauncACRValidation(mgr.GetClient(), logrus.WithField("component", "acr_validator"))
 
 	ctx := context.Background()
 
 	if err = (&controllers.DeploymentReconciler{
-		Client:        mgr.GetClient(),
-		Log:           ctrl.Log.WithName("controllers").WithName("Deployment"),
+		Client: mgr.GetClient(),
+		Log: logrus.WithFields(logrus.Fields{
+			"module": "controllers", "component": "DeploymentReconciler"}),
 		Scheme:        mgr.GetScheme(),
-		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), ctrl.Log),
+		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), logrus.New()),
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)

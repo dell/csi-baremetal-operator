@@ -66,7 +66,7 @@ spec:
                         - level
                         type: object
                       resources:
-                        description: ResourceRequirements describes the compute resource requirements.
+                        description: ResourceRequirements contain information for mem/cpu requirements
                         nullable: true
                         properties:
                           limits:
@@ -76,7 +76,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                            description: ResourceList is a set of (resource name, quantity) pairs.
+                            nullable: true
                             type: object
                           requests:
                             additionalProperties:
@@ -85,7 +86,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                            description: ResourceList is a set of (resource name, quantity) pairs.
+                            nullable: true
                             type: object
                         type: object
                       sidecars:
@@ -489,6 +491,7 @@ spec:
                     type: object
                   resources:
                     description: ResourceRequirements contain information for mem/cpu requirements
+                    nullable: true
                     properties:
                       limits:
                         additionalProperties:

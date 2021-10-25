@@ -21,7 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -59,11 +60,11 @@ var (
 type Controller struct {
 	clientset kubernetes.Interface
 	client    client.Client
-	log       logr.Logger
+	log       *logrus.Entry
 }
 
 // NewNodeOperationsController returns Controller object
-func NewNodeOperationsController(clientset kubernetes.Interface, client client.Client, log logr.Logger) *Controller {
+func NewNodeOperationsController(clientset kubernetes.Interface, client client.Client, log *logrus.Entry) *Controller {
 	return &Controller{
 		clientset: clientset,
 		client:    client,
