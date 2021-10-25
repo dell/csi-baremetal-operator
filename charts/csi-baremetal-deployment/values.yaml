@@ -33,15 +33,12 @@ nodeSelector:
 
 # CSI Driver parameters
 driver:
-
   controller:
     image:
       tag:
-
   node:
     image:
       tag:
-
   drivemgr:
     type: basemgr
     image:
@@ -52,112 +49,87 @@ driver:
     deployConfig: false
     amountOfLoopDevices: 3
     sizeOfLoopDevices: 101Mi
-
   # Sidecars parameters
   provisioner:
     image:
       # if you want to use topology feature (multiple PVCs per pod) you should use v1.2.2
       tag: v1.6.0
-
   resizer:
     image:
       tag: v1.1.0
-
   nodeDriverRegistrar:
     image:
       tag: v1.3.0
-
   livenessProbe:
     image:
       tag: v2.1.0
-
   # Metrics endpoint
   metrics:
     path: /metrics
     port: 8787
-
   # Logging settings
   log:
     format: text
     level: info
-
   logReceiver:
     create: false
-    #stdout/es if stdout, then fluent bit will print collected logs in stdout, if es, then the output of fluent bit is Elastic Search
-    output: stdout #es
+    # stdout/es if stdout, then fluent bit will print collected logs in stdout, if es, then the output of fluent bit is Elastic Search
+    output: stdout
     # Valid values for Elasticsearch are "http" and "https"
     # protocol: http
-
     # Elasticsearch address
     # host: 10.249.234.158
-
     # Port to use for provided Elasticsearch receiver
     # port: 9200
-
     fluentbitAgent:
       image:
         name:
         tag:
-
   alerts:
     mountConfig: false
 
 # CSI Scheduler parameters
 scheduler:
-
   enable: true
-
   image:
     tag:
-
   # Logging settings
   log:
     format: text
     level: info
-
   # Metrics endpoint
   metrics:
     path: /metrics
     port: 8787
-
   extender:
     port: 8889
-
   # Patcher settings
   patcher:
     # option to enable Kubernetes scheduler configuration patching to use csi extender
     # platform field must be also set to the one of supported from pkg/constant/platforms.go
     # NOTE: use with caution - will overwrite existing configuration
     enable: false
-
     image:
       tag:
-
     kubeconfig: /etc/kubernetes/scheduler.conf
     interval: 60
     restore_on_shutdown: true
     config_map_name: schedulerpatcher-config
-
     # Patching will be restarted if extenders aren't ready after timeout (mins)
     readinessTimeout: 20
-
   # extender will be looking for volumes that should be provisioned
   # by storage class with provided provisioner name
   provisioner: csi-baremetal
 
 # CSI Operator parameters
 nodeController:
-
   enable: true
-
   image:
     tag:
-
   # Logging settings
   log:
     format: text
     level: info
-
   # Metrics endpoint
   metrics:
     path: /metrics
