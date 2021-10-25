@@ -319,7 +319,7 @@ spec:
                 - storageProvisioner
                 type: object
               selector:
-                description: Selector is an unused field to passing linters since our CRD is not actual Deployment
+                description: Selector used to select set of CSI deployments
                 properties:
                   matchLabels:
                     items:
