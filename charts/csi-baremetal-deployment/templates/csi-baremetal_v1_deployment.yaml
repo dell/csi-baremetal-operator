@@ -29,63 +29,37 @@ spec:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
       sidecars:
-       livenessprobe:
+        livenessprobe:
           image:
             name: livenessprobe
             tag: {{ .Values.driver.livenessProbe.image.tag }}
           resources:
-            requests:
-              memory: {{ .Values.driver.livenessProbe.resources.requests.memory }}
-              cpu: {{ .Values.driver.livenessProbe.resources.requests.cpu }}
-            limits:
-              memory: {{ .Values.driver.livenessProbe.resources.limits.memory }}
-              cpu: {{ .Values.driver.livenessProbe.resources.limits.cpu }}
-
-       csi-provisioner:
+            {{- include "setResources" .Values.driver.livenessProbe | nindent 12 }}
+        csi-provisioner:
           image:
             name: csi-provisioner
             tag: {{ .Values.driver.provisioner.image.tag }}
           resources:
-            requests:
-              memory: {{  .Values.driver.provisioner.resources.requests.memory }}
-              cpu: {{  .Values.driver.provisioner.resources.requests.cpu }}
-            limits:
-              memory: {{  .Values.driver.provisioner.resources.limits.memory }}
-              cpu: {{  .Values.driver.provisioner.resources.limits.cpu }}
-       csi-resizer:
+            {{- include "setResources" .Values.driver.provisioner | nindent 12 }}
+        csi-resizer:
           image:
             name: csi-resizer
             tag: {{ .Values.driver.resizer.image.tag }}
           resources:
-            requests:
-              memory: {{ .Values.driver.resizer.resources.requests.memory }}
-              cpu: {{ .Values.driver.resizer.resources.requests.cpu }}
-            limits:
-              memory: {{ .Values.driver.resizer.resources.limits.memory }}
-              cpu: {{ .Values.driver.resizer.resources.limits.cpu }}
+            {{- include "setResources" .Values.driver.resizer | nindent 12 }}
     node:
       driveMgr:
         image:
           name: csi-baremetal-{{ .Values.driver.drivemgr.type }}
           tag: {{ .Values.driver.drivemgr.image.tag | default .Values.image.tag }}
         resources:
-          requests:
-            memory: {{  .Values.driver.drivemgr.resources.requests.memory }}
-            cpu: {{  .Values.driver.drivemgr.resources.requests.cpu }}
-          limits:
-            memory: {{  .Values.driver.drivemgr.resources.limits.memory }}
-            cpu: {{  .Values.driver.drivemgr.resources.limits.cpu }}
+          {{- include "setResources" .Values.driver.drivemgr | nindent 10 }}
         endpoint: {{ .Values.driver.drivemgr.grpc.server.endpoint }}
       image:
         name: csi-baremetal-node
         tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}
       resources:
-        requests:
-          memory: {{  .Values.driver.node.resources.requests.memory }}
-          cpu: {{  .Values.driver.node.resources.requests.cpu }}
-        limits:
-          memory: {{  .Values.driver.node.resources.limits.memory }}
-          cpu: {{  .Values.driver.node.resources.limits.cpu }}
+        {{- include "setResources" .Values.driver.node | nindent 8 }}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
@@ -95,23 +69,13 @@ spec:
             name: csi-node-driver-registrar
             tag: {{ .Values.driver.nodeDriverRegistrar.image.tag }}
           resources:
-            requests:
-              memory: {{  .Values.driver.nodeDriverRegistrar.resources.requests.memory }}
-              cpu: {{  .Values.driver.nodeDriverRegistrar.resources.requests.cpu }}
-            limits:
-              memory: {{  .Values.driver.nodeDriverRegistrar.resources.limits.memory }}
-              cpu: {{  .Values.driver.nodeDriverRegistrar.resources.limits.cpu }}
+            {{- include "setResources" .Values.driver.nodeDriverRegistrar | nindent 12 }}
         livenessprobe:
           image:
             name: livenessprobe
             tag: {{ .Values.driver.livenessProbe.image.tag }}
           resources:
-            requests:
-              memory: {{  .Values.driver.livenessProbe.resources.requests.memory }}
-              cpu: {{  .Values.driver.livenessProbe.resources.requests.cpu }}
-            limits:
-              memory: {{  .Values.driver.livenessProbe.resources.limits.memory }}
-              cpu: {{  .Values.driver.livenessProbe.resources.limits.cpu }}
+            {{- include "setResources" .Values.driver.livenessProbe | nindent 12 }}
     metrics:
       path: {{ .Values.driver.metrics.path }}
       port: {{ .Values.driver.metrics.port }}
@@ -126,12 +90,7 @@ spec:
       name: csi-baremetal-scheduler-extender
       tag: {{ .Values.scheduler.image.tag | default .Values.image.tag }}
     resources:
-      requests:
-        memory: {{  .Values.scheduler.resources.requests.memory }}
-        cpu: {{  .Values.scheduler.resources.requests.cpu }}
-      limits:
-        memory: {{  .Values.scheduler.resources.limits.memory }}
-        cpu: {{  .Values.scheduler.resources.limits.cpu }}
+      {{- include "setResources" .Values.scheduler | nindent 6 }}
     log:
       format: {{ .Values.scheduler.log.format }}
       level: {{ .Values.scheduler.log.level }}
@@ -145,12 +104,7 @@ spec:
         name: csi-baremetal-scheduler-patcher
         tag: {{ .Values.scheduler.patcher.image.tag | default .Values.image.tag }}
       resources:
-        requests:
-          memory: {{  .Values.scheduler.patcher.resources.requests.memory }}
-          cpu: {{  .Values.scheduler.patcher.resources.requests.cpu }}
-        limits:
-          memory: {{  .Values.scheduler.patcher.resources.limits.memory }}
-          cpu: {{  .Values.scheduler.patcher.resources.limits.cpu }}
+        {{- include "setResources" .Values.scheduler.patcher | nindent 8 }}
       interval: {{ .Values.scheduler.patcher.interval }}
       restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
@@ -162,12 +116,7 @@ spec:
       name: csi-baremetal-node-controller
       tag: {{ .Values.nodeController.image.tag | default .Values.image.tag }}
     resources:
-      requests:
-        memory: {{  .Values.nodeController.resources.requests.memory }}
-        cpu: {{  .Values.nodeController.resources.requests.cpu }}
-      limits:
-        memory: {{  .Values.nodeController.resources.limits.memory }}
-        cpu: {{  .Values.nodeController.resources.limits.cpu }}
+      {{- include "setResources" .Values.nodeController | nindent 6 }}
     log:
       format: {{ .Values.nodeController.log.format }}
       level: {{ .Values.nodeController.log.level }}

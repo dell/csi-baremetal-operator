@@ -184,7 +184,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			Resources:                *c.Resources,
+			Resources:                corev1.ResourceRequirements(*c.Resources),
 		},
 		{
 			Name:            constant.ProvisionerName,
