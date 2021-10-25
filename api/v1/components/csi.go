@@ -44,7 +44,7 @@ type DeploymentSpec struct {
 	Platform string `json:"platform"`
 }
 
-// Selector is an unused field to passing linters since our CRD is not actual Deployment
+// Selector used to select set of CSI deployments
 type Selector struct {
 	MatchLabels []string `json:"matchLabels,omitempty"`
 }
