@@ -16,7 +16,6 @@ limitations under the License.
 
 package components
 
-
 // Controller encapsulates logic for CSI controller component
 type Controller struct {
 	Image    *Image              `json:"image,omitempty"`
