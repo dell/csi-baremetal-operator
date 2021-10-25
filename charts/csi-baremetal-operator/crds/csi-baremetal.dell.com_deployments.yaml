@@ -311,14 +311,20 @@ spec:
                         type: integer
                       restoreOnShutdown:
                         type: boolean
-                    required:
-                    - enable
                     type: object
                   storageProvisioner:
                     type: string
                 required:
                 - enable
                 - storageProvisioner
+                type: object
+              selector:
+                description: Selector ...
+                properties:
+                  matchLabels:
+                    items:
+                      type: string
+                    type: array
                 type: object
               sequentialLVGReservation:
                 type: boolean

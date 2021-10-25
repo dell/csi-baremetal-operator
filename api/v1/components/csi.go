@@ -36,7 +36,15 @@ type DeploymentSpec struct {
 	NodeIDAnnotation         bool          `json:"nodeIDAnnotation,omitempty"`
 	SequentialLVGReservation bool          `json:"sequentialLVGReservation,omitempty"`
 
+	// +optional
+	Selector Selector `json:"selector,omitempty"`
+
 	// +kubebuilder:validation:Enum=rke;openshift;vanilla
 	// +kubebuilder:default:=vanilla
 	Platform string `json:"platform"`
+}
+
+// Selector is an unused field to passing linters since our CRD is not actual Deployment
+type Selector struct {
+	MatchLabels []string `json:"matchLabels,omitempty"`
 }
