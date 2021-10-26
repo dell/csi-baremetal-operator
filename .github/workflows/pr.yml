@@ -50,21 +50,6 @@ jobs:
     - name: Lint code
       run: GOGC=300 make lint-code
 
-    - name: Set up Helm
-      uses: azure/setup-helm@v1
-      with:
-        version: v3.4.0
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-
-    - name: Set up chart-testing
-      uses: helm/chart-testing-action@v2.1.0
-
-    - name: Run chart-testing (lint)
-      run: ct lint --config chart-linter.yaml
-
     - name: Build binary
       run: |
         make manager
