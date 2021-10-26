@@ -85,8 +85,7 @@ install-controller-gen:
 generate-operator-crds: install-controller-gen 
 	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
 
-lint-charts:
-	helm lint ./${CSI_DEPLOYMENT_CHART_PATH}
+lint-operator-chart:
 	helm lint ./${CSI_OPERATOR_CHART_PATH}
 
 lint-code:
