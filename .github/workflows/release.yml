@@ -38,8 +38,8 @@ jobs:
         run: |
           echo "::set-output name=release_path::/tmp/${{ github.event.inputs.release_tag }}"
           echo "::set-output name=sha::${{ steps.target.outputs._3 }}"
-          echo "::set-output name=release_branch::feature-issue-${{ github.event.inputs.issue_number }}-release-${{ github.event.inputs.release_tag }}"
-          echo "::set-output name=current_branch::${GITHUB_REF#refs/heads/}"
+          app_version=$(awk '{ sub(/.*v/, ""); sub(/-.*/, ""); print }' <<< ${{ github.event.inputs.release_tag }})
+          echo "::set-output name=app_version::${app_version}"
 
       - name: Install python3
         uses: actions/setup-python@v2
@@ -53,14 +53,10 @@ jobs:
           pip install yq
 
       - name: Update csi-baremetal-operator image tag in values
-        uses: mikefarah/yq@master
-        with:
-            cmd: yq eval -i '.image.tag="${{ github.event.inputs.csi_operator_version }}"' ./charts/csi-baremetal-operator/values.yaml
+        run: echo $(yq -i -y '.image.tag="${{ github.event.inputs.csi_operator_version }}"' ./charts/csi-baremetal-operator/values.yaml)
 
       - name: Update csi-baremetal-deployment image tag in values
-        uses: mikefarah/yq@master
-        with:
-            cmd: yq eval -i '.image.tag="${{ github.event.inputs.csi_version }}"' ./charts/csi-baremetal-deployment/values.yaml
+        run: echo $(yq -i -y '.image.tag="${{ github.event.inputs.csi_version }}"' ./charts/csi-baremetal-deployment/values.yaml)
 
       - name: Tag release with annotation
         run: |
@@ -71,7 +67,7 @@ jobs:
       - name: Create csi-baremetal-operator asset
         id: asset_1
         run: |
-          helm package charts/csi-baremetal-operator/ --version ${{ github.event.inputs.csi_operator_version }} --app-version ${{ github.event.inputs.release_tag }} --dependency-update
+          helm package ./charts/csi-baremetal-operator/ --version ${{ github.event.inputs.csi_operator_version }} --app-version ${{ steps.vars.outputs.app_version }}
           echo "::set-output name=archive_name::csi-baremetal-operator-${{ github.event.inputs.csi_operator_version }}.tgz"
 
       - name: Upload csi-baremetal-operator asset
@@ -83,7 +79,7 @@ jobs:
       - name: Create csi-baremetal-deployment asset
         id: asset_2
         run: |
-          helm package charts/csi-baremetal-deployment/ --version ${{ github.event.inputs.csi_operator_version }} --app-version ${{ github.event.inputs.release_tag }} --dependency-update
+          helm package ./charts/csi-baremetal-deployment/ --version ${{ github.event.inputs.csi_operator_version }} --app-version ${{ steps.vars.outputs.app_version }}
           echo "::set-output name=archive_name::csi-baremetal-deployment-${{ github.event.inputs.csi_operator_version }}.tgz"
 
       - name: Upload csi-baremetal-deployment asset
@@ -114,27 +110,27 @@ jobs:
             ./${{ steps.asset_1.outputs.archive_name }}
             ./${{ steps.asset_2.outputs.archive_name }}
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
-        with:
-          path: ${{ steps.vars.outputs.release_path }}
-
       - name: Checkout gh-pages
         uses: actions/checkout@v2
         with:
           ref: gh-pages
 
-      - name: Update index.yaml
+      - name: Download csi-baremetal-operator package
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ steps.asset_1.outputs.archive_name }}
+
+      - name: Download csi-baremetal-deployment package
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ steps.asset_2.outputs.archive_name }}
+
+      - name: Publish charts to gh-pages
         run: |
-          git pull
-          git checkout gh-pages
-          helm repo index ${{ steps.vars.outputs.release_path }} --url ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.event.inputs.release_tag }} --merge docs/index.yaml
-          cp ${{ steps.vars.outputs.release_path }}/index.yaml -t ./docs
-      
-      # - name: Lint charts
-      #   run: |
-      #     helm lint ./charts/csi-baremetal-deployment/
-      #     helm lint ./charts/csi-baremetal-operator/
+          echo `ls -Rl .`
+          assets_url=https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.release_tag }}
+          helm repo index . --url ${assets_url} --merge docs/index.yaml
+          mv ./index.yaml -f ./docs
 
       - name: Commit and push changes
         id: commit_docs
