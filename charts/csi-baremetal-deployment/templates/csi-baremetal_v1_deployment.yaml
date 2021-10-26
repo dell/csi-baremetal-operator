@@ -13,9 +13,6 @@ spec:
   registrySecret: {{ .Values.global.registrySecret }}
   pullPolicy: {{ .Values.image.pullPolicy }}
   nodeIDAnnotation: {{ .Values.feature.usenodeannotation }}
-  selector:
-    matchLabels:
-    - csi-baremetal
   {{- if and (.Values.nodeSelector.key) (.Values.nodeSelector.value)}}
   nodeSelector:
     key: {{.Values.nodeSelector.key}}
