@@ -61,6 +61,11 @@ spec:
       jsonPath: .spec.Slot
       name: SLOT
       type: string
+    - description: Drive firmware
+      jsonPath: .spec.Firmware
+      name: FIRMWARE
+      priority: 1
+      type: string
     name: v1
     schema:
       openAPIV3Schema:
