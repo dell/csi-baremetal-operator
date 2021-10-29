@@ -24,7 +24,8 @@ spec:
       image:
         name: csi-baremetal-controller
         tag: {{ .Values.driver.controller.image.tag | default .Values.image.tag }}
-      {{- include "setResources" .Values.driver.controller | nindent 6 }}
+      resources:
+        {{- include "setResources" .Values.driver.controller | indent 8 }}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
@@ -33,28 +34,33 @@ spec:
           image:
             name: livenessprobe
             tag: {{ .Values.driver.livenessProbe.image.tag }}
-          {{- include "setResources" .Values.driver.livenessProbe | nindent 10 }}
+          resources:
+            {{- include "setResources" .Values.driver.livenessProbe | indent 12 }}
         csi-provisioner:
           image:
             name: csi-provisioner
             tag: {{ .Values.driver.provisioner.image.tag }}
-          {{- include "setResources" .Values.driver.provisioner | nindent 10 }}
+          resources:
+            {{- include "setResources" .Values.driver.provisioner | indent 12 }}
         csi-resizer:
           image:
             name: csi-resizer
             tag: {{ .Values.driver.resizer.image.tag }}
-          {{- include "setResources" .Values.driver.resizer | nindent 10 }}
+          resources:
+            {{- include "setResources" .Values.driver.resizer | indent 12 }}
     node:
       driveMgr:
         image:
           name: csi-baremetal-{{ .Values.driver.drivemgr.type }}
           tag: {{ .Values.driver.drivemgr.image.tag | default .Values.image.tag }}
-        {{- include "setResources" .Values.driver.drivemgr | nindent 8 }}
+        resources:
+          {{- include "setResources" .Values.driver.drivemgr | indent 10 }}
         endpoint: {{ .Values.driver.drivemgr.grpc.server.endpoint }}
       image:
         name: csi-baremetal-node
         tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}
-      {{- include "setResources" .Values.driver.node | nindent 6 }}
+      resources:
+        {{- include "setResources" .Values.driver.node | indent 8 }}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
@@ -63,12 +69,14 @@ spec:
           image:
             name: csi-node-driver-registrar
             tag: {{ .Values.driver.nodeDriverRegistrar.image.tag }}
-          {{- include "setResources" .Values.driver.nodeDriverRegistrar | nindent 10 }}
+          resources:
+            {{- include "setResources" .Values.driver.nodeDriverRegistrar | indent 12 }}
         livenessprobe:
           image:
             name: livenessprobe
             tag: {{ .Values.driver.livenessProbe.image.tag }}
-          {{- include "setResources" .Values.driver.livenessProbe | nindent 10 }}
+          resources:
+            {{- include "setResources" .Values.driver.livenessProbe | indent 12 }}
     metrics:
       path: {{ .Values.driver.metrics.path }}
       port: {{ .Values.driver.metrics.port }}
@@ -82,7 +90,8 @@ spec:
     image:
       name: csi-baremetal-scheduler-extender
       tag: {{ .Values.scheduler.image.tag | default .Values.image.tag }}
-    {{- include "setResources" .Values.scheduler | nindent 4 }}
+    resources:
+      {{- include "setResources" .Values.scheduler | indent 6 }}
     log:
       format: {{ .Values.scheduler.log.format }}
       level: {{ .Values.scheduler.log.level }}
@@ -95,7 +104,8 @@ spec:
       image:
         name: csi-baremetal-scheduler-patcher
         tag: {{ .Values.scheduler.patcher.image.tag | default .Values.image.tag }}
-      {{- include "setResources" .Values.scheduler.patcher | nindent 6 }}
+      resources:
+        {{- include "setResources" .Values.scheduler.patcher | indent 8 }}
       interval: {{ .Values.scheduler.patcher.interval }}
       restoreOnShutdown: {{ .Values.scheduler.patcher.restore_on_shutdown }}
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
@@ -106,7 +116,8 @@ spec:
     image:
       name: csi-baremetal-node-controller
       tag: {{ .Values.nodeController.image.tag | default .Values.image.tag }}
-    {{- include "setResources" .Values.nodeController | nindent 4 }}
+    resources:
+      {{- include "setResources" .Values.nodeController | indent 6 }}
     log:
       format: {{ .Values.nodeController.log.format }}
       level: {{ .Values.nodeController.log.level }}

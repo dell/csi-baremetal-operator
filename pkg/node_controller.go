@@ -114,7 +114,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
-			Resources:                corev1.ResourceRequirements(*resources),
+			Resources:                common.ConstructResourceRequirements(resources),
 		},
 	}
 }
