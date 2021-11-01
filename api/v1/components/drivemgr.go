@@ -20,4 +20,7 @@ package components
 type DriveMgr struct {
 	Image    *Image `json:"image,omitempty"`
 	Endpoint string `json:"endpoint"`
+	// +nullable
+	// +optional
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }

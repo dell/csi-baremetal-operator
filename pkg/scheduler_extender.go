@@ -176,6 +176,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled 
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			VolumeMounts:             volumeMounts,
+			Resources:                common.ConstructResourceRequirements(csi.Spec.Scheduler.Resources),
 		},
 	}
 }

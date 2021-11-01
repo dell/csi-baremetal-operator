@@ -34,13 +34,12 @@ spec:
         name: manager
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources:
-          # Memory limit is increased due to bug in OpenShift 4.6 - https://bugzilla.redhat.com/show_bug.cgi?id=1904558
           limits:
-            cpu: 100m
-            memory: 200Mi
+            cpu: {{ .Values.resources.limits.cpu }}
+            memory: {{ .Values.resources.limits.memory }}
           requests:
-            cpu: 100m
-            memory: 20Mi
+            cpu: {{ .Values.resources.requests.cpu }}
+            memory: {{ .Values.resources.requests.memory }}
         volumeMounts:
         - mountPath: /crash-dump
           name: crash-dump 

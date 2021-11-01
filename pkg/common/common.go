@@ -158,3 +158,11 @@ func ConstructSelectorMap(appName string) map[string]string {
 		constant.SelectorKey: appName,
 	}
 }
+
+// ConstructResourceRequirements creates the ResourceRequirements contains Limits and Requests lists
+func ConstructResourceRequirements(resources *components.ResourceRequirements) corev1.ResourceRequirements {
+	if resources != nil {
+		return corev1.ResourceRequirements(*resources)
+	}
+	return corev1.ResourceRequirements{}
+}

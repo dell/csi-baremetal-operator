@@ -13,19 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package components
 
-// Scheduler encapsulates information to deploy CSI scheduler
-type Scheduler struct {
-	Enable             bool     `json:"enable"`
-	Image              *Image   `json:"image,omitempty"`
-	Log                *Log     `json:"log,omitempty"`
-	Metrics            *Metrics `json:"metrics,omitempty"`
-	Patcher            *Patcher `json:"patcher,omitempty"`
-	ExtenderPort       string   `json:"extenderPort,omitempty"`
-	StorageProvisioner string   `json:"storageProvisioner"`
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
+// ResourceRequirements contain information for mem/cpu requirements
+type ResourceRequirements struct {
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources,omitempty"`
+	Limits corev1.ResourceList `json:"limits,omitempty"`
+	// +nullable
+	// +optional
+	Requests corev1.ResourceList `json:"requests,omitempty"`
 }

@@ -19,4 +19,7 @@ package components
 // Sidecar represent CSI sidecar containers
 type Sidecar struct {
 	Image *Image `json:"image,omitempty"`
+	// +nullable
+	// +optional
+	Resources *ResourceRequirements `json:"resources,omitempty"`
 }

@@ -8,3 +8,11 @@ image:
   name: csi-baremetal-operator
   tag: green
   pullPolicy: Always
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 200Mi
+  requests:
+    cpu: 100m
+    memory: 20Mi

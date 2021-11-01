@@ -64,6 +64,7 @@ func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 	config.pullPolicy = csi.Spec.PullPolicy
 	config.loglevel = csi.Spec.Scheduler.Log.Level
 	config.configFolder = configurationPath
+	config.resources = csi.Spec.Scheduler.Patcher.Resources
 	return &config, nil
 }
 
@@ -76,6 +77,7 @@ type patcherConfiguration struct {
 	loglevel          components.Level
 	interval          int
 	restoreOnShutdown bool
+	resources         *components.ResourceRequirements
 
 	platform        string
 	targetConfig    string
