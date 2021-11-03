@@ -10,7 +10,7 @@ CRD_OPTIONS ?= "crd:trivialVersions=true"
 
 ### version
 MAJOR            := 1
-MINOR            := 0
+MINOR            := 1
 PATCH            := 0
 PRODUCT_VERSION  ?= ${MAJOR}.${MINOR}.${PATCH}
 BUILD_REL_A      := $(shell git rev-list HEAD |wc -l)
