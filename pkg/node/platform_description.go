@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	supportedKernel = "5.4"
+	supportedKernel = "5.3"
 	defaultPlatform = "default"
 )
 
