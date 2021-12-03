@@ -9,3 +9,5 @@ volumeBindingMode: WaitForFirstConsumer
 parameters:
   storageType: HDD
   fsType: xfs
+mountOptions:
+  - noatime

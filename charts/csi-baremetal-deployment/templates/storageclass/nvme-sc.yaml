@@ -9,3 +9,5 @@ volumeBindingMode: WaitForFirstConsumer
 parameters:
   storageType: NVME
   fsType: xfs
+mountOptions:
+  - noatime

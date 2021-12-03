@@ -10,3 +10,5 @@ parameters:
   storageType: NVME
   fsType: xfs
   isPartitioned: "true"
+mountOptions:
+  - noatime
