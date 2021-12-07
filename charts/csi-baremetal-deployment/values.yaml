@@ -77,7 +77,10 @@ driver:
   provisioner:
     image:
       # if you want to use topology feature (multiple PVCs per pod) you should use v1.2.2
-      tag: v1.6.0
+      tag: v3.0.0
+      # storage.k8s.io/v1beta1 CSINode object has been deprecated and was removed in the 1.22 release
+      # storage.k8s.io/v1 CSINode object introduced
+      deprecatedTag: v1.6.0
     resources:
       limits:
         cpu:

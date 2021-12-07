@@ -8,7 +8,7 @@ Kubernetes Operator to deploy and manage lifecycle of [Bare-Metal CSI Driver](ht
 
 Supported environments
 ----------------------
-- **Kubernetes**: 1.18, 1.19, 1.20, 1.21
+- **Kubernetes**: 1.18, 1.19, 1.20, 1.21, 1.22
 - **OpenShift**: 4.6
 - **Node OS**:
   - Ubuntu 18.04 / 20.04 LTS
