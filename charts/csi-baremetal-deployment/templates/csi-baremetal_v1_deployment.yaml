@@ -39,11 +39,7 @@ spec:
         csi-provisioner:
           image:
             name: csi-provisioner
-            {{- if semverCompare ">=1.22.0" .Capabilities.KubeVersion.Version }}
             tag: {{ .Values.driver.provisioner.image.tag }}
-            {{- else }}
-            tag: {{ .Values.driver.provisioner.image.deprecatedTag }}
-            {{- end }}
           resources:
             {{- include "setResources" .Values.driver.provisioner | indent 12 }}
         csi-resizer:
