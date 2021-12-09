@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: wbt-config
+  labels:
+    app: csi-baremetal-node
+data:
+  config.yaml: |-
+    enable: true
+    wbt_lat_usec_value: 0
+    acceptable_volume_options:
+      modes:
+        - FS
+      storage_types:
+        - HDD
+        - SSD
+        - NVME
+
+  acceptable_kernels.yaml: |-
+    node_kernel_versions:
+      - 5.12.13-051213-generic
