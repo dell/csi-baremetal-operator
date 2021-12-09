@@ -12,4 +12,3 @@ parameters:
   # With ANY storage type CSI allocates volumes on top of ANY physical drive (non LVG)
   storageType: ANY
   fsType: xfs
-  WBTDisable: "on"

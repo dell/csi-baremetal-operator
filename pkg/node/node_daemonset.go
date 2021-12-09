@@ -34,6 +34,9 @@ const (
 	mountPointDirVolume   = "mountpoint-dir"
 	csiPathVolume         = "csi-path"
 	driveConfigVolume     = "drive-config"
+	wbtConfigVolume       = "wbt-config"
+	wbtConfigMapName      = "wbt-config"
+	wbtConfigPath         = "/etc/wbt_config"
 )
 
 // GetNodeDaemonsetPodsSelector returns a label-selector to use in the List method
@@ -132,7 +135,7 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 			HostPath: &corev1.HostPathVolumeSource{Path: "/var/lib/kubelet/plugins/kubernetes.io/csi", Type: &unset},
 		}},
 		corev1.Volume{
-			Name: "wbt",
+			Name: wbtConfigVolume,
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "wbt-config"},
@@ -145,10 +148,10 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 
 	if isLoopbackMgr(csi.Spec.Driver.Node.DriveMgr.Image.Name) {
 		volumes = append(volumes, corev1.Volume{
-			Name: driveConfigVolume,
+			Name: wbtConfigVolume,
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: loopbackManagerConfigName},
+					LocalObjectReference: corev1.LocalObjectReference{Name: wbtConfigMapName},
 					DefaultMode:          &configMapMode,
 					Optional:             pointer.BoolPtr(true),
 				},
@@ -197,7 +200,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
 		{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
 		{Name: driveConfigVolume, MountPath: "/etc/config"},
-		{Name: "wbt", MountPath: "/etc/wbt_config"},
+		{Name: wbtConfigMapName, MountPath: wbtConfigPath},
 		constant.CrashMountVolume,
 	}
 	return []corev1.Container{

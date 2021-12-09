@@ -10,8 +10,10 @@ data:
     enable: true
     wbt_lat_usec_value: 0
     acceptable_volume_options:
+    # FS, RAW, RAWPART
       modes:
         - FS
+    # HDD, SSD, NVME, ANY
       storage_types:
         - HDD
         - SSD
