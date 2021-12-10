@@ -199,7 +199,6 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		{Name: mountPointDirVolume, MountPath: "/var/lib/kubelet/pods", MountPropagation: &bidirectional},
 		{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
 		{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
-		{Name: driveConfigVolume, MountPath: "/etc/config"},
 		{Name: wbtConfigMapName, MountPath: wbtConfigPath},
 		constant.CrashMountVolume,
 	}
