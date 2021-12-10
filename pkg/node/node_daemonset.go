@@ -138,7 +138,7 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 			Name: wbtConfigVolume,
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: "wbt-config"},
+					LocalObjectReference: corev1.LocalObjectReference{Name: wbtConfigMapName},
 					DefaultMode:          &configMapMode,
 					Optional:             pointer.BoolPtr(true),
 				},
@@ -148,10 +148,10 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 
 	if isLoopbackMgr(csi.Spec.Driver.Node.DriveMgr.Image.Name) {
 		volumes = append(volumes, corev1.Volume{
-			Name: wbtConfigVolume,
+			Name: driveConfigVolume,
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: wbtConfigMapName},
+					LocalObjectReference: corev1.LocalObjectReference{Name: loopbackManagerConfigName},
 					DefaultMode:          &configMapMode,
 					Optional:             pointer.BoolPtr(true),
 				},
