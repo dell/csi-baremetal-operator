@@ -177,7 +177,6 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		{Name: constant.LogsVolume, MountPath: "/var/log"},
 		{Name: hostDevVolume, MountPath: "/dev"},
 		{Name: hostSysVolume, MountPath: "/sys"},
-		{Name: hostRunUdevVolume, MountPath: "/run/udev"},
 		{Name: hostRunLVMVolume, MountPath: "/run/lvm"},
 		{Name: hostRunLock, MountPath: "/run/lock"},
 		{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
