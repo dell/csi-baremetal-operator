@@ -109,9 +109,6 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 		corev1.Volume{Name: hostRootVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/", Type: &directory},
 		}},
-		corev1.Volume{Name: hostRunUdevVolume, VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{Path: "/run/udev", Type: &directory},
-		}},
 		corev1.Volume{Name: hostRunLVMVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: "/run/lvm", Type: &directory},
 		}},
