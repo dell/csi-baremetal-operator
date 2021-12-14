@@ -16,7 +16,7 @@ data:
         - FS
     # Name from "kubectl get sc"
     # It is risky to change WBT settings for LVG Volumes
-      storage_types:
+      storage_classes:
         - csi-baremetal-sc-hdd
         - csi-baremetal-sc-ssd
         - csi-baremetal-sc-nvme
