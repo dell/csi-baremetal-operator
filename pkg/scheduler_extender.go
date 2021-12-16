@@ -3,27 +3,26 @@ package pkg
 import (
 	"context"
 	"errors"
-	"github.com/dell/csi-baremetal-operator/pkg/validator"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
-	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/sirupsen/logrus"
-
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
+	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
 const (

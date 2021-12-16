@@ -3,10 +3,12 @@ package rbac
 import (
 	"context"
 	"fmt"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
+
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
 // Validator ...
