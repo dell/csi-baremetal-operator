@@ -21,9 +21,8 @@ all: manager
 coverage:
 	go tool cover -html=coverage.out -o coverage.html
 
-# TODO - improve code coverage - https://github.com/dell/csi-baremetal/issues/658
 test:
-	${GO_ENV_VARS} go test `go list ./... | grep pkg | grep -v node_daemonset.go` -race -cover -coverprofile=coverage.out -covermode=atomic
+	${GO_ENV_VARS} go test `go list ./... | grep pkg` -race -cover -coverprofile=coverage.out -covermode=atomic
 
 # Build manager binary
 manager: fmt vet
