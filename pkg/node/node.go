@@ -2,6 +2,13 @@ package node
 
 import (
 	"context"
+	"errors"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
+	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,13 +31,15 @@ const (
 type Node struct {
 	clientset kubernetes.Interface
 	log       *logrus.Entry
+	validator validator.Validator
 }
 
 // NewNode creates a Node object
-func NewNode(clientset kubernetes.Interface, logger *logrus.Entry) *Node {
+func NewNode(clientset kubernetes.Interface, logger *logrus.Entry, validator validator.Validator) *Node {
 	return &Node{
 		clientset: clientset,
 		log:       logger,
+		validator: validator,
 	}
 }
 
@@ -41,6 +50,34 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 		// return err != nil to request reconcile again if one ore more daemonsets failed
 		resultErr error
 	)
+
+	// in case of Openshift deployment - validate node service accounts security bindings
+	if csi.Spec.Platform == constant.PlatformOpenShift {
+		var rbacError rbac.Error
+		if resultErr = n.validator.ValidateRBAC(ctx, &models.RBACRules{
+			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
+				ServiceAccountName: nodeServiceAccountName,
+				Namespace:          csi.Namespace,
+				Role: &rbacv1.Role{
+					Rules: []rbacv1.PolicyRule{
+						{
+							Verbs:         []string{"use"},
+							APIGroups:     []string{"security.openshift.io"},
+							Resources:     []string{"securitycontextconstraints"},
+							ResourceNames: []string{"privileged"},
+						},
+					},
+				},
+			},
+			Type: models.ServiceAccountIsRoleBound,
+		}); resultErr != nil {
+			if errors.As(resultErr, &rbacError) {
+				n.log.Error(rbacError, "Failed to validate node service account security context bindings")
+				return nil
+			}
+			return resultErr
+		}
+	}
 
 	needToDeploy, err := n.updateNodeLabels(ctx, csi.Spec.NodeSelector)
 	if err != nil {
