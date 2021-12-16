@@ -3,6 +3,8 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -33,6 +35,11 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 		node: node.NewNode(
 			&clientSet,
 			log.WithField(constant.CSIName, "node"),
+			validator.NewValidator(rbac.NewValidator(
+				client,
+				log.WithField(constant.CSIName, "rbac node validator"),
+				rbac.NewMatcher()),
+			),
 		),
 		controller: Controller{
 			Clientset: &clientSet,
@@ -41,6 +48,11 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 		extender: SchedulerExtender{
 			Clientset: &clientSet,
 			Entry:     log.WithField(constant.CSIName, "extender"),
+			validator: validator.NewValidator(rbac.NewValidator(
+				client,
+				log.WithField(constant.CSIName, "rbac extender validator"),
+				rbac.NewMatcher()),
+			),
 		},
 		patcher: patcher.SchedulerPatcher{
 			Clientset: &clientSet,
