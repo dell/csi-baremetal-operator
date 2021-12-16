@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: node-config
+  labels:
+    app: csi-baremetal-node
+data:
+  wbt-config.yaml: |-
+    enable: true
+    wbt_lat_usec_value: 0
+    acceptable_volume_options:
+    # Values - FS, RAW, RAWPART
+    # Block volumes don't take any impact from WBT
+      modes:
+        - FS
+    # Name from "kubectl get sc"
+    # It is risky to change WBT settings for LVG Volumes
+      storage_classes:
+        - csi-baremetal-sc-hdd
+        - csi-baremetal-sc-ssd
+        - csi-baremetal-sc-nvme
+
+  wbt-acceptable_kernels.yaml: |-
+    enable_for_all: false
+    # The list of acceptable kernel versions
+    # Used only if enable_for_all is false
+    node_kernel_versions:
+      # RHEL 8
+      - 4.18.0-193.65.2.el8_2.x86_64

@@ -1,0 +1,3 @@
+# TODO: improve code coverage - https://github.com/dell/csi-baremetal/issues/658
+ignore:
+  - "pkg/node/node_daemonset.go"
