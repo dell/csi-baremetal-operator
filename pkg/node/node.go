@@ -75,6 +75,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 				n.log.Error(rbacError, "Failed to validate node service account security context bindings")
 				return nil
 			}
+			n.log.Error(resultErr, "Error occurred while validating node service account security context bindings")
 			return resultErr
 		}
 	}
