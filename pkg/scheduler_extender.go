@@ -26,9 +26,8 @@ import (
 )
 
 const (
-	extenderContainerName      = "scheduler-extender"
-	extenderName               = constant.CSIName + "-se"
-	extenderServiceAccountName = constant.CSIName + "-extender-sa"
+	extenderContainerName = "scheduler-extender"
+	extenderName          = constant.CSIName + "-se"
 
 	extenderPort = 8889
 )
@@ -47,7 +46,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 		var rbacError rbac.Error
 		if err := n.validator.ValidateRBAC(ctx, &models.RBACRules{
 			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
-				ServiceAccountName: extenderServiceAccountName,
+				ServiceAccountName: constant.ExtenderServiceAccountName,
 				Namespace:          csi.Namespace,
 				Role: &rbacv1.Role{
 					Rules: []rbacv1.PolicyRule{
@@ -131,8 +130,8 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
-					ServiceAccountName:            extenderServiceAccountName,
-					DeprecatedServiceAccount:      extenderServiceAccountName,
+					ServiceAccountName:            constant.ExtenderServiceAccountName,
+					DeprecatedServiceAccount:      constant.ExtenderServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,

@@ -18,7 +18,6 @@ import (
 
 const (
 	nodeName                  = constant.CSIName + "-node"
-	nodeServiceAccountName    = "csi-node-sa"
 	loopbackManagerImageName  = "loopbackmgr"
 	loopbackManagerConfigName = "loopback-config"
 
@@ -76,8 +75,8 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					NodeSelector:                  nodeSelectors,
-					ServiceAccountName:            nodeServiceAccountName,
-					DeprecatedServiceAccount:      nodeServiceAccountName,
+					ServiceAccountName:            constant.NodeServiceAccountName,
+					DeprecatedServiceAccount:      constant.NodeServiceAccountName,
 					SecurityContext:               &corev1.PodSecurityContext{},
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
