@@ -56,7 +56,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 		var rbacError rbac.Error
 		if resultErr = n.validator.ValidateRBAC(ctx, &models.RBACRules{
 			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
-				ServiceAccountName: nodeServiceAccountName,
+				ServiceAccountName: constant.NodeServiceAccountName,
 				Namespace:          csi.Namespace,
 				Role: &rbacv1.Role{
 					Rules: []rbacv1.PolicyRule{

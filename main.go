@@ -22,7 +22,6 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -32,6 +31,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg"
 	"github.com/dell/csi-baremetal-operator/pkg/acrvalidator"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -85,6 +85,7 @@ func main() {
 			"module": "controllers", "component": "DeploymentReconciler"}),
 		Scheme:        mgr.GetScheme(),
 		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), logrus.New()),
+		Matcher:       rbac.NewMatcher(),
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)

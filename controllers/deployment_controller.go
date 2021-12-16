@@ -21,8 +21,10 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -35,11 +37,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/sirupsen/logrus"
-
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 )
 
 // DeploymentReconciler reconciles a Deployment object
@@ -48,6 +50,7 @@ type DeploymentReconciler struct {
 	Log    *logrus.Entry
 	Scheme *runtime.Scheme
 	pkg.CSIDeployment
+	Matcher rbac.Matcher
 }
 
 const (
@@ -248,6 +251,85 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	if err != nil {
 		return err
 	}
+
+	err = c.Watch(&source.Kind{Type: &rbacv1.Role{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		var (
+			ctx         = context.Background()
+			deployments = &csibaremetalv1.DeploymentList{}
+			role        = &rbacv1.Role{}
+			ok          bool
+		)
+
+		err := r.Client.List(ctx, deployments)
+		if err != nil {
+			return []reconcile.Request{}
+		}
+
+		if role, ok = obj.(*rbacv1.Role); !ok {
+			return []reconcile.Request{}
+		}
+
+		if !r.Matcher.MatchPolicyRules(role.Rules, []rbacv1.PolicyRule{
+			{
+				Verbs:         []string{"use"},
+				APIGroups:     []string{"security.openshift.io"},
+				Resources:     []string{"securitycontextconstraints"},
+				ResourceNames: []string{"privileged"},
+			},
+		}) {
+			return []reconcile.Request{}
+		}
+
+		var requests []reconcile.Request
+		for _, dep := range deployments.Items {
+			if role.Namespace != dep.Namespace {
+				continue
+			}
+
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      dep.Name,
+					Namespace: dep.Namespace,
+				}})
+		}
+
+		return requests
+	}))
+
+	err = c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		var (
+			ctx         = context.Background()
+			deployments = &csibaremetalv1.DeploymentList{}
+			roleBinding = &rbacv1.RoleBinding{}
+			ok          bool
+		)
+
+		err := r.Client.List(ctx, deployments)
+		if err != nil {
+			return []reconcile.Request{}
+		}
+
+		if roleBinding, ok = obj.(*rbacv1.RoleBinding); !ok {
+			return []reconcile.Request{}
+		}
+
+		var requests []reconcile.Request
+		for _, dep := range deployments.Items {
+			// Only reconcile on node and scheduler extender service accounts
+			if !r.Matcher.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.NodeServiceAccountName) &&
+				!r.Matcher.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.ExtenderServiceAccountName) {
+				continue
+			}
+
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      dep.Name,
+					Namespace: dep.Namespace,
+				}})
+		}
+
+		return requests
+	}))
 
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
 		pod := rawObj.(*corev1.Pod)
