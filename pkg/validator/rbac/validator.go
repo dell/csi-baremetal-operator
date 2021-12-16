@@ -50,8 +50,8 @@ func (r *rbac) ValidateServiceAccountIsBound(ctx context.Context, rules *models.
 
 	// preparing founded role bindings refs and finding matched ones between them
 	matchesRoleBindingsRefs := make([]string, len(matchesRoleBindings))
-	for i := 0; i < len(matchesRoleBindingsRefs); i++ {
-		matchesRoleBindingsRefs = append(matchesRoleBindingsRefs, matchesRoleBindings[i].RoleRef.Name)
+	for i := 0; i < len(matchesRoleBindings); i++ {
+		matchesRoleBindingsRefs[i] = matchesRoleBindings[i].RoleRef.Name
 	}
 	matchesRoles := r.matcher.MatchRoles(roles.Items, matchesRoleBindingsRefs)
 	if len(matchesRoles) == 0 {
