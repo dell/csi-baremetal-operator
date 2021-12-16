@@ -282,6 +282,10 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 		var requests []reconcile.Request
 		for _, dep := range deployments.Items {
+			// Reconcile roles only for openshift platform
+			if dep.Spec.Platform != constant.PlatformOpenShift {
+				continue
+			}
 			if role.Namespace != dep.Namespace {
 				continue
 			}
@@ -315,6 +319,13 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 		var requests []reconcile.Request
 		for _, dep := range deployments.Items {
+			// Reconcile rolebindings only for openshift platform
+			if dep.Spec.Platform != constant.PlatformOpenShift {
+				continue
+			}
+			if roleBinding.Namespace != dep.Namespace {
+				continue
+			}
 			// Only reconcile on node and scheduler extender service accounts
 			if !r.Matcher.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.NodeServiceAccountName) &&
 				!r.Matcher.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.ExtenderServiceAccountName) {
