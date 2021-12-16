@@ -24,7 +24,7 @@ func (m *matcher) MatchPolicyRules(actual, requested []rbacv1.PolicyRule) (match
 			}
 		}
 
-		if matches == true {
+		if matches {
 			return true
 		}
 	}

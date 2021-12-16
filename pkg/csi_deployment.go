@@ -3,8 +3,6 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"github.com/dell/csi-baremetal-operator/pkg/validator"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -17,6 +15,8 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/node"
 	"github.com/dell/csi-baremetal-operator/pkg/nodeoperations"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 )
 
 // CSIDeployment contains controllers of CSI resources

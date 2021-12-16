@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"fmt"
+
 	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
 	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
