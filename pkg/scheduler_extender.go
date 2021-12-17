@@ -19,6 +19,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/eventing"
+	eventModels "github.com/dell/csi-baremetal-operator/pkg/eventing/models"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
@@ -64,7 +65,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 			Type: models.ServiceAccountIsRoleBound,
 		}); err != nil {
 			if errors.As(err, &rbacError) {
-				n.EventRecorder.Eventf(ctx, csi, eventing.WarningType, "ExtenderRoleValidationFailed",
+				n.EventRecorder.Eventf(ctx, csi, eventModels.WarningType, "ExtenderRoleValidationFailed",
 					"Failed to validate serviceAccount %s securityContextConstraints, should be used privileged",
 					constant.ExtenderServiceAccountName)
 				n.Warn(rbacError, "Failed to validate extender service account security context bindings")
