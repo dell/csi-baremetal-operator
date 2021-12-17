@@ -65,7 +65,8 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 		}); err != nil {
 			if errors.As(err, &rbacError) {
 				n.EventRecorder.Eventf(ctx, csi, eventing.WarningType, "ExtenderRoleValidationFailed",
-					"Failed to validate extender service account security context bindings")
+					"Failed to validate serviceAccount %s securityContextConstraints, should be used privileged",
+					constant.ExtenderServiceAccountName)
 				n.Warn(rbacError, "Failed to validate extender service account security context bindings")
 				return nil
 			}
