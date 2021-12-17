@@ -18,6 +18,7 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/eventing"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
@@ -36,7 +37,8 @@ const (
 type SchedulerExtender struct {
 	Clientset kubernetes.Interface
 	*logrus.Entry
-	validator validator.Validator
+	Validator     validator.Validator
+	EventRecorder eventing.Recorder
 }
 
 // Update updates csi-baremetal-se or creates if not found
@@ -44,7 +46,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 	// in case of Openshift deployment - validate extender service accounts security bindings
 	if csi.Spec.Platform == constant.PlatformOpenShift {
 		var rbacError rbac.Error
-		if err := n.validator.ValidateRBAC(ctx, &models.RBACRules{
+		if err := n.Validator.ValidateRBAC(ctx, &models.RBACRules{
 			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
 				ServiceAccountName: constant.ExtenderServiceAccountName,
 				Namespace:          csi.Namespace,
@@ -62,9 +64,12 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 			Type: models.ServiceAccountIsRoleBound,
 		}); err != nil {
 			if errors.As(err, &rbacError) {
-				n.Error(rbacError, "Failed to validate extender service account security context bindings")
+				n.EventRecorder.Eventf(ctx, csi, eventing.WarningType, "ExtenderRoleValidationFailed",
+					"Failed to validate extender service account security context bindings")
+				n.Warn(rbacError, "Failed to validate extender service account security context bindings")
 				return nil
 			}
+			n.Error(err, "Error occurred while validating extender service account security context bindings")
 			return err
 		}
 	}

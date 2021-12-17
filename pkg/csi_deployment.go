@@ -6,12 +6,14 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/eventing"
 	"github.com/dell/csi-baremetal-operator/pkg/node"
 	"github.com/dell/csi-baremetal-operator/pkg/nodeoperations"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
@@ -30,15 +32,20 @@ type CSIDeployment struct {
 }
 
 // NewCSIDeployment creates CSIDeployment
-func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log *logrus.Logger) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log *logrus.Logger, scheme *runtime.Scheme) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
 			&clientSet,
 			log.WithField(constant.CSIName, "node"),
 			validator.NewValidator(rbac.NewValidator(
 				client,
-				log.WithField(constant.CSIName, "rbac node validator"),
+				log.WithField(constant.CSIName, "rbacNodeValidator"),
 				rbac.NewMatcher()),
+			),
+			eventing.NewRecorder(client,
+				scheme,
+				v1.EventSource{Component: constant.ComponentName},
+				log.WithField(constant.CSIName, "eventRecorder"),
 			),
 		),
 		controller: Controller{
@@ -48,10 +55,15 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 		extender: SchedulerExtender{
 			Clientset: &clientSet,
 			Entry:     log.WithField(constant.CSIName, "extender"),
-			validator: validator.NewValidator(rbac.NewValidator(
+			Validator: validator.NewValidator(rbac.NewValidator(
 				client,
-				log.WithField(constant.CSIName, "rbac extender validator"),
+				log.WithField(constant.CSIName, "rbacExtenderValidator"),
 				rbac.NewMatcher()),
+			),
+			EventRecorder: eventing.NewRecorder(client,
+				scheme,
+				v1.EventSource{Component: constant.ComponentName},
+				log.WithField(constant.CSIName, "eventRecorder"),
 			),
 		},
 		patcher: patcher.SchedulerPatcher{
