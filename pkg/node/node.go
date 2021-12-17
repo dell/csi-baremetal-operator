@@ -16,6 +16,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/eventing"
+	eventModels "github.com/dell/csi-baremetal-operator/pkg/eventing/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
@@ -74,7 +75,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 			Type: models.ServiceAccountIsRoleBound,
 		}); resultErr != nil {
 			if errors.As(resultErr, &rbacError) {
-				n.eventRecorder.Eventf(ctx, csi, eventing.WarningType, "NodeRoleValidationFailed",
+				n.eventRecorder.Eventf(ctx, csi, eventModels.WarningType, "NodeRoleValidationFailed",
 					"Failed to validate serviceAccount %s securityContextConstraints, should be used privileged",
 					constant.NodeServiceAccountName)
 				n.log.Warning(rbacError, "Failed to validate node service account security context bindings")
