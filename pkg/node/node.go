@@ -3,14 +3,9 @@ package node
 import (
 	"context"
 	"errors"
-	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/validator"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
-	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
-	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/sirupsen/logrus"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -19,7 +14,12 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
-
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/eventing"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
+	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
 )
 
@@ -29,17 +29,19 @@ const (
 
 // Node controls csi-baremetal-node
 type Node struct {
-	clientset kubernetes.Interface
-	log       *logrus.Entry
-	validator validator.Validator
+	clientset     kubernetes.Interface
+	log           *logrus.Entry
+	validator     validator.Validator
+	eventRecorder eventing.Recorder
 }
 
 // NewNode creates a Node object
-func NewNode(clientset kubernetes.Interface, logger *logrus.Entry, validator validator.Validator) *Node {
+func NewNode(clientset kubernetes.Interface, logger *logrus.Entry, validator validator.Validator, eventRecorder eventing.Recorder) *Node {
 	return &Node{
-		clientset: clientset,
-		log:       logger,
-		validator: validator,
+		clientset:     clientset,
+		log:           logger,
+		validator:     validator,
+		eventRecorder: eventRecorder,
 	}
 }
 
@@ -72,7 +74,9 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 			Type: models.ServiceAccountIsRoleBound,
 		}); resultErr != nil {
 			if errors.As(resultErr, &rbacError) {
-				n.log.Error(rbacError, "Failed to validate node service account security context bindings")
+				n.eventRecorder.Eventf(ctx, csi, eventing.WarningType, "NodeRoleValidationFailed",
+					"Failed to validate node service account security context bindings")
+				n.log.Warning(rbacError, "Failed to validate node service account security context bindings")
 				return nil
 			}
 			n.log.Error(resultErr, "Error occurred while validating node service account security context bindings")

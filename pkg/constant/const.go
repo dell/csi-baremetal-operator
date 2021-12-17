@@ -23,6 +23,8 @@ import (
 const (
 	// CSIName - default prefix
 	CSIName = "csi-baremetal"
+	// ComponentName - is the name of component
+	ComponentName = CSIName + "-operator"
 
 	// PrometheusPort - default prometeus port
 	PrometheusPort = 8787
