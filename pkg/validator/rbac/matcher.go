@@ -4,7 +4,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
-// Matcher ...
+// Matcher is a helper for matching actual resources with requested ones
 type Matcher interface {
 	MatchPolicyRules(actual, requested []rbacv1.PolicyRule) (matches bool)
 	MatchPolicyRule(actual, requested *rbacv1.PolicyRule) (matches bool)
@@ -112,7 +112,7 @@ func (m *matcher) MatchRoles(roles []rbacv1.Role, names []string) (matchesRoles 
 	return
 }
 
-// NewMatcher ...
+// NewMatcher is a constructor for matcher
 func NewMatcher() Matcher {
 	return &matcher{}
 }

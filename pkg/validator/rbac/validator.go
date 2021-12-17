@@ -11,7 +11,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
-// Validator ...
+// Validator is rbac validator for checking predefined rule (e.g. service account is bound to role with certain policy rules)
 type Validator interface {
 	ValidateServiceAccountIsBound(ctx context.Context, rules *models.ServiceAccountIsRoleBoundData) error
 }
@@ -75,7 +75,7 @@ func (r *rbac) ValidateServiceAccountIsBound(ctx context.Context, rules *models.
 		"service account: '%s', namespace: '%s'", rules.ServiceAccountName, rules.Namespace))
 }
 
-// NewValidator ...
+// NewValidator is a constructor for rbac validator
 func NewValidator(client client.Client, log *logrus.Entry, matcher Matcher) Validator {
 	return &rbac{
 		client:  client,
