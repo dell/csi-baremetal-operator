@@ -252,7 +252,26 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &rbacv1.Role{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+	if err = watchRole(c, r.Client, r.Matcher); err != nil {
+		return err
+	}
+
+	if err = watchRoleBinding(c, r.Client, r.Matcher); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
+		pod := rawObj.(*corev1.Pod)
+		return []string{pod.Spec.NodeName}
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher) error {
+	return c.Watch(&source.Kind{Type: &rbacv1.Role{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		var (
 			ctx         = context.Background()
 			deployments = &csibaremetalv1.DeploymentList{}
@@ -260,7 +279,7 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 			ok          bool
 		)
 
-		err := r.Client.List(ctx, deployments)
+		err := cl.List(ctx, deployments)
 		if err != nil {
 			return []reconcile.Request{}
 		}
@@ -269,7 +288,7 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 			return []reconcile.Request{}
 		}
 
-		if !r.Matcher.MatchPolicyRules(role.Rules, []rbacv1.PolicyRule{
+		if !m.MatchPolicyRules(role.Rules, []rbacv1.PolicyRule{
 			{
 				Verbs:         []string{"use"},
 				APIGroups:     []string{"security.openshift.io"},
@@ -299,8 +318,10 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 		return requests
 	}))
+}
 
-	err = c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher) error {
+	return c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		var (
 			ctx         = context.Background()
 			deployments = &csibaremetalv1.DeploymentList{}
@@ -308,7 +329,7 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 			ok          bool
 		)
 
-		err := r.Client.List(ctx, deployments)
+		err := cl.List(ctx, deployments)
 		if err != nil {
 			return []reconcile.Request{}
 		}
@@ -327,8 +348,8 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 				continue
 			}
 			// Only reconcile on node and scheduler extender service accounts
-			if !r.Matcher.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.NodeServiceAccountName) &&
-				!r.Matcher.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.ExtenderServiceAccountName) {
+			if !m.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.NodeServiceAccountName) &&
+				!m.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.ExtenderServiceAccountName) {
 				continue
 			}
 
@@ -341,15 +362,6 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 		return requests
 	}))
-
-	if err := mgr.GetFieldIndexer().IndexField(ctx, &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
-		pod := rawObj.(*corev1.Pod)
-		return []string{pod.Spec.NodeName}
-	}); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func isNodeChanged(old runtime.Object, new runtime.Object) bool {
