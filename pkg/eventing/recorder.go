@@ -3,13 +3,14 @@ package eventing
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ref "k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 // tickStepForEventCreating is the time step between retries of creating k8s Event
@@ -45,7 +46,6 @@ func (r *recorder) Eventf(ctx context.Context, object runtime.Object,
 	event := r.makeEvent(reference, nil, eventtype, reason, message)
 	event.Source = r.source
 	go createK8sEvent(ctx, event, r.client, r.log)
-	return
 }
 
 // makeEvent is helper to build v1.Event according parameters

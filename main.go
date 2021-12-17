@@ -84,7 +84,7 @@ func main() {
 		Log: logrus.WithFields(logrus.Fields{
 			"module": "controllers", "component": "DeploymentReconciler"}),
 		Scheme:        mgr.GetScheme(),
-		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), logrus.New()),
+		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), logrus.New(), mgr.GetScheme()),
 		Matcher:       rbac.NewMatcher(),
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
