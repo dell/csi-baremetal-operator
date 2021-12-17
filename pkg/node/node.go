@@ -75,7 +75,8 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 		}); resultErr != nil {
 			if errors.As(resultErr, &rbacError) {
 				n.eventRecorder.Eventf(ctx, csi, eventing.WarningType, "NodeRoleValidationFailed",
-					"Failed to validate node service account security context bindings")
+					"Failed to validate serviceAccount %s securityContextConstraints, should be used privileged",
+					constant.NodeServiceAccountName)
 				n.log.Warning(rbacError, "Failed to validate node service account security context bindings")
 				return nil
 			}
