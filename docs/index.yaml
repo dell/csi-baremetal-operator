@@ -2,6 +2,15 @@ apiVersion: v1
 entries:
   csi-baremetal-deployment:
   - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2021-12-17T18:40:30.909496247+03:00"
+    description: Bare-metal CSI Deployment
+    digest: ac8e59176af1605400e134a66c582eb68c18ab8a0c40726862576c40648cee57
+    name: csi-baremetal-deployment
+    urls:
+    - https://github.com/dell/csi-baremetal-operator/releases/download/v1.0.0-rc1/csi-baremetal-deployment-1.0.0-78.8504a5c.tgz
+    version: 1.0.0-78.8504a5c
+  - apiVersion: v2
     appVersion: 0.5.0
     created: "2021-10-26T15:29:59.16730276Z"
     description: Bare-metal CSI Deployment
@@ -57,6 +66,15 @@ entries:
     version: 0.2.2-39.5850f57
   csi-baremetal-operator:
   - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2021-12-17T18:40:30.909865629+03:00"
+    description: Bare-metal CSI Operator
+    digest: 153f988eedb6290d37051abb9283d67981835881bcd8aaaa9df5e1b6b40dfa27
+    name: csi-baremetal-operator
+    urls:
+    - https://github.com/dell/csi-baremetal-operator/releases/download/v1.0.0-rc1/csi-baremetal-operator-1.0.0-78.8504a5c.tgz
+    version: 1.0.0-78.8504a5c
+  - apiVersion: v2
     appVersion: 0.5.0
     created: "2021-10-26T15:29:59.167957169Z"
     description: Bare-metal CSI Operator
@@ -110,4 +128,4 @@ entries:
     urls:
     - https://github.com/dell/csi-baremetal-operator/releases/download/v0.2.2-beta/csi-baremetal-operator-0.2.2-39.5850f57.tgz
     version: 0.2.2-39.5850f57
-generated: "2021-10-26T15:29:59.166311548Z"
+generated: "2021-12-17T18:40:30.907987336+03:00"
