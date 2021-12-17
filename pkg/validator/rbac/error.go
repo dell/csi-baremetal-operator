@@ -2,7 +2,7 @@ package rbac
 
 import "fmt"
 
-// Error ...
+// Error is a custom rbac error type
 type Error interface {
 	error
 }
@@ -15,7 +15,7 @@ func (r *rbacError) Error() string {
 	return fmt.Sprintf("failed to validate rbac: %s", r.message)
 }
 
-// NewRBACError ...
+// NewRBACError is a constructor for rbac error
 func NewRBACError(message string) Error {
 	return &rbacError{
 		message: message,

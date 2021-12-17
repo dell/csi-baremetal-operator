@@ -8,7 +8,7 @@ import (
 	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
-// Validator ...
+// Validator is a generic validator for validating certain conditions (e.g. rbac resources matches)
 type Validator interface {
 	ValidateRBAC(ctx context.Context, rules *models.RBACRules) error
 }
@@ -30,7 +30,7 @@ func (v *validator) ValidateRBAC(ctx context.Context, rules *models.RBACRules) (
 	}
 }
 
-// NewValidator ...
+// NewValidator is a constructor for validator
 func NewValidator(rbacValidator rbacValidator) Validator {
 	return &validator{
 		rbacValidator: rbacValidator,
