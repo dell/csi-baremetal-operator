@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/dell/csi-baremetal/pkg/events"
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +16,6 @@ import (
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/eventing"
 	eventModels "github.com/dell/csi-baremetal-operator/pkg/eventing/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
@@ -33,13 +33,13 @@ type Node struct {
 	clientset     kubernetes.Interface
 	log           *logrus.Entry
 	validator     validator.Validator
-	eventRecorder eventing.Recorder
+	eventRecorder events.EventRecorder
 	matchPolicies []rbacv1.PolicyRule
 }
 
 // NewNode creates a Node object
 func NewNode(clientset kubernetes.Interface,
-	eventRecorder eventing.Recorder,
+	eventRecorder events.EventRecorder,
 	validator validator.Validator,
 	matchPolicies []rbacv1.PolicyRule,
 	logger *logrus.Entry,
@@ -75,7 +75,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 			Type: models.ServiceAccountIsRoleBound,
 		}); resultErr != nil {
 			if errors.As(resultErr, &rbacError) {
-				n.eventRecorder.Eventf(ctx, csi, eventModels.WarningType, "NodeRoleValidationFailed",
+				n.eventRecorder.Eventf(csi, eventModels.WarningType, "NodeRoleValidationFailed",
 					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
 					csi.Spec.Driver.Node.ServiceAccount)
 				n.log.Warning(rbacError, "Node service account has insufficient securityContextConstraints, should have privileged")

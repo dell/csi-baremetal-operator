@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/dell/csi-baremetal/pkg/events"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +19,6 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/eventing"
 	eventModels "github.com/dell/csi-baremetal-operator/pkg/eventing/models"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
@@ -39,7 +39,7 @@ type SchedulerExtender struct {
 	Clientset kubernetes.Interface
 	*logrus.Entry
 	Validator     validator.Validator
-	EventRecorder eventing.Recorder
+	EventRecorder events.EventRecorder
 	MatchPolicies []rbacv1.PolicyRule
 }
 
@@ -59,7 +59,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 			Type: models.ServiceAccountIsRoleBound,
 		}); err != nil {
 			if errors.As(err, &rbacError) {
-				n.EventRecorder.Eventf(ctx, csi, eventModels.WarningType, "ExtenderRoleValidationFailed",
+				n.EventRecorder.Eventf(csi, eventModels.WarningType, "ExtenderRoleValidationFailed",
 					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
 					csi.Spec.Scheduler.ServiceAccount)
 				n.Warn(rbacError, "Extender service account has insufficient securityContextConstraints, should have privileged")

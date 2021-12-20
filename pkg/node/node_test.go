@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dell/csi-baremetal/pkg/events"
+	"github.com/dell/csi-baremetal/pkg/events/mocks"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -20,8 +22,6 @@ import (
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/eventing"
-	"github.com/dell/csi-baremetal-operator/pkg/eventing/mocks"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 )
@@ -119,7 +119,7 @@ func TestNewNode(t *testing.T) {
 		cl := builderWithScheme.WithObjects().Build()
 
 		node := NewNode(clientSet,
-			new(mocks.Recorder),
+			new(mocks.EventRecorder),
 			validator.NewValidator(rbac.NewValidator(cl, logEntry, rbac.NewMatcher())),
 			matchPolicies,
 			logEntry,
@@ -138,7 +138,7 @@ func Test_ValidateRBAC(t *testing.T) {
 			deployment = testDeployment.DeepCopy()
 		)
 
-		eventRecorder := new(mocks.Recorder)
+		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		node := prepareNode(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
@@ -154,7 +154,7 @@ func Test_ValidateRBAC(t *testing.T) {
 			role        = testRole.DeepCopy()
 		)
 
-		eventRecorder := new(mocks.Recorder)
+		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		node := prepareNode(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, roleBinding, role))
@@ -171,7 +171,7 @@ func Test_updateNodeLabels(t *testing.T) {
 			node2 = testNode2.DeepCopy()
 		)
 
-		eventRecorder := new(mocks.Recorder)
+		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
@@ -201,7 +201,7 @@ func Test_updateNodeLabels(t *testing.T) {
 		node1.Status.NodeInfo = coreV1.NodeSystemInfo{KernelVersion: newKernelVersion}
 		node2.Status.NodeInfo = coreV1.NodeSystemInfo{KernelVersion: newKernelVersion}
 
-		eventRecorder := new(mocks.Recorder)
+		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
@@ -229,7 +229,7 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		node1.Status.NodeInfo = coreV1.NodeSystemInfo{KernelVersion: newKernelVersion}
 
-		eventRecorder := new(mocks.Recorder)
+		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
@@ -256,7 +256,7 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		corruptedNode.Status.NodeInfo = coreV1.NodeSystemInfo{KernelVersion: "corrupted_version"}
 
-		eventRecorder := new(mocks.Recorder)
+		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		node := prepareNode(eventRecorder, prepareNodeClientSet(corruptedNode), prepareValidatorClient(scheme))
@@ -283,7 +283,7 @@ func Test_updateNodeLabels(t *testing.T) {
 		nodeSelector = &components.NodeSelector{Key: selectorLabel, Value: selectorTag}
 		node1.Labels[selectorLabel] = selectorTag
 
-		eventRecorder := new(mocks.Recorder)
+		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
@@ -314,7 +314,7 @@ func Test_cleanNodeLabels(t *testing.T) {
 		node1.Labels[platformLabel] = "default"
 		node2.Labels[platformLabel] = "default"
 
-		eventRecorder := new(mocks.Recorder)
+		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
@@ -342,7 +342,7 @@ func prepareValidatorClient(scheme *runtime.Scheme, objects ...client.Object) cl
 	return builderWithScheme.WithObjects(objects...).Build()
 }
 
-func prepareNode(eventRecorder eventing.Recorder, clientSet kubernetes.Interface, client client.Client) *Node {
+func prepareNode(eventRecorder events.EventRecorder, clientSet kubernetes.Interface, client client.Client) *Node {
 	return NewNode(clientSet, eventRecorder,
 		validator.NewValidator(rbac.NewValidator(client, logEntry, rbac.NewMatcher())),
 		matchPolicies,
