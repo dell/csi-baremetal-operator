@@ -99,6 +99,15 @@ var (
 			Platform: constant.PlatformOpenShift,
 		},
 	}
+
+	matchPolicies = []rbacv1.PolicyRule{
+		{
+			Verbs:         []string{"use"},
+			APIGroups:     []string{"security.openshift.io"},
+			Resources:     []string{"securitycontextconstraints"},
+			ResourceNames: []string{"privileged"},
+		},
+	}
 )
 
 func TestNewNode(t *testing.T) {
@@ -111,9 +120,11 @@ func TestNewNode(t *testing.T) {
 		builderWithScheme := builder.WithScheme(scheme)
 		cl := builderWithScheme.WithObjects().Build()
 
-		node := NewNode(clientSet, logEntry,
-			validator.NewValidator(rbac.NewValidator(cl, logEntry, rbac.NewMatcher())),
+		node := NewNode(clientSet,
 			new(mocks.Recorder),
+			validator.NewValidator(rbac.NewValidator(cl, logEntry, rbac.NewMatcher())),
+			matchPolicies,
+			logEntry,
 		)
 		assert.NotNil(t, node.clientset)
 		assert.NotNil(t, node.log)
@@ -334,8 +345,9 @@ func prepareValidatorClient(scheme *runtime.Scheme, objects ...client.Object) cl
 }
 
 func prepareNode(eventRecorder eventing.Recorder, clientSet kubernetes.Interface, client client.Client) *Node {
-	return NewNode(clientSet, logEntry,
+	return NewNode(clientSet, eventRecorder,
 		validator.NewValidator(rbac.NewValidator(client, logEntry, rbac.NewMatcher())),
-		eventRecorder,
+		matchPolicies,
+		logEntry,
 	)
 }
