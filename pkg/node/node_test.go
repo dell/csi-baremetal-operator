@@ -98,6 +98,11 @@ var (
 			Namespace: "test-csi",
 		},
 		Spec: components.DeploymentSpec{
+			Driver: &components.Driver{
+				Node: &components.Node{
+					ServiceAccount: "csi-node-sa",
+				},
+			},
 			Platform: constant.PlatformOpenShift,
 		},
 	}
