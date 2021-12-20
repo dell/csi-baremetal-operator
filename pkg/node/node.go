@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
+	"github.com/dell/csi-baremetal/pkg/eventing"
 	"github.com/dell/csi-baremetal/pkg/events"
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -16,12 +18,10 @@ import (
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	eventModels "github.com/dell/csi-baremetal-operator/pkg/eventing/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
-	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
 )
 
 const (
@@ -75,7 +75,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 			Type: models.ServiceAccountIsRoleBound,
 		}); resultErr != nil {
 			if errors.As(resultErr, &rbacError) {
-				n.eventRecorder.Eventf(csi, eventModels.WarningType, "NodeRoleValidationFailed",
+				n.eventRecorder.Eventf(csi, eventing.WarningType, "NodeRoleValidationFailed",
 					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
 					csi.Spec.Driver.Node.ServiceAccount)
 				n.log.Warning(rbacError, "Node service account has insufficient securityContextConstraints, should have privileged")
