@@ -58,8 +58,53 @@ Installation process
     * OpenShift
         ```
         helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true \
-      --set platform=openshift --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
+      --set platform=openshift --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET \
+      -n $NAMESPACE
         ```
+      **Note:** In case of CSI deployment at Openshift platform in non default namespace, CSI ServiceAccounts \
+      csi-node-sa and csi-baremetal-extender-sa will require Privileged SCC. In case there are no such permissions \
+      CSI Operator will not deploy node and scheduler extender daemonsets. You can see the following events in such case:
+      ```
+      65m         Warning   NodeRoleValidationFailed       deployment/csi-baremetal                              Failed to validate node service account security context bindings
+      65m         Warning   ExtenderRoleValidationFailed   deployment/csi-baremetal                              Failed to validate extender service account security context bindings
+      ```
+      To make them deployable - create the following role and rolebinding in deployed namespace:
+      ```yaml
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: $ROLENAME
+        namespace: $NAMESPACE
+      rules:
+      - apiGroups:
+        - security.openshift.io
+        resourceNames:
+        - privileged
+        resources:
+        - securitycontextconstraints
+        verbs:
+        - use
+      ```
+      ```yaml
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: role-binding
+        namespace: $NAMESPACE
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: $ROLENAME
+      subjects:
+      - kind: ServiceAccount
+        name: csi-baremetal-extender-sa
+        namespace: $NAMESPACE
+      - kind: ServiceAccount
+        name: csi-node-sa
+        namespace: $NAMESPACE
+      ```
+      After created the below roles and rolebindings CSI Operator will automatically catch the changes and deploy
+      node and scheduler extender daemonsets.
     * [Kind](https://kind.sigs.k8s.io/) (for testing purposes only)
       ```
       helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true \
