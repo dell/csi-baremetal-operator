@@ -54,8 +54,8 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 		resultErr error
 	)
 
-	// in case of Openshift deployment - validate node service accounts security bindings
-	if csi.Spec.Platform == constant.PlatformOpenShift {
+	// in case of Openshift deployment and non default namespace - validate node service accounts security bindings
+	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
 		var rbacError rbac.Error
 		if resultErr = n.validator.ValidateRBAC(ctx, &models.RBACRules{
 			Data: &rbacmodels.ServiceAccountIsRoleBoundData{

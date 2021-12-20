@@ -44,8 +44,8 @@ type SchedulerExtender struct {
 
 // Update updates csi-baremetal-se or creates if not found
 func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	// in case of Openshift deployment - validate extender service accounts security bindings
-	if csi.Spec.Platform == constant.PlatformOpenShift {
+	// in case of Openshift deployment and non default namespace - validate extender service accounts security bindings
+	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
 		var rbacError rbac.Error
 		if err := n.Validator.ValidateRBAC(ctx, &models.RBACRules{
 			Data: &rbacmodels.ServiceAccountIsRoleBoundData{

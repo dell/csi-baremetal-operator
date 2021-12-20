@@ -301,8 +301,8 @@ func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher) error 
 
 		var requests []reconcile.Request
 		for _, dep := range deployments.Items {
-			// Reconcile roles only for openshift platform
-			if dep.Spec.Platform != constant.PlatformOpenShift {
+			// Reconcile roles only for openshift platform and non default namespace
+			if dep.Spec.Platform != constant.PlatformOpenShift || dep.Namespace == constant.DefaultNamespace {
 				continue
 			}
 			if role.Namespace != dep.Namespace {
@@ -340,8 +340,8 @@ func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher)
 
 		var requests []reconcile.Request
 		for _, dep := range deployments.Items {
-			// Reconcile rolebindings only for openshift platform
-			if dep.Spec.Platform != constant.PlatformOpenShift {
+			// Reconcile rolebindings only for openshift platform and non default namespace
+			if dep.Spec.Platform != constant.PlatformOpenShift || dep.Namespace == constant.DefaultNamespace {
 				continue
 			}
 			if roleBinding.Namespace != dep.Namespace {
