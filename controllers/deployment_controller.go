@@ -347,8 +347,8 @@ func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher,
 			deployments.Items[0].Namespace == constant.DefaultNamespace ||
 			deployments.Items[0].Namespace != roleBinding.Namespace ||
 			// Only reconcile on node and scheduler extender service accounts
-			(!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, constant.NodeServiceAccountName) &&
-				!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, constant.ExtenderServiceAccountName)) {
+			(!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Driver.Node.ServiceAccount) &&
+				!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Scheduler.ServiceAccount)) {
 			return []reconcile.Request{}
 		}
 

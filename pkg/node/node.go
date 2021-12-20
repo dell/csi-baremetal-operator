@@ -66,7 +66,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 		var rbacError rbac.Error
 		if resultErr = n.validator.ValidateRBAC(ctx, &models.RBACRules{
 			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
-				ServiceAccountName: constant.NodeServiceAccountName,
+				ServiceAccountName: csi.Spec.Driver.Node.ServiceAccount,
 				Namespace:          csi.Namespace,
 				Role: &rbacv1.Role{
 					Rules: n.matchPolicies,
@@ -77,7 +77,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 			if errors.As(resultErr, &rbacError) {
 				n.eventRecorder.Eventf(ctx, csi, eventModels.WarningType, "NodeRoleValidationFailed",
 					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
-					constant.NodeServiceAccountName)
+					csi.Spec.Driver.Node.ServiceAccount)
 				n.log.Warning(rbacError, "Node service account has insufficient securityContextConstraints, should have privileged")
 				return nil
 			}

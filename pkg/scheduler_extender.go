@@ -50,7 +50,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 		var rbacError rbac.Error
 		if err := n.Validator.ValidateRBAC(ctx, &models.RBACRules{
 			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
-				ServiceAccountName: constant.ExtenderServiceAccountName,
+				ServiceAccountName: csi.Spec.Scheduler.ServiceAccount,
 				Namespace:          csi.Namespace,
 				Role: &rbacv1.Role{
 					Rules: n.MatchPolicies,
@@ -61,7 +61,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 			if errors.As(err, &rbacError) {
 				n.EventRecorder.Eventf(ctx, csi, eventModels.WarningType, "ExtenderRoleValidationFailed",
 					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
-					constant.ExtenderServiceAccountName)
+					csi.Spec.Scheduler.ServiceAccount)
 				n.Warn(rbacError, "Extender service account has insufficient securityContextConstraints, should have privileged")
 				return nil
 			}
@@ -131,8 +131,8 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
-					ServiceAccountName:            constant.ExtenderServiceAccountName,
-					DeprecatedServiceAccount:      constant.ExtenderServiceAccountName,
+					ServiceAccountName:            csi.Spec.Scheduler.ServiceAccount,
+					DeprecatedServiceAccount:      csi.Spec.Scheduler.ServiceAccount,
 					SecurityContext:               &corev1.PodSecurityContext{},
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,

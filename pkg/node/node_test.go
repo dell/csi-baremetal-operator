@@ -57,6 +57,15 @@ var (
 		},
 	}
 
+	matchPolicies = []rbacv1.PolicyRule{
+		{
+			Verbs:         []string{"use"},
+			APIGroups:     []string{"security.openshift.io"},
+			Resources:     []string{"securitycontextconstraints"},
+			ResourceNames: []string{"privileged"},
+		},
+	}
+
 	testRoleBinding = rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-rolebinding",
@@ -65,7 +74,7 @@ var (
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      rbacv1.ServiceAccountKind,
-				Name:      constant.NodeServiceAccountName,
+				Name:      "csi-node-sa",
 				Namespace: "test-csi",
 			},
 		},
@@ -80,14 +89,7 @@ var (
 			Name:      "test-role",
 			Namespace: "test-csi",
 		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				Verbs:         []string{"use"},
-				APIGroups:     []string{"security.openshift.io"},
-				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"privileged"},
-			},
-		},
+		Rules: matchPolicies,
 	}
 
 	testDeployment = v1.Deployment{
@@ -97,15 +99,6 @@ var (
 		},
 		Spec: components.DeploymentSpec{
 			Platform: constant.PlatformOpenShift,
-		},
-	}
-
-	matchPolicies = []rbacv1.PolicyRule{
-		{
-			Verbs:         []string{"use"},
-			APIGroups:     []string{"security.openshift.io"},
-			Resources:     []string{"securitycontextconstraints"},
-			ResourceNames: []string{"privileged"},
 		},
 	}
 )

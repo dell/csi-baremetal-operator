@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.5.0
+    controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
   name: deployments.csi-baremetal.dell.com
 spec:
@@ -25,24 +25,31 @@ spec:
         description: Deployment is the Schema for the deployments API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
           spec:
-            description: DeploymentSpec represent all CSI components need to be deployed by operator
+            description: DeploymentSpec represent all CSI components need to be deployed
+              by operator
             properties:
               driver:
                 description: Driver represent CSI driver with all necessary CSI components
                 properties:
                   controller:
-                    description: Controller encapsulates logic for CSI controller component
+                    description: Controller encapsulates logic for CSI controller
+                      component
                     properties:
                       image:
-                        description: Image contain information for components docker images
+                        description: Image contain information for components docker
+                          images
                         properties:
                           name:
                             type: string
@@ -59,14 +66,16 @@ spec:
                             description: Format is format in which log will appear
                             type: string
                           level:
-                            description: Level indicates which types if logging need to be show
+                            description: Level indicates which types if logging need
+                              to be show
                             type: string
                         required:
                         - format
                         - level
                         type: object
                       resources:
-                        description: ResourceRequirements contain information for mem/cpu requirements
+                        description: ResourceRequirements contain information for
+                          mem/cpu requirements
                         nullable: true
                         properties:
                           limits:
@@ -76,7 +85,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: ResourceList is a set of (resource name, quantity) pairs.
+                            description: ResourceList is a set of (resource name,
+                              quantity) pairs.
                             nullable: true
                             type: object
                           requests:
@@ -86,7 +96,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: ResourceList is a set of (resource name, quantity) pairs.
+                            description: ResourceList is a set of (resource name,
+                              quantity) pairs.
                             nullable: true
                             type: object
                         type: object
@@ -95,7 +106,8 @@ spec:
                           description: Sidecar represent CSI sidecar containers
                           properties:
                             image:
-                              description: Image contain information for components docker images
+                              description: Image contain information for components
+                                docker images
                               properties:
                                 name:
                                   type: string
@@ -106,7 +118,8 @@ spec:
                               - tag
                               type: object
                             resources:
-                              description: ResourceRequirements contain information for mem/cpu requirements
+                              description: ResourceRequirements contain information
+                                for mem/cpu requirements
                               nullable: true
                               properties:
                                 limits:
@@ -116,7 +129,8 @@ spec:
                                     - type: string
                                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
-                                  description: ResourceList is a set of (resource name, quantity) pairs.
+                                  description: ResourceList is a set of (resource
+                                    name, quantity) pairs.
                                   nullable: true
                                   type: object
                                 requests:
@@ -126,7 +140,8 @@ spec:
                                     - type: string
                                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
-                                  description: ResourceList is a set of (resource name, quantity) pairs.
+                                  description: ResourceList is a set of (resource
+                                    name, quantity) pairs.
                                   nullable: true
                                   type: object
                               type: object
@@ -134,10 +149,12 @@ spec:
                         type: object
                     type: object
                   logReceiver:
-                    description: LogReceiver encapsulates information needed to establish log receiver for components
+                    description: LogReceiver encapsulates information needed to establish
+                      log receiver for components
                     properties:
                       image:
-                        description: Image contain information for components docker images
+                        description: Image contain information for components docker
+                          images
                         properties:
                           name:
                             type: string
@@ -153,7 +170,8 @@ spec:
                     - name
                     type: object
                   metrics:
-                    description: Metrics encapsulates necessary information to expose metric for different components
+                    description: Metrics encapsulates necessary information to expose
+                      metric for different components
                     properties:
                       path:
                         type: string
@@ -176,7 +194,8 @@ spec:
                           endpoint:
                             type: string
                           image:
-                            description: Image contain information for components docker images
+                            description: Image contain information for components
+                              docker images
                             properties:
                               name:
                                 type: string
@@ -187,7 +206,8 @@ spec:
                             - tag
                             type: object
                           resources:
-                            description: ResourceRequirements contain information for mem/cpu requirements
+                            description: ResourceRequirements contain information
+                              for mem/cpu requirements
                             nullable: true
                             properties:
                               limits:
@@ -197,7 +217,8 @@ spec:
                                   - type: string
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
-                                description: ResourceList is a set of (resource name, quantity) pairs.
+                                description: ResourceList is a set of (resource name,
+                                  quantity) pairs.
                                 nullable: true
                                 type: object
                               requests:
@@ -207,7 +228,8 @@ spec:
                                   - type: string
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
-                                description: ResourceList is a set of (resource name, quantity) pairs.
+                                description: ResourceList is a set of (resource name,
+                                  quantity) pairs.
                                 nullable: true
                                 type: object
                             type: object
@@ -215,7 +237,8 @@ spec:
                         - endpoint
                         type: object
                       image:
-                        description: Image contain information for components docker images
+                        description: Image contain information for components docker
+                          images
                         properties:
                           name:
                             type: string
@@ -232,14 +255,16 @@ spec:
                             description: Format is format in which log will appear
                             type: string
                           level:
-                            description: Level indicates which types if logging need to be show
+                            description: Level indicates which types if logging need
+                              to be show
                             type: string
                         required:
                         - format
                         - level
                         type: object
                       resources:
-                        description: ResourceRequirements contain information for mem/cpu requirements
+                        description: ResourceRequirements contain information for
+                          mem/cpu requirements
                         nullable: true
                         properties:
                           limits:
@@ -249,7 +274,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: ResourceList is a set of (resource name, quantity) pairs.
+                            description: ResourceList is a set of (resource name,
+                              quantity) pairs.
                             nullable: true
                             type: object
                           requests:
@@ -259,16 +285,20 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: ResourceList is a set of (resource name, quantity) pairs.
+                            description: ResourceList is a set of (resource name,
+                              quantity) pairs.
                             nullable: true
                             type: object
                         type: object
+                      serviceAccount:
+                        type: string
                       sidecars:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
                           properties:
                             image:
-                              description: Image contain information for components docker images
+                              description: Image contain information for components
+                                docker images
                               properties:
                                 name:
                                   type: string
@@ -279,7 +309,8 @@ spec:
                               - tag
                               type: object
                             resources:
-                              description: ResourceRequirements contain information for mem/cpu requirements
+                              description: ResourceRequirements contain information
+                                for mem/cpu requirements
                               nullable: true
                               properties:
                                 limits:
@@ -289,7 +320,8 @@ spec:
                                     - type: string
                                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
-                                  description: ResourceList is a set of (resource name, quantity) pairs.
+                                  description: ResourceList is a set of (resource
+                                    name, quantity) pairs.
                                   nullable: true
                                   type: object
                                 requests:
@@ -299,19 +331,23 @@ spec:
                                     - type: string
                                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
-                                  description: ResourceList is a set of (resource name, quantity) pairs.
+                                  description: ResourceList is a set of (resource
+                                    name, quantity) pairs.
                                   nullable: true
                                   type: object
                               type: object
                           type: object
                         type: object
+                    required:
+                    - serviceAccount
                     type: object
                 type: object
               globalRegistry:
                 nullable: true
                 type: string
               nodeController:
-                description: NodeController represent operator for CSI bare-metal nodes
+                description: NodeController represent operator for CSI bare-metal
+                  nodes
                 properties:
                   enable:
                     type: boolean
@@ -333,14 +369,16 @@ spec:
                         description: Format is format in which log will appear
                         type: string
                       level:
-                        description: Level indicates which types if logging need to be show
+                        description: Level indicates which types if logging need to
+                          be show
                         type: string
                     required:
                     - format
                     - level
                     type: object
                   resources:
-                    description: ResourceRequirements contain information for mem/cpu requirements
+                    description: ResourceRequirements contain information for mem/cpu
+                      requirements
                     nullable: true
                     properties:
                       limits:
@@ -350,7 +388,8 @@ spec:
                           - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
-                        description: ResourceList is a set of (resource name, quantity) pairs.
+                        description: ResourceList is a set of (resource name, quantity)
+                          pairs.
                         nullable: true
                         type: object
                       requests:
@@ -360,7 +399,8 @@ spec:
                           - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
-                        description: ResourceList is a set of (resource name, quantity) pairs.
+                        description: ResourceList is a set of (resource name, quantity)
+                          pairs.
                         nullable: true
                         type: object
                     type: object
@@ -370,7 +410,8 @@ spec:
               nodeIDAnnotation:
                 type: boolean
               nodeSelector:
-                description: NodeSelector contains key-value pair to deploy node components on specific k8sNodes
+                description: NodeSelector contains key-value pair to deploy node components
+                  on specific k8sNodes
                 properties:
                   key:
                     type: string
@@ -419,14 +460,16 @@ spec:
                         description: Format is format in which log will appear
                         type: string
                       level:
-                        description: Level indicates which types if logging need to be show
+                        description: Level indicates which types if logging need to
+                          be show
                         type: string
                     required:
                     - format
                     - level
                     type: object
                   metrics:
-                    description: Metrics encapsulates necessary information to expose metric for different components
+                    description: Metrics encapsulates necessary information to expose
+                      metric for different components
                     properties:
                       path:
                         type: string
@@ -438,14 +481,16 @@ spec:
                     - port
                     type: object
                   patcher:
-                    description: Patcher represents scheduler patcher container, which tries to patch Kubernetes scheduler
+                    description: Patcher represents scheduler patcher container, which
+                      tries to patch Kubernetes scheduler
                     properties:
                       configMapName:
                         type: string
                       enable:
                         type: boolean
                       image:
-                        description: Image contain information for components docker images
+                        description: Image contain information for components docker
+                          images
                         properties:
                           name:
                             type: string
@@ -460,7 +505,8 @@ spec:
                       readinessTimeout:
                         type: integer
                       resources:
-                        description: ResourceRequirements contain information for mem/cpu requirements
+                        description: ResourceRequirements contain information for
+                          mem/cpu requirements
                         nullable: true
                         properties:
                           limits:
@@ -470,7 +516,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: ResourceList is a set of (resource name, quantity) pairs.
+                            description: ResourceList is a set of (resource name,
+                              quantity) pairs.
                             nullable: true
                             type: object
                           requests:
@@ -480,7 +527,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: ResourceList is a set of (resource name, quantity) pairs.
+                            description: ResourceList is a set of (resource name,
+                              quantity) pairs.
                             nullable: true
                             type: object
                         type: object
@@ -490,7 +538,8 @@ spec:
                     - enable
                     type: object
                   resources:
-                    description: ResourceRequirements contain information for mem/cpu requirements
+                    description: ResourceRequirements contain information for mem/cpu
+                      requirements
                     nullable: true
                     properties:
                       limits:
@@ -500,7 +549,8 @@ spec:
                           - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
-                        description: ResourceList is a set of (resource name, quantity) pairs.
+                        description: ResourceList is a set of (resource name, quantity)
+                          pairs.
                         nullable: true
                         type: object
                       requests:
@@ -510,14 +560,18 @@ spec:
                           - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
-                        description: ResourceList is a set of (resource name, quantity) pairs.
+                        description: ResourceList is a set of (resource name, quantity)
+                          pairs.
                         nullable: true
                         type: object
                     type: object
+                  serviceAccount:
+                    type: string
                   storageProvisioner:
                     type: string
                 required:
                 - enable
+                - serviceAccount
                 - storageProvisioner
                 type: object
               sequentialLVGReservation:

@@ -64,10 +64,6 @@ const (
 	SelectorKey = "name"
 	// FluentbitLabelKey is key for label used by fluentbit to make "release" folder
 	FluentbitLabelKey = "release"
-	// NodeServiceAccountName is a name for service account of node daemonset
-	NodeServiceAccountName = "csi-node-sa"
-	// ExtenderServiceAccountName is a name for service account of scheduler extender
-	ExtenderServiceAccountName = CSIName + "-extender-sa"
 	// DefaultNamespace is the default namespace
 	DefaultNamespace = "default"
 )

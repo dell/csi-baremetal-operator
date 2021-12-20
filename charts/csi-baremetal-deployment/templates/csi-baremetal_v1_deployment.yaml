@@ -56,6 +56,7 @@ spec:
         resources:
           {{- include "setResources" .Values.driver.drivemgr | indent 10 }}
         endpoint: {{ .Values.driver.drivemgr.grpc.server.endpoint }}
+      serviceAccount: {{ .Values.driver.node.serviceAccount | default "csi-node-sa" }}
       image:
         name: csi-baremetal-node
         tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}
@@ -87,6 +88,7 @@ spec:
         tag: {{ .Values.driver.logReceiver.fluentbitAgent.image.tag | default "shippable" }}
   scheduler:
     enable: {{ .Values.scheduler.enable }}
+    serviceAccount: {{ .Values.scheduler.serviceAccount | default "csi-baremetal-extender-sa"}}
     image:
       name: csi-baremetal-scheduler-extender
       tag: {{ .Values.scheduler.image.tag | default .Values.image.tag }}
