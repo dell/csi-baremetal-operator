@@ -34,15 +34,22 @@ type Node struct {
 	log           *logrus.Entry
 	validator     validator.Validator
 	eventRecorder eventing.Recorder
+	matchPolicies []rbacv1.PolicyRule
 }
 
 // NewNode creates a Node object
-func NewNode(clientset kubernetes.Interface, logger *logrus.Entry, validator validator.Validator, eventRecorder eventing.Recorder) *Node {
+func NewNode(clientset kubernetes.Interface,
+	eventRecorder eventing.Recorder,
+	validator validator.Validator,
+	matchPolicies []rbacv1.PolicyRule,
+	logger *logrus.Entry,
+) *Node {
 	return &Node{
 		clientset:     clientset,
 		log:           logger,
 		validator:     validator,
 		eventRecorder: eventRecorder,
+		matchPolicies: matchPolicies,
 	}
 }
 
@@ -62,23 +69,16 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 				ServiceAccountName: constant.NodeServiceAccountName,
 				Namespace:          csi.Namespace,
 				Role: &rbacv1.Role{
-					Rules: []rbacv1.PolicyRule{
-						{
-							Verbs:         []string{"use"},
-							APIGroups:     []string{"security.openshift.io"},
-							Resources:     []string{"securitycontextconstraints"},
-							ResourceNames: []string{"privileged"},
-						},
-					},
+					Rules: n.matchPolicies,
 				},
 			},
 			Type: models.ServiceAccountIsRoleBound,
 		}); resultErr != nil {
 			if errors.As(resultErr, &rbacError) {
 				n.eventRecorder.Eventf(ctx, csi, eventModels.WarningType, "NodeRoleValidationFailed",
-					"Failed to validate serviceAccount %s securityContextConstraints, should be used privileged",
+					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
 					constant.NodeServiceAccountName)
-				n.log.Warning(rbacError, "Failed to validate node service account security context bindings")
+				n.log.Warning(rbacError, "Node service account has insufficient securityContextConstraints, should have privileged")
 				return nil
 			}
 			n.log.Error(resultErr, "Error occurred while validating node service account security context bindings")

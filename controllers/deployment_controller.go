@@ -50,7 +50,8 @@ type DeploymentReconciler struct {
 	Log    *logrus.Entry
 	Scheme *runtime.Scheme
 	pkg.CSIDeployment
-	Matcher rbac.Matcher
+	Matcher       rbac.Matcher
+	MatchPolicies []rbacv1.PolicyRule
 }
 
 const (
@@ -252,11 +253,11 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		return err
 	}
 
-	if err = watchRole(c, r.Client, r.Matcher); err != nil {
+	if err = watchRole(c, r.Client, r.Matcher, r.MatchPolicies, r.Log); err != nil {
 		return err
 	}
 
-	if err = watchRoleBinding(c, r.Client, r.Matcher); err != nil {
+	if err = watchRoleBinding(c, r.Client, r.Matcher, r.Log); err != nil {
 		return err
 	}
 
@@ -270,7 +271,7 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	return nil
 }
 
-func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher) error {
+func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher, matchPolicies []rbacv1.PolicyRule, log *logrus.Entry) error {
 	return c.Watch(&source.Kind{Type: &rbacv1.Role{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		var (
 			ctx         = context.Background()
@@ -281,46 +282,41 @@ func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher) error 
 
 		err := cl.List(ctx, deployments)
 		if err != nil {
+			log.Error(err, "Failed to list csi deployments")
 			return []reconcile.Request{}
 		}
 
 		if role, ok = obj.(*rbacv1.Role); !ok {
+			log.Warnf("got invalid Object type at Role watcher, actual type: '%s'", reflect.TypeOf(obj))
 			return []reconcile.Request{}
 		}
 
-		if !m.MatchPolicyRules(role.Rules, []rbacv1.PolicyRule{
+		if len(deployments.Items) != 1 {
+			log.Warnf("Invalid number of csi deployments at Role watcher, number: '%d', expected: '%d'",
+				len(deployments.Items), 1)
+			return []reconcile.Request{}
+		}
+
+		// Reconcile roles only for openshift platform and non default namespace
+		if deployments.Items[0].Spec.Platform != constant.PlatformOpenShift ||
+			deployments.Items[0].Namespace == constant.DefaultNamespace ||
+			deployments.Items[0].Namespace != role.Namespace ||
+			!m.MatchPolicyRules(role.Rules, matchPolicies) {
+			return []reconcile.Request{}
+		}
+
+		return []reconcile.Request{
 			{
-				Verbs:         []string{"use"},
-				APIGroups:     []string{"security.openshift.io"},
-				Resources:     []string{"securitycontextconstraints"},
-				ResourceNames: []string{"privileged"},
-			},
-		}) {
-			return []reconcile.Request{}
-		}
-
-		var requests []reconcile.Request
-		for _, dep := range deployments.Items {
-			// Reconcile roles only for openshift platform and non default namespace
-			if dep.Spec.Platform != constant.PlatformOpenShift || dep.Namespace == constant.DefaultNamespace {
-				continue
-			}
-			if role.Namespace != dep.Namespace {
-				continue
-			}
-
-			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
-					Name:      dep.Name,
-					Namespace: dep.Namespace,
-				}})
+					Name:      deployments.Items[0].Name,
+					Namespace: deployments.Items[0].Namespace,
+				},
+			},
 		}
-
-		return requests
 	}))
 }
 
-func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher) error {
+func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher, log *logrus.Entry) error {
 	return c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		var (
 			ctx         = context.Background()
@@ -331,36 +327,39 @@ func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher)
 
 		err := cl.List(ctx, deployments)
 		if err != nil {
+			log.Error(err, "Failed to list csi deployments")
 			return []reconcile.Request{}
 		}
 
 		if roleBinding, ok = obj.(*rbacv1.RoleBinding); !ok {
+			log.Warnf("got invalid Object type at RoleBinding watcher, actual type: '%s'", reflect.TypeOf(obj))
 			return []reconcile.Request{}
 		}
 
-		var requests []reconcile.Request
-		for _, dep := range deployments.Items {
-			// Reconcile rolebindings only for openshift platform and non default namespace
-			if dep.Spec.Platform != constant.PlatformOpenShift || dep.Namespace == constant.DefaultNamespace {
-				continue
-			}
-			if roleBinding.Namespace != dep.Namespace {
-				continue
-			}
-			// Only reconcile on node and scheduler extender service accounts
-			if !m.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.NodeServiceAccountName) &&
-				!m.MatchRoleBindingSubjects(roleBinding, dep.Namespace, constant.ExtenderServiceAccountName) {
-				continue
-			}
-
-			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      dep.Name,
-					Namespace: dep.Namespace,
-				}})
+		if len(deployments.Items) != 1 {
+			log.Warnf("Invalid number of csi deployments at RoleBinding watcher, number: '%d', expected: '%d'",
+				len(deployments.Items), 1)
+			return []reconcile.Request{}
 		}
 
-		return requests
+		// Reconcile roles only for openshift platform and non default namespace
+		if deployments.Items[0].Spec.Platform != constant.PlatformOpenShift ||
+			deployments.Items[0].Namespace == constant.DefaultNamespace ||
+			deployments.Items[0].Namespace != roleBinding.Namespace ||
+			// Only reconcile on node and scheduler extender service accounts
+			(!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, constant.NodeServiceAccountName) &&
+				!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, constant.ExtenderServiceAccountName)) {
+			return []reconcile.Request{}
+		}
+
+		return []reconcile.Request{
+			{
+				NamespacedName: types.NamespacedName{
+					Name:      deployments.Items[0].Name,
+					Namespace: deployments.Items[0].Namespace,
+				},
+			},
+		}
 	}))
 }
 

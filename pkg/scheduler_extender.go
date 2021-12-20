@@ -40,6 +40,7 @@ type SchedulerExtender struct {
 	*logrus.Entry
 	Validator     validator.Validator
 	EventRecorder eventing.Recorder
+	MatchPolicies []rbacv1.PolicyRule
 }
 
 // Update updates csi-baremetal-se or creates if not found
@@ -52,23 +53,16 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 				ServiceAccountName: constant.ExtenderServiceAccountName,
 				Namespace:          csi.Namespace,
 				Role: &rbacv1.Role{
-					Rules: []rbacv1.PolicyRule{
-						{
-							Verbs:         []string{"use"},
-							APIGroups:     []string{"security.openshift.io"},
-							Resources:     []string{"securitycontextconstraints"},
-							ResourceNames: []string{"privileged"},
-						},
-					},
+					Rules: n.MatchPolicies,
 				},
 			},
 			Type: models.ServiceAccountIsRoleBound,
 		}); err != nil {
 			if errors.As(err, &rbacError) {
 				n.EventRecorder.Eventf(ctx, csi, eventModels.WarningType, "ExtenderRoleValidationFailed",
-					"Failed to validate serviceAccount %s securityContextConstraints, should be used privileged",
+					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
 					constant.ExtenderServiceAccountName)
-				n.Warn(rbacError, "Failed to validate extender service account security context bindings")
+				n.Warn(rbacError, "Extender service account has insufficient securityContextConstraints, should have privileged")
 				return nil
 			}
 			n.Error(err, "Error occurred while validating extender service account security context bindings")

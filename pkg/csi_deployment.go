@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,21 +33,25 @@ type CSIDeployment struct {
 }
 
 // NewCSIDeployment creates CSIDeployment
-func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log *logrus.Logger, scheme *runtime.Scheme) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client,
+	matcher rbac.Matcher, matchPolicies []rbacv1.PolicyRule,
+	log *logrus.Logger, scheme *runtime.Scheme,
+) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
 			&clientSet,
-			log.WithField(constant.CSIName, "node"),
-			validator.NewValidator(rbac.NewValidator(
-				client,
-				log.WithField(constant.CSIName, "rbacNodeValidator"),
-				rbac.NewMatcher()),
-			),
 			eventing.NewRecorder(client,
 				scheme,
 				v1.EventSource{Component: constant.ComponentName},
 				log.WithField(constant.CSIName, "eventRecorder"),
 			),
+			validator.NewValidator(rbac.NewValidator(
+				client,
+				log.WithField(constant.CSIName, "rbacNodeValidator"),
+				matcher),
+			),
+			matchPolicies,
+			log.WithField(constant.CSIName, "node"),
 		),
 		controller: Controller{
 			Clientset: &clientSet,
@@ -65,6 +70,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 				v1.EventSource{Component: constant.ComponentName},
 				log.WithField(constant.CSIName, "eventRecorder"),
 			),
+			MatchPolicies: matchPolicies,
 		},
 		patcher: patcher.SchedulerPatcher{
 			Clientset: &clientSet,

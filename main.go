@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -79,13 +80,23 @@ func main() {
 
 	ctx := context.Background()
 
+	matcher := rbac.NewMatcher()
+	matchPolicies := []rbacv1.PolicyRule{
+		{
+			Verbs:         []string{"use"},
+			APIGroups:     []string{"security.openshift.io"},
+			Resources:     []string{"securitycontextconstraints"},
+			ResourceNames: []string{"privileged"},
+		},
+	}
 	if err = (&controllers.DeploymentReconciler{
 		Client: mgr.GetClient(),
 		Log: logrus.WithFields(logrus.Fields{
 			"module": "controllers", "component": "DeploymentReconciler"}),
 		Scheme:        mgr.GetScheme(),
-		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), logrus.New(), mgr.GetScheme()),
-		Matcher:       rbac.NewMatcher(),
+		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), matcher, matchPolicies, logrus.New(), mgr.GetScheme()),
+		Matcher:       matcher,
+		MatchPolicies: matchPolicies,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)
