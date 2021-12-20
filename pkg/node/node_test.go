@@ -8,14 +8,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	coreV1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	v1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/eventing"
 	"github.com/dell/csi-baremetal-operator/pkg/eventing/mocks"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
@@ -52,6 +56,49 @@ var (
 			},
 		},
 	}
+
+	testRoleBinding = rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-rolebinding",
+			Namespace: "test-csi",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      rbacv1.ServiceAccountKind,
+				Name:      constant.NodeServiceAccountName,
+				Namespace: "test-csi",
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     "Role",
+			Name:     "test-role",
+		},
+	}
+	testRole = rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-role",
+			Namespace: "test-csi",
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				Verbs:         []string{"use"},
+				APIGroups:     []string{"security.openshift.io"},
+				Resources:     []string{"securitycontextconstraints"},
+				ResourceNames: []string{"privileged"},
+			},
+		},
+	}
+
+	testDeployment = v1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-deployment",
+			Namespace: "test-csi",
+		},
+		Spec: components.DeploymentSpec{
+			Platform: constant.PlatformOpenShift,
+		},
+	}
 )
 
 func TestNewNode(t *testing.T) {
@@ -75,6 +122,38 @@ func TestNewNode(t *testing.T) {
 	})
 }
 
+func Test_ValidateRBAC(t *testing.T) {
+	t.Run("Not Existing Role and RoleBinding for node ServiceAccount", func(t *testing.T) {
+		var (
+			ctx        = context.Background()
+			deployment = testDeployment.DeepCopy()
+		)
+
+		eventRecorder := new(mocks.Recorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
+		err := node.Update(ctx, deployment, scheme)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Existing Role and RoleBinding for node ServiceAccount", func(t *testing.T) {
+		var (
+			ctx         = context.Background()
+			deployment  = testDeployment.DeepCopy()
+			roleBinding = testRoleBinding.DeepCopy()
+			role        = testRole.DeepCopy()
+		)
+
+		eventRecorder := new(mocks.Recorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, roleBinding, role))
+		err := node.Update(ctx, deployment, scheme)
+		assert.Nil(t, err)
+	})
+}
+
 func Test_updateNodeLabels(t *testing.T) {
 	t.Run("Should deploy default platform and label nodes", func(t *testing.T) {
 		var (
@@ -85,7 +164,8 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		eventRecorder := new(mocks.Recorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-		node := prepareNode(eventRecorder, node1, node2)
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
 
 		needToDeploy, err := node.updateNodeLabels(ctx, nodeSelector)
 		assert.Nil(t, err)
@@ -114,7 +194,8 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		eventRecorder := new(mocks.Recorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-		node := prepareNode(eventRecorder, node1, node2)
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
 
 		needToDeploy, err := node.updateNodeLabels(ctx, nodeSelector)
 		assert.Nil(t, err)
@@ -141,7 +222,8 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		eventRecorder := new(mocks.Recorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-		node := prepareNode(eventRecorder, node1, node2)
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
 
 		needToDeploy, err := node.updateNodeLabels(ctx, nodeSelector)
 		assert.Nil(t, err)
@@ -167,7 +249,8 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		eventRecorder := new(mocks.Recorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-		node := prepareNode(eventRecorder, corruptedNode)
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(corruptedNode), prepareValidatorClient(scheme))
 
 		needToDeploy, err := node.updateNodeLabels(ctx, nodeSelector)
 		assert.NotNil(t, err)
@@ -193,7 +276,8 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		eventRecorder := new(mocks.Recorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-		node := prepareNode(eventRecorder, node1, node2)
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
 
 		needToDeploy, err := node.updateNodeLabels(ctx, nodeSelector)
 		assert.Nil(t, err)
@@ -223,7 +307,8 @@ func Test_cleanNodeLabels(t *testing.T) {
 
 		eventRecorder := new(mocks.Recorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-		node := prepareNode(eventRecorder, node1, node2)
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(node1, node2), prepareValidatorClient(scheme))
 
 		err := node.cleanNodeLabels(ctx)
 		assert.Nil(t, err)
@@ -238,25 +323,19 @@ func Test_cleanNodeLabels(t *testing.T) {
 	})
 }
 
-func prepareNode(eventRecorder eventing.Recorder, objects ...client.Object) *Node {
-	// preparing clientSet
-	runTimeObjects := make([]runtime.Object, len(objects))
-	for i := 0; i < len(objects); i++ {
-		runTimeObjects[i] = objects[i].DeepCopyObject()
-	}
-	clientSet := fake.NewSimpleClientset(runTimeObjects...)
+func prepareNodeClientSet(objects ...runtime.Object) kubernetes.Interface {
+	return fake.NewSimpleClientset(objects...)
+}
 
-	// preparing client
-	scheme, _ := common.PrepareScheme()
+func prepareValidatorClient(scheme *runtime.Scheme, objects ...client.Object) client.Client {
 	builder := fakeClient.ClientBuilder{}
 	builderWithScheme := builder.WithScheme(scheme)
-	cl := builderWithScheme.WithObjects(objects...).Build()
+	return builderWithScheme.WithObjects(objects...).Build()
+}
 
-	// prepare event recorder
-	node := NewNode(clientSet, logEntry,
-		validator.NewValidator(rbac.NewValidator(cl, logEntry, rbac.NewMatcher())),
+func prepareNode(eventRecorder eventing.Recorder, clientSet kubernetes.Interface, client client.Client) *Node {
+	return NewNode(clientSet, logEntry,
+		validator.NewValidator(rbac.NewValidator(client, logEntry, rbac.NewMatcher())),
 		eventRecorder,
 	)
-
-	return node
 }
