@@ -2,28 +2,34 @@ package pkg
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
+	"github.com/dell/csi-baremetal/pkg/eventing"
+	"github.com/dell/csi-baremetal/pkg/events"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/sirupsen/logrus"
-
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
+	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
 const (
-	extenderContainerName      = "scheduler-extender"
-	extenderName               = constant.CSIName + "-se"
-	extenderServiceAccountName = constant.CSIName + "-extender-sa"
+	extenderContainerName = "scheduler-extender"
+	extenderName          = constant.CSIName + "-se"
 
 	extenderPort = 8889
 )
@@ -32,10 +38,38 @@ const (
 type SchedulerExtender struct {
 	Clientset kubernetes.Interface
 	*logrus.Entry
+	Validator     validator.Validator
+	EventRecorder events.EventRecorder
+	MatchPolicies []rbacv1.PolicyRule
 }
 
 // Update updates csi-baremetal-se or creates if not found
 func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	// in case of Openshift deployment and non default namespace - validate extender service accounts security bindings
+	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
+		var rbacError rbac.Error
+		if err := n.Validator.ValidateRBAC(ctx, &models.RBACRules{
+			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
+				ServiceAccountName: csi.Spec.Scheduler.ServiceAccount,
+				Namespace:          csi.Namespace,
+				Role: &rbacv1.Role{
+					Rules: n.MatchPolicies,
+				},
+			},
+			Type: models.ServiceAccountIsRoleBound,
+		}); err != nil {
+			if errors.As(err, &rbacError) {
+				n.EventRecorder.Eventf(csi, eventing.WarningType, "ExtenderRoleValidationFailed",
+					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
+					csi.Spec.Scheduler.ServiceAccount)
+				n.Warn(rbacError, "Extender service account has insufficient securityContextConstraints, should have privileged")
+				return nil
+			}
+			n.Error(err, "Error occurred while validating extender service account security context bindings")
+			return err
+		}
+	}
+
 	// create daemonset
 	expected := n.createExtenderDaemonSet(csi)
 	if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
@@ -97,8 +131,8 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
-					ServiceAccountName:            extenderServiceAccountName,
-					DeprecatedServiceAccount:      extenderServiceAccountName,
+					ServiceAccountName:            csi.Spec.Scheduler.ServiceAccount,
+					DeprecatedServiceAccount:      csi.Spec.Scheduler.ServiceAccount,
 					SecurityContext:               &corev1.PodSecurityContext{},
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,

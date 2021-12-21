@@ -45,6 +45,7 @@ driver:
         memory:
 
   node:
+    serviceAccount: csi-node-sa
     image:
       tag:
     resources:
@@ -147,6 +148,7 @@ driver:
 # CSI Scheduler parameters
 scheduler:
   enable: true
+  serviceAccount: csi-baremetal-extender-sa
   image:
     tag:
   resources:

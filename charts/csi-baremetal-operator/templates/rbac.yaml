@@ -39,6 +39,14 @@ rules:
   - "*"
   verbs:
   - "*"
+- apiGroups:
+  - "rbac.authorization.k8s.io"
+  resources:
+  - rolebindings
+  - roles
+  verbs:
+  - list
+  - watch
 # Required for Openshift only
 # TODO Deploy only when OpenShift - https://github.com/dell/csi-baremetal/issues/422
 - apiGroups:

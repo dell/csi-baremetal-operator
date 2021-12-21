@@ -2,8 +2,13 @@ package node
 
 import (
 	"context"
+	"errors"
 
+	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
+	"github.com/dell/csi-baremetal/pkg/eventing"
+	"github.com/dell/csi-baremetal/pkg/events"
 	"github.com/sirupsen/logrus"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -12,8 +17,11 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
-
-	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
+	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
 const (
@@ -22,15 +30,26 @@ const (
 
 // Node controls csi-baremetal-node
 type Node struct {
-	clientset kubernetes.Interface
-	log       *logrus.Entry
+	clientset     kubernetes.Interface
+	log           *logrus.Entry
+	validator     validator.Validator
+	eventRecorder events.EventRecorder
+	matchPolicies []rbacv1.PolicyRule
 }
 
 // NewNode creates a Node object
-func NewNode(clientset kubernetes.Interface, logger *logrus.Entry) *Node {
+func NewNode(clientset kubernetes.Interface,
+	eventRecorder events.EventRecorder,
+	validator validator.Validator,
+	matchPolicies []rbacv1.PolicyRule,
+	logger *logrus.Entry,
+) *Node {
 	return &Node{
-		clientset: clientset,
-		log:       logger,
+		clientset:     clientset,
+		log:           logger,
+		validator:     validator,
+		eventRecorder: eventRecorder,
+		matchPolicies: matchPolicies,
 	}
 }
 
@@ -41,6 +60,31 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 		// return err != nil to request reconcile again if one ore more daemonsets failed
 		resultErr error
 	)
+
+	// in case of Openshift deployment and non default namespace - validate node service accounts security bindings
+	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
+		var rbacError rbac.Error
+		if resultErr = n.validator.ValidateRBAC(ctx, &models.RBACRules{
+			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
+				ServiceAccountName: csi.Spec.Driver.Node.ServiceAccount,
+				Namespace:          csi.Namespace,
+				Role: &rbacv1.Role{
+					Rules: n.matchPolicies,
+				},
+			},
+			Type: models.ServiceAccountIsRoleBound,
+		}); resultErr != nil {
+			if errors.As(resultErr, &rbacError) {
+				n.eventRecorder.Eventf(csi, eventing.WarningType, "NodeRoleValidationFailed",
+					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
+					csi.Spec.Driver.Node.ServiceAccount)
+				n.log.Warning(rbacError, "Node service account has insufficient securityContextConstraints, should have privileged")
+				return nil
+			}
+			n.log.Error(resultErr, "Error occurred while validating node service account security context bindings")
+			return resultErr
+		}
+	}
 
 	needToDeploy, err := n.updateNodeLabels(ctx, csi.Spec.NodeSelector)
 	if err != nil {

@@ -23,6 +23,8 @@ import (
 const (
 	// CSIName - default prefix
 	CSIName = "csi-baremetal"
+	// ComponentName - is the name of component
+	ComponentName = CSIName + "-operator"
 
 	// PrometheusPort - default prometeus port
 	PrometheusPort = 8787
@@ -62,6 +64,8 @@ const (
 	SelectorKey = "name"
 	// FluentbitLabelKey is key for label used by fluentbit to make "release" folder
 	FluentbitLabelKey = "release"
+	// DefaultNamespace is the default namespace
+	DefaultNamespace = "default"
 )
 
 var (

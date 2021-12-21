@@ -19,6 +19,7 @@ package components
 // Scheduler encapsulates information to deploy CSI scheduler
 type Scheduler struct {
 	Enable             bool     `json:"enable"`
+	ServiceAccount     string   `json:"serviceAccount"`
 	Image              *Image   `json:"image,omitempty"`
 	Log                *Log     `json:"log,omitempty"`
 	Metrics            *Metrics `json:"metrics,omitempty"`

@@ -21,9 +21,12 @@ import (
 	"flag"
 	"os"
 
+	"github.com/dell/csi-baremetal/pkg/events/recorder"
 	"github.com/sirupsen/logrus"
-
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/kubernetes"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -32,6 +35,8 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg"
 	"github.com/dell/csi-baremetal-operator/pkg/acrvalidator"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -78,13 +83,33 @@ func main() {
 	acrvalidator.LauncACRValidation(mgr.GetClient(), logrus.WithField("component", "acr_validator"))
 
 	ctx := context.Background()
+	logger := logrus.New()
 
+	eventRecorder := recorder.New(&v1core.EventSinkImpl{Interface: clientSet.CoreV1().Events("")},
+		scheme, corev1.EventSource{Component: constant.ComponentName},
+		logger.WithField(constant.CSIName, "eventRecorder"),
+	)
+	if err != nil {
+		setupLog.Error(err, "unable to setup event recorder")
+		os.Exit(1)
+	}
+	matcher := rbac.NewMatcher()
+	matchPolicies := []rbacv1.PolicyRule{
+		{
+			Verbs:         []string{"use"},
+			APIGroups:     []string{"security.openshift.io"},
+			Resources:     []string{"securitycontextconstraints"},
+			ResourceNames: []string{"privileged"},
+		},
+	}
 	if err = (&controllers.DeploymentReconciler{
 		Client: mgr.GetClient(),
 		Log: logrus.WithFields(logrus.Fields{
 			"module": "controllers", "component": "DeploymentReconciler"}),
 		Scheme:        mgr.GetScheme(),
-		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), logrus.New()),
+		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), matcher, matchPolicies, eventRecorder, logger),
+		Matcher:       matcher,
+		MatchPolicies: matchPolicies,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)

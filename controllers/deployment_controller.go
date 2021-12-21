@@ -21,8 +21,10 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -35,11 +37,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/sirupsen/logrus"
-
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 )
 
 // DeploymentReconciler reconciles a Deployment object
@@ -48,6 +50,8 @@ type DeploymentReconciler struct {
 	Log    *logrus.Entry
 	Scheme *runtime.Scheme
 	pkg.CSIDeployment
+	Matcher       rbac.Matcher
+	MatchPolicies []rbacv1.PolicyRule
 }
 
 const (
@@ -249,6 +253,14 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		return err
 	}
 
+	if err = watchRole(c, r.Client, r.Matcher, r.MatchPolicies, r.Log); err != nil {
+		return err
+	}
+
+	if err = watchRoleBinding(c, r.Client, r.Matcher, r.Log); err != nil {
+		return err
+	}
+
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
 		pod := rawObj.(*corev1.Pod)
 		return []string{pod.Spec.NodeName}
@@ -257,6 +269,98 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	}
 
 	return nil
+}
+
+func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher, matchPolicies []rbacv1.PolicyRule, log *logrus.Entry) error {
+	return c.Watch(&source.Kind{Type: &rbacv1.Role{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		var (
+			ctx         = context.Background()
+			deployments = &csibaremetalv1.DeploymentList{}
+			role        = &rbacv1.Role{}
+			ok          bool
+		)
+
+		err := cl.List(ctx, deployments)
+		if err != nil {
+			log.Error(err, "Failed to list csi deployments")
+			return []reconcile.Request{}
+		}
+
+		if role, ok = obj.(*rbacv1.Role); !ok {
+			log.Warnf("got invalid Object type at Role watcher, actual type: '%s'", reflect.TypeOf(obj))
+			return []reconcile.Request{}
+		}
+
+		if len(deployments.Items) != 1 {
+			log.Warnf("Invalid number of csi deployments at Role watcher, number: '%d', expected: '%d'",
+				len(deployments.Items), 1)
+			return []reconcile.Request{}
+		}
+
+		// Reconcile roles only for openshift platform and non default namespace
+		if deployments.Items[0].Spec.Platform != constant.PlatformOpenShift ||
+			deployments.Items[0].Namespace == constant.DefaultNamespace ||
+			deployments.Items[0].Namespace != role.Namespace ||
+			!m.MatchPolicyRules(role.Rules, matchPolicies) {
+			return []reconcile.Request{}
+		}
+
+		return []reconcile.Request{
+			{
+				NamespacedName: types.NamespacedName{
+					Name:      deployments.Items[0].Name,
+					Namespace: deployments.Items[0].Namespace,
+				},
+			},
+		}
+	}))
+}
+
+func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher, log *logrus.Entry) error {
+	return c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+		var (
+			ctx         = context.Background()
+			deployments = &csibaremetalv1.DeploymentList{}
+			roleBinding = &rbacv1.RoleBinding{}
+			ok          bool
+		)
+
+		err := cl.List(ctx, deployments)
+		if err != nil {
+			log.Error(err, "Failed to list csi deployments")
+			return []reconcile.Request{}
+		}
+
+		if roleBinding, ok = obj.(*rbacv1.RoleBinding); !ok {
+			log.Warnf("got invalid Object type at RoleBinding watcher, actual type: '%s'", reflect.TypeOf(obj))
+			return []reconcile.Request{}
+		}
+
+		if len(deployments.Items) != 1 {
+			log.Warnf("Invalid number of csi deployments at RoleBinding watcher, number: '%d', expected: '%d'",
+				len(deployments.Items), 1)
+			return []reconcile.Request{}
+		}
+
+		// Reconcile roles only for openshift platform and non default namespace
+		if deployments.Items[0].Spec.Platform != constant.PlatformOpenShift ||
+			deployments.Items[0].Namespace == constant.DefaultNamespace ||
+			deployments.Items[0].Namespace != roleBinding.Namespace ||
+			// Only reconcile on node and scheduler extender service accounts
+			(!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Driver.Node.ServiceAccount) &&
+				!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Scheduler.ServiceAccount)) {
+			return []reconcile.Request{}
+		}
+
+		return []reconcile.Request{
+			{
+				NamespacedName: types.NamespacedName{
+					Name:      deployments.Items[0].Name,
+					Namespace: deployments.Items[0].Namespace,
+				},
+			},
+		}
+	}))
 }
 
 func isNodeChanged(old runtime.Object, new runtime.Object) bool {

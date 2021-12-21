@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,6 +16,9 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/node"
 	"github.com/dell/csi-baremetal-operator/pkg/nodeoperations"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
+	"github.com/dell/csi-baremetal/pkg/events"
 )
 
 // CSIDeployment contains controllers of CSI resources
@@ -28,10 +32,20 @@ type CSIDeployment struct {
 }
 
 // NewCSIDeployment creates CSIDeployment
-func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log *logrus.Logger) CSIDeployment {
+func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client,
+	matcher rbac.Matcher, matchPolicies []rbacv1.PolicyRule,
+	eventRecorder events.EventRecorder, log *logrus.Logger,
+) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
 			&clientSet,
+			eventRecorder,
+			validator.NewValidator(rbac.NewValidator(
+				client,
+				log.WithField(constant.CSIName, "rbacNodeValidator"),
+				matcher),
+			),
+			matchPolicies,
 			log.WithField(constant.CSIName, "node"),
 		),
 		controller: Controller{
@@ -41,6 +55,13 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client, log 
 		extender: SchedulerExtender{
 			Clientset: &clientSet,
 			Entry:     log.WithField(constant.CSIName, "extender"),
+			Validator: validator.NewValidator(rbac.NewValidator(
+				client,
+				log.WithField(constant.CSIName, "rbacExtenderValidator"),
+				rbac.NewMatcher()),
+			),
+			EventRecorder: eventRecorder,
+			MatchPolicies: matchPolicies,
 		},
 		patcher: patcher.SchedulerPatcher{
 			Clientset: &clientSet,
