@@ -286,6 +286,11 @@ func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher, matchP
 			return []reconcile.Request{}
 		}
 
+		if len(deployments.Items) == 0 {
+			// if there are no deployments - then just skip reconcile
+			return []reconcile.Request{}
+		}
+
 		if role, ok = obj.(*rbacv1.Role); !ok {
 			log.Warnf("got invalid Object type at Role watcher, actual type: '%s'", reflect.TypeOf(obj))
 			return []reconcile.Request{}
@@ -328,6 +333,11 @@ func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher,
 		err := cl.List(ctx, deployments)
 		if err != nil {
 			log.Error(err, "Failed to list csi deployments")
+			return []reconcile.Request{}
+		}
+
+		if len(deployments.Items) == 0 {
+			// if there are no deployments - then just skip reconcile
 			return []reconcile.Request{}
 		}
 
