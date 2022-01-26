@@ -51,7 +51,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      platform.DaemonsetName(nodeName),
 			Namespace: csi.GetNamespace(),
-			Labels:    common.ConstructLabelAppMap(),
+			Labels:    common.ConstructLabelMap(nodeName),
 		},
 		Spec: v1.DaemonSetSpec{
 			// selector
