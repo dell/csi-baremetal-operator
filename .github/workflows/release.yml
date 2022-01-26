@@ -66,7 +66,7 @@ jobs:
       - name: Tag release with annotation
         run: |
           TAG_NAME=${{ github.event.inputs.release_tag }}
-          git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME: issue ${{ github.event.inputs.issue_number }}"
+          git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME"
           git push origin $TAG_NAME
 
       - name: Create csi-baremetal-operator asset
