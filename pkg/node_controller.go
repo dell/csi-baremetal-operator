@@ -52,7 +52,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeControllerName,
 			Namespace: csi.GetNamespace(),
-			Labels:    common.ConstructSelectorMap(nodeControllerName),
+			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DeploymentSpec{
 			Replicas: pointer.Int32Ptr(ncReplicasCount),

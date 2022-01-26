@@ -6,8 +6,6 @@ metadata:
   labels:
     app: csi-baremetal
     app.kubernetes.io/name: csi-baremetal
-    component: csi-baremetal-operator
-    app.kubernetes.io/component: csi-baremetal-operator
 spec:
   selector:
     matchLabels:
