@@ -67,7 +67,7 @@ vet:
 
 # Build the docker image
 docker-build:
-	docker build --build-arg ${BASE_IMAGE} . -t ${IMG}
+	docker build --build-arg BASE_IMAGE=${BASE_IMAGE} . -t ${IMG}
 
 # Build the docker image
 kind-load:
