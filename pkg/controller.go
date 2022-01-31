@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"log"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -128,8 +129,12 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 	)
 	provisionerEnvVars := []corev1.EnvVar{}
 	provisionerEnvVars = append(provisionerEnvVars, corev1.EnvVar{Name: "ADDRESS", Value: "/csi/csi.sock"})
-	for _, item := range *provisioner.EnvVars {
-		provisionerEnvVars = append(provisionerEnvVars, corev1.EnvVar{Name: item.Name, Value: item.Value})
+	log.Printf("%+v", provisioner.EnvVars)
+	log.Printf("%+v", *provisioner.EnvVars)
+	if provisioner.EnvVars != nil {
+		for _, item := range *provisioner.EnvVars {
+			provisionerEnvVars = append(provisionerEnvVars, corev1.EnvVar{Name: item.Name, Value: item.Value})
+		}
 	}
 	return []corev1.Container{
 		{
