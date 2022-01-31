@@ -7,6 +7,7 @@ CSI_DEPLOYMENT_CHART_PATH=charts/csi-baremetal-deployment
 CSI_CHART_CRDS_PATH=charts/csi-baremetal-operator/crds
 CONTROLLER_GEN_BIN=./bin/controller-gen
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+BASE_IMAGE ?= golang:1.16
 
 ### version
 MAJOR            := 1
