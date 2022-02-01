@@ -19,7 +19,7 @@ package components
 // Sidecar represent CSI sidecar containers
 type Sidecar struct {
 	Image *Image `json:"image,omitempty"`
-	// +kubebuilder:validation:Type=object
+	// +kubebuilder:validation:Type=array
 	// +nullable
 	// +optional
 	EnvVars *[]EnvVars `json:"envVars,omitempty"`

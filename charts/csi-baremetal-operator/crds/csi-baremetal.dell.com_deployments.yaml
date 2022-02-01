@@ -113,7 +113,7 @@ spec:
                                 - value
                                 type: object
                               nullable: true
-                              type: object
+                              type: array
                             image:
                               description: Image contain information for components docker images
                               properties:
@@ -305,7 +305,7 @@ spec:
                                 - value
                                 type: object
                               nullable: true
-                              type: object
+                              type: array
                             image:
                               description: Image contain information for components docker images
                               properties:
