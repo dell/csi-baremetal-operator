@@ -108,10 +108,7 @@ spec:
                                     pattern: '[A-Z0-9_]'
                                     type: string
                                   value:
-                                    anyOf:
-                                    - type: integer
-                                    - type: string
-                                    x-kubernetes-int-or-string: true
+                                    type: string
                                 required:
                                 - name
                                 - value
@@ -304,10 +301,7 @@ spec:
                                     pattern: '[A-Z0-9_]'
                                     type: string
                                   value:
-                                    anyOf:
-                                    - type: integer
-                                    - type: string
-                                    x-kubernetes-int-or-string: true
+                                    type: string
                                 required:
                                 - name
                                 - value

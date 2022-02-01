@@ -97,7 +97,7 @@ driver:
       - name: RETRY_INTERVAL_MAX
         value: 5m
       - name: WORKER_THREADS
-        value: 100
+        value: '100'
     resources:
       limits:
         cpu:

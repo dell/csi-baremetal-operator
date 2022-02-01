@@ -16,11 +16,11 @@ limitations under the License.
 
 package components
 
-import "k8s.io/apimachinery/pkg/util/intstr"
-
 // EnvVars contains additional env variables passed to sidecar containers trough helm
 type EnvVars struct {
 	// +kubebuilder:validation:Pattern:="[A-Z0-9_]"
-	Name  string             `json:"name"`
-	Value intstr.IntOrString `json:"value"`
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
+	Value string `json:"value"`
 }
