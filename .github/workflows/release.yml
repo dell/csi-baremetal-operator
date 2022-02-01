@@ -12,6 +12,9 @@ on:
       release_tag:
         description: 'Release tag'
         required: true
+      branch:
+        description: 'Release branch name'
+        required: true
 
 jobs:
   create_release:
@@ -20,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       - name: Configure Git
         run: |
@@ -61,7 +66,7 @@ jobs:
       - name: Tag release with annotation
         run: |
           TAG_NAME=${{ github.event.inputs.release_tag }}
-          git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME: issue ${{ github.event.inputs.issue_number }}"
+          git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME"
           git push origin $TAG_NAME
 
       - name: Create csi-baremetal-operator asset
@@ -102,6 +107,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ github.event.inputs.release_tag }}
+          target_commitish: ${{ github.event.inputs.branch }}
           name: Release ${{ github.event.inputs.release_tag }}
           body: ${{ steps.changelog.outputs.changelog }}
           draft: false
