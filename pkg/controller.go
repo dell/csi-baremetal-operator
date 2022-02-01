@@ -198,17 +198,10 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			Name:            constant.ProvisionerName,
 			Image:           common.ConstructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
-			Args: []string{
-				"--csi-address=$(ADDRESS)",
-				"--v=5",
-				"--feature-gates=Topology=true",
-				"--extra-create-metadata",
-				"--timeout=$(TIMEOUT_DURATION)",
-				"--retry-interval-start=$(RETRY_INTERVAL_START)",
-				"--retry-interval-max=$(RETRY_INTERVAL_MAX)",
-				"--worker-threads=$(WORKER_THREADS)",
+			Args:            *provisioner.Args,
+			Env: []corev1.EnvVar{
+				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
-			Env: common.ConstructEnvVars(provisioner.EnvVars),
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
 				constant.CrashMountVolume,

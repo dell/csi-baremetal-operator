@@ -168,13 +168,3 @@ func ConstructResourceRequirements(resources *components.ResourceRequirements) c
 	}
 	return corev1.ResourceRequirements{}
 }
-
-// ConstructEnvVars creates the environment variables for sidecar containers
-func ConstructEnvVars(vars *[]components.EnvVars) (envVars []corev1.EnvVar) {
-	if vars != nil {
-		for _, item := range *vars {
-			envVars = append(envVars, corev1.EnvVar{Name: item.Name, Value: item.Value})
-		}
-	}
-	return
-}

@@ -100,20 +100,10 @@ spec:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
                           properties:
-                            envVars:
+                            args:
+                              description: Arguments to the entrypoint.
                               items:
-                                description: EnvVars contains additional env variables passed to sidecar containers trough helm
-                                properties:
-                                  name:
-                                    pattern: '[A-Z0-9_]'
-                                    type: string
-                                  value:
-                                    type: string
-                                required:
-                                - name
-                                - value
-                                type: object
-                              nullable: true
+                                type: string
                               type: array
                             image:
                               description: Image contain information for components docker images
@@ -293,20 +283,10 @@ spec:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
                           properties:
-                            envVars:
+                            args:
+                              description: Arguments to the entrypoint.
                               items:
-                                description: EnvVars contains additional env variables passed to sidecar containers trough helm
-                                properties:
-                                  name:
-                                    pattern: '[A-Z0-9_]'
-                                    type: string
-                                  value:
-                                    type: string
-                                required:
-                                - name
-                                - value
-                                type: object
-                              nullable: true
+                                type: string
                               type: array
                             image:
                               description: Image contain information for components docker images

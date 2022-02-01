@@ -86,18 +86,16 @@ driver:
     image:
       # if you want to use topology feature (multiple PVCs per pod) you should use v1.2.2
       tag: v3.0.0
-    envVars:
-      # the following parameters is required https://github.com/kubernetes-csi/external-provisioner#command-line-options
-      - name: ADDRESS
-        value: "/csi/csi.sock"
-      - name: TIMEOUT_DURATION
-        value: 30s
-      - name: RETRY_INTERVAL_START
-        value: 1s
-      - name: RETRY_INTERVAL_MAX
-        value: 5m
-      - name: WORKER_THREADS
-        value: '100'
+    args:
+      # https://github.com/kubernetes-csi/external-provisioner#command-line-options
+      - "--csi-address=$(ADDRESS)"
+      - "--v=5"
+      - "--feature-gates=Topology=true"
+      - "--extra-create-metadata"
+      - "--timeout=30s"
+      - "--retry-interval-start=1s"
+      - "--retry-interval-max=5m"
+      - "--worker-threads=100"
     resources:
       limits:
         cpu:
