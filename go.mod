@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/dell/csi-baremetal v0.2.2-beta
+	github.com/go-logr/logr v0.3.0
 	github.com/masterminds/semver v1.5.0
 	github.com/openshift/api v0.0.0-20200618202633-7192180f496a
 	github.com/sirupsen/logrus v1.6.0
