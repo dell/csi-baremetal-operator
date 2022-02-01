@@ -129,7 +129,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 	)
 	provisionerEnvVars := []corev1.EnvVar{}
 	provisionerEnvVars = append(provisionerEnvVars, corev1.EnvVar{Name: "ADDRESS", Value: "/csi/csi.sock"})
-	log.Printf("%+v %+v", provisioner, csi)
+	log.Printf("%+v", provisioner)
 	log.Printf("%+v", *provisioner.EnvVars)
 	if provisioner.EnvVars != nil {
 		for _, item := range *provisioner.EnvVars {
