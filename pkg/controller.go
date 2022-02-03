@@ -31,6 +31,11 @@ const (
 	healthPort = 9999
 
 	provisionerTimeout = "30s"
+
+	// reservation parameters
+	fastTimeoutEnv = "RESERVATION_FAST_TIMEOUT"
+	slowTimeoutEnv = "RESERVATION_SLOW_TIMEOUT"
+	attemptsNumEnv = "RESERVATION_ATTEMPTS_NUM"
 )
 
 // Controller controls csi-baremetal-controller
@@ -151,6 +156,9 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
 				}},
+				{Name: fastTimeoutEnv, Value: c.FastTimeout},
+				{Name: slowTimeoutEnv, Value: c.SlowTimeout},
+				{Name: attemptsNumEnv, Value: strconv.Itoa(int(c.MaxAttempts))},
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.LogsVolume, MountPath: "/var/log"},

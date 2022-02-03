@@ -23,5 +23,8 @@ type Controller struct {
 	Sidecars map[string]*Sidecar `json:"sidecars,omitempty"`
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources,omitempty"`
+	Resources   *ResourceRequirements `json:"resources,omitempty"`
+	FastTimeout string                `json:"fastTimeout,omitempty"`
+	SlowTimeout string                `json:"slowTimeout,omitempty"`
+	MaxAttempts uint                  `json:"maxAttempts,omitempty"`
 }

@@ -24,6 +24,9 @@ spec:
       image:
         name: csi-baremetal-controller
         tag: {{ .Values.driver.controller.image.tag | default .Values.image.tag }}
+      fastTimeout: {{ .Values.driver.controller.reservation.fastTimeout }}
+      slowTimeout: {{ .Values.driver.controller.reservation.slowTimeout }}
+      maxAttempts: {{ .Values.driver.controller.reservation.maxAttempts }}
       resources:
         {{- include "setResources" .Values.driver.controller | indent 8 }}
       log:
