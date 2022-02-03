@@ -57,7 +57,7 @@ func (c *Controller) Update(ctx context.Context, csi *csibaremetalv1.Deployment,
 func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 	var (
 		selectors = common.ConstructSelectorMap(controllerName)
-		labels    = common.ConstructLabelMap(controllerName)
+		labels    = common.ConstructLabelMap(controllerName, controller)
 	)
 
 	selectors["role"] = controllerRoleKey

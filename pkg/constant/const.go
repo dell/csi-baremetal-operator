@@ -57,6 +57,10 @@ const (
 	AppLabelKey = "app.kubernetes.io/name"
 	// AppLabelShortKey matches CSI CRs with csi-baremetal app
 	AppLabelShortKey = "app"
+	// ComponentLabelKey matches CSI CRs with csi-baremetal component
+	ComponentLabelKey = "app.kubernetes.io/component"
+	// ComponentLabelShortKey matches CSI CRs with csi-baremetal component
+	ComponentLabelShortKey = "component"
 	// AppLabelValue matches CSI CRs with csi-baremetal app
 	AppLabelValue = CSIName
 

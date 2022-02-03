@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	nodeName                  = constant.CSIName + "-node"
+	node                      = "node"
+	nodeName                  = constant.CSIName + "-" + node
 	loopbackManagerImageName  = "loopbackmgr"
 	loopbackManagerConfigName = "loopback-config"
 
@@ -63,7 +64,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: common.ConstructLabelMap(nodeName),
+					Labels: common.ConstructLabelMap(nodeName, node),
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",

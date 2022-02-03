@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	patcherName          = constant.CSIName + "-se-patcher"
+	patcher              = "se-patcher"
+	patcherName          = constant.CSIName + "-" + patcher
 	patcherContainerName = "schedulerpatcher"
 
 	kubernetesManifestsVolume = "kubernetes-manifests"
@@ -181,7 +182,7 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: common.ConstructLabelMap(patcherName),
+					Labels: common.ConstructLabelMap(patcherName, patcher),
 				},
 				Spec: corev1.PodSpec{
 					Containers:                    p.createPatcherContainers(),
