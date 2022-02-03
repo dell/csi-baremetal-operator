@@ -29,7 +29,8 @@ import (
 
 const (
 	extenderContainerName = "scheduler-extender"
-	extenderName          = constant.CSIName + "-se"
+	extender              = "se"
+	extenderName          = constant.CSIName + "-" + extender
 
 	extenderPort = 8889
 )
@@ -118,7 +119,7 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 				// labels and annotations
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: common.ConstructLabelMap(extenderName),
+					Labels: common.ConstructLabelMap(extenderName, extender),
 					// integration with monitoring
 					Annotations: map[string]string{
 						"prometheus.io/scrape": "true",

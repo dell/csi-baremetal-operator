@@ -17,8 +17,8 @@ spec:
         name: {{ .Release.Name }}
         app: csi-baremetal
         app.kubernetes.io/name: csi-baremetal
-        component: csi-baremetal-operator
-        app.kubernetes.io/component: csi-baremetal-operator
+        component: operator
+        app.kubernetes.io/component: operator
         # release label used by fluentbit to make "release" folder
         release: {{ .Release.Name }}
     spec:

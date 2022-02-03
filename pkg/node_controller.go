@@ -64,7 +64,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					// labels
-					Labels: common.ConstructLabelMap(nodeControllerName),
+					Labels: common.ConstructLabelMap(nodeControllerName, nodeController),
 				},
 				Spec: corev1.PodSpec{
 					Containers:                    createNodeControllerContainers(csi),
