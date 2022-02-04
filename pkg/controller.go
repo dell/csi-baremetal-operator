@@ -158,7 +158,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				}},
 				{Name: fastDelayEnv, Value: c.FastDelay},
 				{Name: slowDelayEnv, Value: c.SlowDelay},
-				{Name: maxFastAttemptsEnv, Value: strconv.Itoa(int(c.MaxFastAttempts))},
+				{Name: maxFastAttemptsEnv, Value: strconv.FormatUint(uint64(c.MaxFastAttempts), 10)},
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.LogsVolume, MountPath: "/var/log"},
