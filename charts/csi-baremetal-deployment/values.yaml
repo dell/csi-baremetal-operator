@@ -36,6 +36,13 @@ driver:
   controller:
     image:
       tag:
+    # Parameters for RateLimiter in reservation reconciliation-controller
+    # See k8s.io/client-go/util/workqueue.NewItemFastSlowRateLimiter for details
+    # Used due to expected attempts during processing ACRs with LVG Volumes
+    reservation:
+      fastDelay: 1500ms
+      slowDelay: 12s
+      maxFastAttempts: 30
     resources:
       limits:
         cpu:
