@@ -40,9 +40,9 @@ driver:
     # See k8s.io/client-go/util/workqueue.NewItemFastSlowRateLimiter for details
     # Used due to expected attempts during processing ACRs with LVG Volumes
     reservation:
-      fastTimeout: 1500ms
-      slowTimeout: 12s
-      maxAttempts: 30
+      fastDelay: 1500ms
+      slowDelay: 12s
+      maxFastAttempts: 30
     resources:
       limits:
         cpu:

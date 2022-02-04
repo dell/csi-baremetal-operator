@@ -41,7 +41,8 @@ spec:
                   controller:
                     description: Controller encapsulates logic for CSI controller component
                     properties:
-                      fastTimeout:
+                      fastDelay:
+                        description: FastDelay is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
                         type: string
                       image:
                         description: Image contain information for components docker images
@@ -67,7 +68,8 @@ spec:
                         - format
                         - level
                         type: object
-                      maxAttempts:
+                      maxFastAttempts:
+                        description: MaxFastAttempts is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
                         type: integer
                       resources:
                         description: ResourceRequirements contain information for mem/cpu requirements
@@ -136,7 +138,8 @@ spec:
                               type: object
                           type: object
                         type: object
-                      slowTimeout:
+                      slowDelay:
+                        description: SlowDelay is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
                         type: string
                     type: object
                   logReceiver:
