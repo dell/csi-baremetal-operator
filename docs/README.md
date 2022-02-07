@@ -27,7 +27,7 @@ Installation process
     ```shell script
     helm repo add csi https://dell.github.io/csi-baremetal-operator
     helm repo update
-    helm search repo csi --devel -l
+    helm search repo csi -l
     ```
 * Setup environment variables
     ```shell script
@@ -41,25 +41,26 @@ Installation process
     ```
 * Install CSI Operator
     ```shell script
-    helm install csi-baremetal-operator csi/csi-baremetal-operator --devel --set global.registry=$REGISTRY \
+    helm install csi-baremetal-operator csi/csi-baremetal-operator --set global.registry=$REGISTRY \
   --set global.registrySecret=$DOCKER_REGISTRY_SECRET
     ```
 * Install CSI
     * Vanilla Kubernetes
         ```
-        helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true \
-      --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
+        helm install csi-baremetal csi/csi-baremetal-deployment --set scheduler.patcher.enable=true \
+      --set driver.drivemgr.type=halmgr --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
         ```
     * RKE2
         ```
-        helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true \
-      --set platform=rke --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
+        helm install csi-baremetal csi/csi-baremetal-deployment --set scheduler.patcher.enable=true \
+      --set driver.drivemgr.type=halmgr --set platform=rke --set global.registry=$REGISTRY \
+      --set global.registrySecret=$DOCKER_REGISTRY_SECRET
         ```
     * OpenShift
         ```
-        helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true \
-      --set platform=openshift --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET \
-      -n $NAMESPACE
+        helm install csi-baremetal csi/csi-baremetal-deployment --set scheduler.patcher.enable=true \
+      --set driver.drivemgr.type=halmgr --set platform=openshift --set global.registry=$REGISTRY \
+      --set global.registrySecret=$DOCKER_REGISTRY_SECRET
         ```
       **Note:** In case of CSI deployment at Openshift platform in non default namespace, CSI ServiceAccounts \
       csi-node-sa and csi-baremetal-extender-sa will require Privileged SCC. In case there are no such permissions \
@@ -107,14 +108,14 @@ Installation process
       node and scheduler extender daemonsets.
     * [Kind](https://kind.sigs.k8s.io/) (for testing purposes only)
       ```
-      helm install csi-baremetal csi/csi-baremetal-deployment --devel --set scheduler.patcher.enable=true \
+      helm install csi-baremetal csi/csi-baremetal-deployment --set scheduler.patcher.enable=true \
       --set driver.drivemgr.type=loopbackmgr --set driver.drivemgr.deployConfig=true --set global.registry=$REGISTRY \
       --set global.registrySecret=$DOCKER_REGISTRY_SECRET
       ```
     * Not supported platform or system with third party Kubernetes scheduler extender - refer [documentation](MANUAL_SCHEDULER_CONFIGURATION.md) for manual patching of Kubernetes scheduler configuration
       ```
-      helm install csi-baremetal csi/csi-baremetal-deployment --devel --set global.registry=$REGISTRY \
-      --set global.registrySecret=$DOCKER_REGISTRY_SECRET
+      helm install csi-baremetal csi/csi-baremetal-deployment --set driver.drivemgr.type=halmgr \
+      --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
       ```
 Usage
 ------
