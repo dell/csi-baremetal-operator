@@ -208,10 +208,10 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				},
 				[]string{
 					// map helm params to csi-provisioner args
-					fmt.Sprintf("--timeout=%v", provisioner.Args["timeout"].StrVal),
-					fmt.Sprintf("--retry-interval-start=%v", provisioner.Args["retryIntervalStart"].StrVal),
-					fmt.Sprintf("--retry-interval-max=%v", provisioner.Args["retryIntervalMax"].StrVal),
-					fmt.Sprintf("--worker-threads=%v", provisioner.Args["workerThreads"].IntVal),
+					fmt.Sprintf("--timeout=%v", provisioner.Args.Timeout),
+					fmt.Sprintf("--retry-interval-start=%v", provisioner.Args.RetryIntervalStart),
+					fmt.Sprintf("--retry-interval-max=%v", provisioner.Args.RetryIntervalMax),
+					fmt.Sprintf("--worker-threads=%v", provisioner.Args.WorkerThreads),
 				}...,
 			),
 			Env: []corev1.EnvVar{

@@ -16,16 +16,21 @@ limitations under the License.
 
 package components
 
-import "k8s.io/apimachinery/pkg/util/intstr"
-
 // Sidecar represent CSI sidecar containers
 type Sidecar struct {
 	Image *Image `json:"image,omitempty"`
 	// Arguments to the entrypoint.
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:validation:Required
-	Args map[string]intstr.IntOrString `json:"args,omitempty" yaml:"args"`
+	Args *args `json:"args,omitempty"`
 	// +nullable
 	// +optional
 	Resources *ResourceRequirements `json:"resources,omitempty"`
+}
+
+type args struct {
+	Timeout            string `json:"timeout,omitempty"`
+	RetryIntervalStart string `json:"retryIntervalStart,omitempty"`
+	RetryIntervalMax   string `json:"retryIntervalMax,omitempty"`
+	WorkerThreads      int    `json:"workerThreads,omitempty"`
 }

@@ -101,12 +101,16 @@ spec:
                           description: Sidecar represent CSI sidecar containers
                           properties:
                             args:
-                              additionalProperties:
-                                anyOf:
-                                - type: integer
-                                - type: string
-                                x-kubernetes-int-or-string: true
                               description: Arguments to the entrypoint.
+                              properties:
+                                retryIntervalMax:
+                                  type: string
+                                retryIntervalStart:
+                                  type: string
+                                timeout:
+                                  type: string
+                                workerThreads:
+                                  type: integer
                               type: object
                             image:
                               description: Image contain information for components docker images
@@ -287,12 +291,16 @@ spec:
                           description: Sidecar represent CSI sidecar containers
                           properties:
                             args:
-                              additionalProperties:
-                                anyOf:
-                                - type: integer
-                                - type: string
-                                x-kubernetes-int-or-string: true
                               description: Arguments to the entrypoint.
+                              properties:
+                                retryIntervalMax:
+                                  type: string
+                                retryIntervalStart:
+                                  type: string
+                                timeout:
+                                  type: string
+                                workerThreads:
+                                  type: integer
                               type: object
                             image:
                               description: Image contain information for components docker images
