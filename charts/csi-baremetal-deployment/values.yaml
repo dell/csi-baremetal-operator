@@ -88,14 +88,10 @@ driver:
       tag: v3.0.0
     args:
       # https://github.com/kubernetes-csi/external-provisioner#command-line-options
-      - "--csi-address=$(ADDRESS)"
-      - "--v=5"
-      - "--feature-gates=Topology=true"
-      - "--extra-create-metadata"
-      - "--timeout=30s"
-      - "--retry-interval-start=1s"
-      - "--retry-interval-max=5m"
-      - "--worker-threads=100"
+      timeout: 30s
+      retryIntervalStart: 1s
+      retryIntervalMax: 5m
+      workerThreads: 100
     resources:
       limits:
         cpu:

@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -198,7 +199,21 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			Name:            constant.ProvisionerName,
 			Image:           common.ConstructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
-			Args:            *provisioner.Args,
+			Args: append(
+				[]string{
+					// default csi-provisioner args
+					"--csi-address=$(ADDRESS)",
+					"--extra-create-metadata",
+					"--feature-gates=Topology=true",
+				},
+				[]string{
+					// map helm params to csi-provisioner args
+					fmt.Sprintf("--timeout=%v", provisioner.Args["timeout"]),
+					fmt.Sprintf("--retry-interval-start=%v", provisioner.Args["retryIntervalStart"]),
+					fmt.Sprintf("--retry-interval-max=%v", provisioner.Args["retryIntervalMax"]),
+					fmt.Sprintf("--worker-threads=%v", provisioner.Args["workerThreads"]),
+				}...,
+			),
 			Env: []corev1.EnvVar{
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
