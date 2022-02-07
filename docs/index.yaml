@@ -9,7 +9,7 @@ entries:
     name: csi-baremetal-deployment
     urls:
     - https://github.com/dell/csi-baremetal-operator/releases/download/v1.0.0/csi-baremetal-deployment-1.0.0-78.8504a5c.tgz
-    version: 1.0.0-78.8504a5c
+    version: 1.0.0
   - apiVersion: v2
     appVersion: 0.5.0
     created: "2021-10-26T15:29:59.16730276Z"
@@ -73,7 +73,7 @@ entries:
     name: csi-baremetal-operator
     urls:
     - https://github.com/dell/csi-baremetal-operator/releases/download/v1.0.0/csi-baremetal-operator-1.0.0-78.8504a5c.tgz
-    version: 1.0.0-78.8504a5c
+    version: 1.0.0
   - apiVersion: v2
     appVersion: 0.5.0
     created: "2021-10-26T15:29:59.167957169Z"
