@@ -1,5 +1,5 @@
 /*
-Copyright © 2021 Dell Inc. or its subsidiaries. All Rights Reserved.
+Copyright © 2022 Dell Inc. or its subsidiaries. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,14 +16,8 @@ limitations under the License.
 
 package components
 
-// Sidecar represent CSI sidecar containers
-type Sidecar struct {
-	Image *Image `json:"image,omitempty"`
-	// +kubebuilder:validation:Type=object
-	// +nullable
-	// +optional
-	EnvVars *[]EnvVars `json:"envVars,omitempty"`
-	// +nullable
-	// +optional
-	Resources *ResourceRequirements `json:"resources,omitempty"`
+// EnvVars contains additional env variables passed to sidecar containers trough helm
+type EnvVars struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }

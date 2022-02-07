@@ -100,6 +100,20 @@ spec:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
                           properties:
+                            envVars:
+                              items:
+                                description: EnvVars contains additional env variables passed to sidecar containers trough helm
+                                properties:
+                                  name:
+                                    type: string
+                                  value:
+                                    type: string
+                                required:
+                                - name
+                                - value
+                                type: object
+                              nullable: true
+                              type: object
                             image:
                               description: Image contain information for components docker images
                               properties:
@@ -278,6 +292,20 @@ spec:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
                           properties:
+                            envVars:
+                              items:
+                                description: EnvVars contains additional env variables passed to sidecar containers trough helm
+                                properties:
+                                  name:
+                                    type: string
+                                  value:
+                                    type: string
+                                required:
+                                - name
+                                - value
+                                type: object
+                              nullable: true
+                              type: object
                             image:
                               description: Image contain information for components docker images
                               properties:

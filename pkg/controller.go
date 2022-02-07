@@ -126,6 +126,11 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		liveness    = csi.Spec.Driver.Controller.Sidecars[constant.LivenessProbeName]
 		c           = csi.Spec.Driver.Controller
 	)
+	provisionerEnvVars := []corev1.EnvVar{}
+	provisionerEnvVars = append(provisionerEnvVars, corev1.EnvVar{Name: "ADDRESS", Value: "/csi/csi.sock"})
+	for _, item := range *provisioner.EnvVars {
+		provisionerEnvVars = append(provisionerEnvVars, corev1.EnvVar{Name: item.Name, Value: item.Value})
+	}
 	return []corev1.Container{
 		{
 			Name:            controller,
@@ -203,11 +208,12 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				"--v=5",
 				"--feature-gates=Topology=true",
 				"--extra-create-metadata",
-				"--timeout=" + provisionerTimeout,
+				"--timeout=$(TIMEOUT_DURATION)",
+				// "--retry-interval-start=$(RETRY_INTERVAL_START)",
+				// "--retry-interval-max=$(RETRY_INTERVAL_MAX)",
+				// "--worker-threads=$(WORKER_THREADS)",
 			},
-			Env: []corev1.EnvVar{
-				{Name: "ADDRESS", Value: "/csi/csi.sock"},
-			},
+			Env: provisionerEnvVars,
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
 				constant.CrashMountVolume,
