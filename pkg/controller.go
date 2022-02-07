@@ -31,8 +31,6 @@ const (
 	// ports
 	healthPort = 9999
 
-	provisionerTimeout = "30s"
-
 	// reservation parameters
 	fastDelayEnv       = "RESERVATION_FAST_DELAY"
 	slowDelayEnv       = "RESERVATION_SLOW_DELAY"
