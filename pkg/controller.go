@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -29,8 +30,6 @@ const (
 
 	// ports
 	healthPort = 9999
-
-	provisionerTimeout = "30s"
 
 	// reservation parameters
 	fastDelayEnv       = "RESERVATION_FAST_DELAY"
@@ -198,13 +197,21 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			Name:            constant.ProvisionerName,
 			Image:           common.ConstructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
-			Args: []string{
-				"--csi-address=$(ADDRESS)",
-				"--v=5",
-				"--feature-gates=Topology=true",
-				"--extra-create-metadata",
-				"--timeout=" + provisionerTimeout,
-			},
+			Args: append(
+				[]string{
+					// default csi-provisioner args
+					"--csi-address=$(ADDRESS)",
+					"--extra-create-metadata",
+					"--feature-gates=Topology=true",
+				},
+				[]string{
+					// map helm params to csi-provisioner args
+					fmt.Sprintf("--timeout=%v", provisioner.Args.Timeout),
+					fmt.Sprintf("--retry-interval-start=%v", provisioner.Args.RetryIntervalStart),
+					fmt.Sprintf("--retry-interval-max=%v", provisioner.Args.RetryIntervalMax),
+					fmt.Sprintf("--worker-threads=%v", provisioner.Args.WorkerThreads),
+				}...,
+			),
 			Env: []corev1.EnvVar{
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},

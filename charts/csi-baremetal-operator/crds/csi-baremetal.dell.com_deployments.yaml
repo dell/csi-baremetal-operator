@@ -100,6 +100,18 @@ spec:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
                           properties:
+                            args:
+                              description: Arguments to the entrypoint.
+                              properties:
+                                retryIntervalMax:
+                                  type: string
+                                retryIntervalStart:
+                                  type: string
+                                timeout:
+                                  type: string
+                                workerThreads:
+                                  type: integer
+                              type: object
                             image:
                               description: Image contain information for components docker images
                               properties:
@@ -278,6 +290,18 @@ spec:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
                           properties:
+                            args:
+                              description: Arguments to the entrypoint.
+                              properties:
+                                retryIntervalMax:
+                                  type: string
+                                retryIntervalStart:
+                                  type: string
+                                timeout:
+                                  type: string
+                                workerThreads:
+                                  type: integer
+                              type: object
                             image:
                               description: Image contain information for components docker images
                               properties:

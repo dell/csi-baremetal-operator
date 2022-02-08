@@ -19,7 +19,18 @@ package components
 // Sidecar represent CSI sidecar containers
 type Sidecar struct {
 	Image *Image `json:"image,omitempty"`
+	// Arguments to the entrypoint.
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:validation:Required
+	Args *args `json:"args,omitempty"`
 	// +nullable
 	// +optional
 	Resources *ResourceRequirements `json:"resources,omitempty"`
+}
+
+type args struct {
+	Timeout            string `json:"timeout,omitempty"`
+	RetryIntervalStart string `json:"retryIntervalStart,omitempty"`
+	RetryIntervalMax   string `json:"retryIntervalMax,omitempty"`
+	WorkerThreads      int    `json:"workerThreads,omitempty"`
 }
