@@ -215,10 +215,11 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled 
 	}
 }
 
-func createExtenderSecurityContext(ctx *components.SecurityContext) (context *corev1.SecurityContext) {
+func createExtenderSecurityContext(ctx *components.SecurityContext) *corev1.SecurityContext {
 	if !ctx.Enable {
-		return
+		return nil
 	}
-	context.Privileged = ctx.Privileged
-	return
+	return &corev1.SecurityContext{
+		Privileged: ctx.Privileged,
+	}
 }
