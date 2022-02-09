@@ -58,7 +58,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
 	if csi.Spec.PodSecurityPolicy.Enable {
 		if err := n.PodSecurityPolicyVerifier.Verify(ctx,
-			csi, csi.Spec.Driver.Node.ServiceAccount,
+			csi, csi.Spec.Scheduler.ServiceAccount,
 		); err != nil {
 			var verifierError securityverifier.Error
 			err = n.PodSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
