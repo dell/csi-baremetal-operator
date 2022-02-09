@@ -16,7 +16,7 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
 )
 
 const (

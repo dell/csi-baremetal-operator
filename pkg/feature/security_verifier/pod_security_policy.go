@@ -52,6 +52,7 @@ func (v *podSecurityPolicyVerifier) HandleError(_ context.Context, csi *csibarem
 	return err
 }
 
+// NewPodSecurityPolicyVerifier is a constructor for pod security policies verifier
 func NewPodSecurityPolicyVerifier(
 	validator validator.Validator,
 	eventRecorder events.EventRecorder,

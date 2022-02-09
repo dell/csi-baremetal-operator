@@ -50,6 +50,7 @@ func (v *securityContextConstraintsVerifier) HandleError(_ context.Context, csi 
 	return err
 }
 
+// NewSecurityContextConstraintsVerifier is a constructor for security context constraints verifier
 func NewSecurityContextConstraintsVerifier(
 	validator validator.Validator,
 	eventRecorder events.EventRecorder,
