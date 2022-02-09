@@ -18,9 +18,9 @@ spec:
     key: {{.Values.nodeSelector.key}}
     value: {{.Values.nodeSelector.value}}
   {{- end }}
-  {{- if .Values.podSecurityPolicy.enable }}
+  {{- if .Values.feature.podSecurityPolicy }}
   podSecurityPolicy:
-    enable: {{ .Values.podSecurityPolicy.enable }}
+    enable: {{ .Values.feature.podSecurityPolicy }}
     resourceName: {{ .Values.podSecurityPolicy.resourceName }}
   {{- end }}
   sequentialLVGReservation: {{ .Values.feature.sequentialLVGReservation }}
@@ -39,7 +39,7 @@ spec:
         level: {{ .Values.driver.log.level }}
       {{- if .Values.driver.controller.securityContext.enable }}
       securityContext:
-        enable: {{- if .Values.driver.controller.securityContext.enable }}
+        enable: {{ .Values.driver.controller.securityContext.enable }}
         runAsNonRoot: {{ .Values.driver.controller.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.driver.controller.securityContext.runAsUser }}
       {{- end }}
@@ -77,6 +77,11 @@ spec:
         tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}
       resources:
         {{- include "setResources" .Values.driver.node | indent 8 }}
+      {{- if .Values.driver.node.securityContext.enable }}
+      securityContext:
+        enable: {{ .Values.driver.node.securityContext.enable }}
+        privileged: {{ .Values.driver.node.securityContext.privileged }}
+      {{- end }}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
@@ -101,11 +106,6 @@ spec:
       image:
         name: {{ .Values.driver.logReceiver.fluentbitAgent.image.name | default "fluent-bit" }}
         tag: {{ .Values.driver.logReceiver.fluentbitAgent.image.tag | default "shippable" }}
-    {{- if .Values.driver.node.securityContext.enable }}
-    securityContext:
-      enable: {{- if .Values.driver.node.securityContext.enable }}
-      privileged: {{ .Values.driver.node.securityContext.privileged }}
-    {{- end }}
   scheduler:
     enable: {{ .Values.scheduler.enable }}
     serviceAccount: {{ .Values.scheduler.serviceAccount | default "csi-baremetal-extender-sa"}}
@@ -135,7 +135,7 @@ spec:
     storageProvisioner: {{ .Values.scheduler.provisioner }}
     {{- if .Values.scheduler.securityContext.enable }}
     securityContext:
-      enable: {{- if .Values.scheduler.securityContext.enable }}
+      enable: {{ .Values.scheduler.securityContext.enable }}
       privileged: {{ .Values.scheduler.securityContext.privileged }}
     {{- end }}
   nodeController:
@@ -150,7 +150,7 @@ spec:
       level: {{ .Values.nodeController.log.level }}
     {{- if .Values.nodeController.securityContext.enable }}
     securityContext:
-      enable: {{- if .Values.nodeController.securityContext.enable }}
+      enable: {{ .Values.nodeController.securityContext.enable }}
       runAsNonRoot: {{ .Values.nodeController.securityContext.runAsNonRoot }}
       runAsUser: {{ .Values.nodeController.securityContext.runAsUser }}
     {{- end }}

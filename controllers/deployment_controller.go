@@ -307,7 +307,8 @@ func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher, matchP
 			deployments.Items[0].Namespace != constant.DefaultNamespace &&
 			deployments.Items[0].Namespace == role.Namespace
 		// Reconcile roles if pod security policy is enabled
-		podSecurityPolicyCondition := deployments.Items[0].Spec.PodSecurityPolicy.Enable
+		podSecurityPolicyCondition := deployments.Items[0].Spec.PodSecurityPolicy != nil &&
+			deployments.Items[0].Spec.PodSecurityPolicy.Enable
 		// Reconcile roles only for openshift platform and non default namespace
 		if (!securityContextConstraintsCondition && !podSecurityPolicyCondition) ||
 			!m.MatchPolicyRules(role.Rules, matchPolicies) {
@@ -361,7 +362,8 @@ func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher,
 			deployments.Items[0].Namespace != constant.DefaultNamespace &&
 			deployments.Items[0].Namespace == roleBinding.Namespace
 		// Reconcile rolebindings if pod security policy is enabled
-		podSecurityPolicyCondition := deployments.Items[0].Spec.PodSecurityPolicy.Enable
+		podSecurityPolicyCondition := deployments.Items[0].Spec.PodSecurityPolicy != nil &&
+			deployments.Items[0].Spec.PodSecurityPolicy.Enable
 		if (!securityContextConstraintsCondition && !podSecurityPolicyCondition) ||
 			// Only reconcile on node and scheduler extender service accounts
 			(!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Driver.Node.ServiceAccount) &&
