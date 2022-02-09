@@ -67,8 +67,8 @@ Installation process
       csi-node-sa and csi-baremetal-extender-sa will require Privileged SCC. In case there are no such permissions \
       CSI Operator will not deploy node and scheduler extender daemonsets. You can see the following events in such case:
       ```
-      65m         Warning   NodeRoleValidationFailed       deployment/csi-baremetal                              ServiceAccount csi-node-sa has insufficient securityContextConstraints, should have privileged
-      65m         Warning   ExtenderRoleValidationFailed   deployment/csi-baremetal                              ServiceAccount csi-baremetal-extender-sa has insufficient securityContextConstraints, should have privileged
+      65m         Warning   SecurityContextConstraintsVerificationFailed       deployment/csi-baremetal                              ServiceAccount csi-node-sa has insufficient securityContextConstraints, should have privileged
+      65m         Warning   SecurityContextConstraintsVerificationFailed       deployment/csi-baremetal                              ServiceAccount csi-baremetal-extender-sa has insufficient securityContextConstraints, should have privileged
       ```
       To make them deployable - create the following role and rolebinding in deployed namespace:
       ```yaml

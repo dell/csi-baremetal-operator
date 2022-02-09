@@ -25,7 +25,7 @@ feature:
   useexternalannotation: false
   nodeIDAnnotation:
   # enable podSecurityPolicy for hardening pods service accounts' security policies
-  podSecurityPolicy: true
+  podSecurityPolicy: false
 
 # to deploy on specific nodes kubeclt get nodes -l <key>=<value>
 # more then one key-value pair is not supported
@@ -53,7 +53,7 @@ driver:
         cpu:
         memory:
     securityContext:
-      enable: true
+      enable: false
       runAsNonRoot: true
       runAsUser: 1000
 
@@ -242,7 +242,7 @@ nodeController:
     path: /metrics
     port: 8787
   securityContext:
-    enable: true
+    enable: false
     runAsNonRoot: true
     runAsUser: 1000
 
