@@ -19,7 +19,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	"github.com/dell/csi-baremetal-operator/pkg/feature"
-	"github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 )
 
