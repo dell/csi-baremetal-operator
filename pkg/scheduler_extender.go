@@ -216,7 +216,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled 
 }
 
 func createExtenderSecurityContext(ctx *components.SecurityContext) *corev1.SecurityContext {
-	if !ctx.Enable {
+	if ctx == nil || !ctx.Enable {
 		return nil
 	}
 	return &corev1.SecurityContext{

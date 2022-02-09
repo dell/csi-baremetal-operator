@@ -327,7 +327,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 }
 
 func createNodeSecurityContext(ctx *components.SecurityContext) *corev1.SecurityContext {
-	if !ctx.Enable {
+	if ctx == nil || !ctx.Enable {
 		return nil
 	}
 	return &corev1.SecurityContext{
