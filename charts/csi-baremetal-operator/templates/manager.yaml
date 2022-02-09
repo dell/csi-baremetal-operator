@@ -27,6 +27,11 @@ spec:
       imagePullSecrets:
         - name: {{ .Values.global.registrySecret }}
       {{- end }}
+      {{- if .Values.securityContext.enable }}
+      securityContext:
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+      {{- end }}
       containers:
       - command:
         - /manager
@@ -46,11 +51,6 @@ spec:
         - mountPath: /crash-dump
           name: crash-dump 
       terminationGracePeriodSeconds: 10
-      {{- if .Values.global.securityContext.enable }}
-        securityContext:
-          runAsNonRoot: {{ .Values.global.securityContext.runAsNonRoot }}
-          runAsUser: {{ .Values.global.securityContext.runAsUser }}
-      {{- end }}
       volumes:  
       - name: crash-dump
         emptyDir: {}
