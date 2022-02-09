@@ -45,7 +45,7 @@ func (p *SchedulerPatcher) updateVanilla(ctx context.Context, csi *csibaremetalv
 
 func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
-	if csi.Spec.PodSecurityPolicy.Enable {
+	if csi.Spec.PodSecurityPolicy != nil && csi.Spec.PodSecurityPolicy.Enable {
 		if err := p.PodSecurityPolicyVerifier.Verify(ctx,
 			csi, csi.Spec.Scheduler.ServiceAccount,
 		); err != nil {

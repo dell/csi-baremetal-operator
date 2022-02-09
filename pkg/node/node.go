@@ -68,7 +68,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 	}
 
 	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
-	if csi.Spec.PodSecurityPolicy.Enable {
+	if csi.Spec.PodSecurityPolicy != nil && csi.Spec.PodSecurityPolicy.Enable {
 		if err := n.podSecurityPolicyVerifier.Verify(ctx,
 			csi, csi.Spec.Driver.Node.ServiceAccount,
 		); err != nil {
