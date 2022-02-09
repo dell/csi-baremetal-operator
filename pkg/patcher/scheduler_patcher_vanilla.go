@@ -292,7 +292,7 @@ func (p patcherConfiguration) createPatcherVolumes() []corev1.Volume {
 }
 
 func (p patcherConfiguration) createSecurityContext() *corev1.SecurityContext {
-	if !p.securityContext.Enable {
+	if p.securityContext == nil || !p.securityContext.Enable {
 		return nil
 	}
 	return &corev1.SecurityContext{
