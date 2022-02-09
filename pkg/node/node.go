@@ -56,7 +56,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 	// in case of Openshift deployment and non default namespace - validate node service accounts security bindings
 	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
 		if err := n.securityContextConstraintsVerifier.Verify(ctx,
-			csi, csi.Spec.Scheduler.ServiceAccount,
+			csi, csi.Spec.Driver.Node.ServiceAccount,
 		); err != nil {
 			var verifierError securityverifier.Error
 			err = n.securityContextConstraintsVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)

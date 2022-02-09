@@ -47,7 +47,7 @@ func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csib
 	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
 	if csi.Spec.PodSecurityPolicy.Enable {
 		if err := p.PodSecurityPolicyVerifier.Verify(ctx,
-			csi, csi.Spec.Driver.Node.ServiceAccount,
+			csi, csi.Spec.Scheduler.ServiceAccount,
 		); err != nil {
 			var verifierError securityverifier.Error
 			err = p.PodSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
