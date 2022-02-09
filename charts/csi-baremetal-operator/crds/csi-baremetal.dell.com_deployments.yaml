@@ -96,6 +96,21 @@ spec:
                             nullable: true
                             type: object
                         type: object
+                      securityContext:
+                        description: SecurityContext represents security context
+                        properties:
+                          enable:
+                            type: boolean
+                          privileged:
+                            type: boolean
+                          runAsNonRoot:
+                            type: boolean
+                          runAsUser:
+                            format: int64
+                            type: integer
+                        required:
+                        - enable
+                        type: object
                       sidecars:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
@@ -272,6 +287,21 @@ spec:
                             nullable: true
                             type: object
                         type: object
+                      securityContext:
+                        description: SecurityContext represents security context
+                        properties:
+                          enable:
+                            type: boolean
+                          privileged:
+                            type: boolean
+                          runAsNonRoot:
+                            type: boolean
+                          runAsUser:
+                            format: int64
+                            type: integer
+                        required:
+                        - enable
+                        type: object
                       serviceAccount:
                         type: string
                       sidecars:
@@ -377,6 +407,21 @@ spec:
                         nullable: true
                         type: object
                     type: object
+                  securityContext:
+                    description: SecurityContext represents security context
+                    properties:
+                      enable:
+                        type: boolean
+                      privileged:
+                        type: boolean
+                      runAsNonRoot:
+                        type: boolean
+                      runAsUser:
+                        format: int64
+                        type: integer
+                    required:
+                    - enable
+                    type: object
                 required:
                 - enable
                 type: object
@@ -397,6 +442,18 @@ spec:
                 - openshift
                 - vanilla
                 type: string
+              podSecurityPolicy:
+                description: PodSecurityPolicy encapsulates information about pod
+                  security policy
+                properties:
+                  enable:
+                    type: boolean
+                  resourceName:
+                    type: string
+                required:
+                - enable
+                - resourceName
+                type: object
               pullPolicy:
                 default: IfNotPresent
                 enum:
@@ -526,6 +583,21 @@ spec:
                         description: ResourceList is a set of (resource name, quantity) pairs.
                         nullable: true
                         type: object
+                    type: object
+                  securityContext:
+                    description: SecurityContext represents security context
+                    properties:
+                      enable:
+                        type: boolean
+                      privileged:
+                        type: boolean
+                      runAsNonRoot:
+                        type: boolean
+                      runAsUser:
+                        format: int64
+                        type: integer
+                    required:
+                    - enable
                     type: object
                   serviceAccount:
                     type: string
