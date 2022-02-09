@@ -265,7 +265,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 }
 
 func createControllerSecurityContext(ctx *components.SecurityContext) *corev1.PodSecurityContext {
-	if !ctx.Enable {
+	if ctx == nil || !ctx.Enable {
 		return nil
 	}
 	return &corev1.PodSecurityContext{
