@@ -9,6 +9,11 @@ metadata:
     app.kubernetes.io/version: 1.0.0
 spec:
   platform: {{ .Values.platform }}
+  {{- if .Values.feature.podSecurityPolicy }}
+  podSecurityPolicy:
+    enable: {{ .Values.feature.podSecurityPolicy }}
+    resourceName: {{ .Values.podSecurityPolicy.resourceName }}
+  {{- end }}
   globalRegistry: {{ .Values.global.registry }}
   registrySecret: {{ .Values.global.registrySecret }}
   pullPolicy: {{ .Values.image.pullPolicy }}
@@ -17,11 +22,6 @@ spec:
   nodeSelector:
     key: {{.Values.nodeSelector.key}}
     value: {{.Values.nodeSelector.value}}
-  {{- end }}
-  {{- if .Values.feature.podSecurityPolicy }}
-  podSecurityPolicy:
-    enable: {{ .Values.feature.podSecurityPolicy }}
-    resourceName: {{ .Values.podSecurityPolicy.resourceName }}
   {{- end }}
   sequentialLVGReservation: {{ .Values.feature.sequentialLVGReservation }}
   driver:

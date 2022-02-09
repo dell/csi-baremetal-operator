@@ -366,8 +366,8 @@ func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher,
 			deployments.Items[0].Spec.PodSecurityPolicy.Enable
 		if (!securityContextConstraintsCondition && !podSecurityPolicyCondition) ||
 			// Only reconcile on node and scheduler extender service accounts
-			(!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Driver.Node.ServiceAccount) &&
-				!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Scheduler.ServiceAccount)) {
+			(!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Spec.Driver.Node.ServiceAccount, deployments.Items[0].Namespace) &&
+				!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Spec.Scheduler.ServiceAccount, deployments.Items[0].Namespace)) {
 			return []reconcile.Request{}
 		}
 
