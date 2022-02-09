@@ -73,7 +73,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					ServiceAccountName:            nodeControllerServiceAccountName,
 					DeprecatedServiceAccount:      nodeControllerServiceAccountName,
-					SecurityContext:               &corev1.PodSecurityContext{},
+					SecurityContext:               createNodeControllerSecurityContext(csi.Spec.NodeController.SecurityContext),
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 					Volumes:                       []corev1.Volume{constant.CrashVolume},
@@ -115,16 +115,16 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
 			Resources:                common.ConstructResourceRequirements(resources),
-			SecurityContext:          createNodeControllerSecurityContext(csi.Spec.NodeController.SecurityContext),
 		},
 	}
 }
 
-func createNodeControllerSecurityContext(ctx *components.SecurityContext) (context *corev1.SecurityContext) {
+func createNodeControllerSecurityContext(ctx *components.SecurityContext) *corev1.PodSecurityContext {
 	if !ctx.Enable {
-		return
+		return nil
 	}
-	context.RunAsNonRoot = ctx.RunAsNonRoot
-	context.RunAsUser = ctx.RunAsUser
-	return
+	return &corev1.PodSecurityContext{
+		RunAsNonRoot: ctx.RunAsNonRoot,
+		RunAsUser:    ctx.RunAsUser,
+	}
 }

@@ -326,10 +326,11 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 	}
 }
 
-func createNodeSecurityContext(ctx *components.SecurityContext) (context *corev1.SecurityContext) {
+func createNodeSecurityContext(ctx *components.SecurityContext) *corev1.SecurityContext {
 	if !ctx.Enable {
-		return
+		return nil
 	}
-	context.Privileged = ctx.Privileged
-	return
+	return &corev1.SecurityContext{
+		Privileged: ctx.Privileged,
+	}
 }

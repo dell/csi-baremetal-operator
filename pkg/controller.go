@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
@@ -110,7 +111,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 					NodeSelector:                  common.MakeNodeSelectorMap(csi.Spec.NodeSelector),
 					ServiceAccountName:            controllerServiceAccountName,
 					DeprecatedServiceAccount:      controllerServiceAccountName,
-					SecurityContext:               &corev1.PodSecurityContext{},
+					SecurityContext:               createControllerSecurityContext(csi.Spec.Driver.Controller.SecurityContext),
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 				},
@@ -253,5 +254,15 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			Resources:                common.ConstructResourceRequirements(liveness.Resources),
 		},
+	}
+}
+
+func createControllerSecurityContext(ctx *components.SecurityContext) *corev1.PodSecurityContext {
+	if !ctx.Enable {
+		return nil
+	}
+	return &corev1.PodSecurityContext{
+		RunAsNonRoot: ctx.RunAsNonRoot,
+		RunAsUser:    ctx.RunAsUser,
 	}
 }

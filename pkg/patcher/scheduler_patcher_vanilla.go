@@ -291,10 +291,11 @@ func (p patcherConfiguration) createPatcherVolumes() []corev1.Volume {
 	}
 }
 
-func (p patcherConfiguration) createSecurityContext() (context *corev1.SecurityContext) {
+func (p patcherConfiguration) createSecurityContext() *corev1.SecurityContext {
 	if !p.securityContext.Enable {
-		return
+		return nil
 	}
-	context.Privileged = p.securityContext.Privileged
-	return
+	return &corev1.SecurityContext{
+		Privileged: p.securityContext.Privileged,
+	}
 }
