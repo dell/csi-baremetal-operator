@@ -23,5 +23,6 @@ type NodeController struct {
 	Log    *Log   `json:"log,omitempty"`
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources,omitempty"`
+	Resources       *ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext *SecurityContext      `json:"securityContext,omitempty"`
 }

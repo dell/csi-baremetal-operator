@@ -16,3 +16,8 @@ resources:
   requests:
     cpu: 100m
     memory: 20Mi
+
+securityContext:
+  enable: true
+  runAsNonRoot: true
+  runAsUser: 1000

@@ -16,15 +16,10 @@ limitations under the License.
 
 package components
 
-// Node encapsulates information for CSI node components
-type Node struct {
-	ServiceAccount string              `json:"serviceAccount"`
-	DriveMgr       *DriveMgr           `json:"driveMgr,omitempty"`
-	Image          *Image              `json:"image,omitempty"`
-	Log            *Log                `json:"log,omitempty"`
-	Sidecars       map[string]*Sidecar `json:"sidecars,omitempty"`
-	// +nullable
-	// +optional
-	Resources       *ResourceRequirements `json:"resources,omitempty"`
-	SecurityContext *SecurityContext      `json:"securityContext,omitempty"`
+// SecurityContext represents security context
+type SecurityContext struct {
+	Enable       bool   `json:"enable"`
+	Privileged   *bool  `json:"privileged,omitempty"`
+	RunAsNonRoot *bool  `json:"runAsNonRoot,omitempty"`
+	RunAsUser    *int64 `json:"runAsUser,omitempty"`
 }

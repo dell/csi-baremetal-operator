@@ -22,6 +22,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 )
@@ -57,13 +58,18 @@ var (
 		},
 	}
 
-	matchPolicies = []rbacv1.PolicyRule{
+	matchSecurityContextConstraintsPolicies = []rbacv1.PolicyRule{
 		{
 			Verbs:         []string{"use"},
 			APIGroups:     []string{"security.openshift.io"},
 			Resources:     []string{"securitycontextconstraints"},
 			ResourceNames: []string{"privileged"},
 		},
+	}
+	matchPodSecurityPolicyTemplate = rbacv1.PolicyRule{
+		Verbs:     []string{"use"},
+		APIGroups: []string{"policy"},
+		Resources: []string{"podsecuritypolicies"},
 	}
 
 	testRoleBinding = rbacv1.RoleBinding{
@@ -89,7 +95,7 @@ var (
 			Name:      "test-role",
 			Namespace: "test-csi",
 		},
-		Rules: matchPolicies,
+		Rules: matchSecurityContextConstraintsPolicies,
 	}
 
 	testDeployment = v1.Deployment{
@@ -119,15 +125,24 @@ func TestNewNode(t *testing.T) {
 		cl := builderWithScheme.WithObjects().Build()
 
 		node := NewNode(clientSet,
-			new(mocks.EventRecorder),
-			validator.NewValidator(rbac.NewValidator(cl, logEntry, rbac.NewMatcher())),
-			matchPolicies,
+			securityverifier.NewPodSecurityPolicyVerifier(
+				validator.NewValidator(rbac.NewValidator(cl, logEntry, rbac.NewMatcher())),
+				new(mocks.EventRecorder),
+				matchPodSecurityPolicyTemplate,
+				logEntry,
+			),
+			securityverifier.NewSecurityContextConstraintsVerifier(
+				validator.NewValidator(rbac.NewValidator(cl, logEntry, rbac.NewMatcher())),
+				new(mocks.EventRecorder),
+				matchSecurityContextConstraintsPolicies,
+				logEntry,
+			),
 			logEntry,
 		)
 		assert.NotNil(t, node.clientset)
 		assert.NotNil(t, node.log)
-		assert.NotNil(t, node.validator)
-		assert.NotNil(t, node.eventRecorder)
+		assert.NotNil(t, node.podSecurityPolicyVerifier)
+		assert.NotNil(t, node.securityContextConstraintsVerifier)
 	})
 }
 
@@ -343,9 +358,19 @@ func prepareValidatorClient(scheme *runtime.Scheme, objects ...client.Object) cl
 }
 
 func prepareNode(eventRecorder events.EventRecorder, clientSet kubernetes.Interface, client client.Client) *Node {
-	return NewNode(clientSet, eventRecorder,
-		validator.NewValidator(rbac.NewValidator(client, logEntry, rbac.NewMatcher())),
-		matchPolicies,
+	return NewNode(clientSet,
+		securityverifier.NewPodSecurityPolicyVerifier(
+			validator.NewValidator(rbac.NewValidator(client, logEntry, rbac.NewMatcher())),
+			eventRecorder,
+			matchPodSecurityPolicyTemplate,
+			logEntry,
+		),
+		securityverifier.NewSecurityContextConstraintsVerifier(
+			validator.NewValidator(rbac.NewValidator(client, logEntry, rbac.NewMatcher())),
+			eventRecorder,
+			matchSecurityContextConstraintsPolicies,
+			logEntry,
+		),
 		logEntry,
 	)
 }

@@ -18,6 +18,11 @@ spec:
     key: {{.Values.nodeSelector.key}}
     value: {{.Values.nodeSelector.value}}
   {{- end }}
+  {{- if .Values.podSecurityPolicy.enable }}
+  podSecurityPolicy:
+    enable: {{ .Values.podSecurityPolicy.enable }}
+    resourceName: {{ .Values.podSecurityPolicy.resourceName }}
+  {{- end }}
   sequentialLVGReservation: {{ .Values.feature.sequentialLVGReservation }}
   driver:
     controller:
@@ -32,6 +37,12 @@ spec:
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
+      {{- if .Values.driver.controller.securityContext.enable }}
+      securityContext:
+        enable: {{- if .Values.driver.controller.securityContext.enable }}
+        runAsNonRoot: {{ .Values.driver.controller.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.driver.controller.securityContext.runAsUser }}
+      {{- end }}
       sidecars:
         livenessprobe:
           image:
@@ -90,6 +101,11 @@ spec:
       image:
         name: {{ .Values.driver.logReceiver.fluentbitAgent.image.name | default "fluent-bit" }}
         tag: {{ .Values.driver.logReceiver.fluentbitAgent.image.tag | default "shippable" }}
+    {{- if .Values.driver.node.securityContext.enable }}
+    securityContext:
+      enable: {{- if .Values.driver.node.securityContext.enable }}
+      privileged: {{ .Values.driver.node.securityContext.privileged }}
+    {{- end }}
   scheduler:
     enable: {{ .Values.scheduler.enable }}
     serviceAccount: {{ .Values.scheduler.serviceAccount | default "csi-baremetal-extender-sa"}}
@@ -117,6 +133,11 @@ spec:
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
       readinessTimeout: {{ .Values.scheduler.patcher.readinessTimeout }}
     storageProvisioner: {{ .Values.scheduler.provisioner }}
+    {{- if .Values.scheduler.securityContext.enable }}
+    securityContext:
+      enable: {{- if .Values.scheduler.securityContext.enable }}
+      privileged: {{ .Values.scheduler.securityContext.privileged }}
+    {{- end }}
   nodeController:
     enable: {{ .Values.nodeController.enable }}
     image:
@@ -127,3 +148,9 @@ spec:
     log:
       format: {{ .Values.nodeController.log.format }}
       level: {{ .Values.nodeController.log.level }}
+    {{- if .Values.nodeController.securityContext.enable }}
+    securityContext:
+      enable: {{- if .Values.nodeController.securityContext.enable }}
+      runAsNonRoot: {{ .Values.nodeController.securityContext.runAsNonRoot }}
+      runAsUser: {{ .Values.nodeController.securityContext.runAsUser }}
+    {{- end }}

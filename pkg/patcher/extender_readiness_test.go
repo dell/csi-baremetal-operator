@@ -6,22 +6,43 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dell/csi-baremetal/pkg/events"
+	"github.com/dell/csi-baremetal/pkg/events/mocks"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
+	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	"github.com/dell/csi-baremetal-operator/pkg/validator"
+	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 )
 
 const (
 	schedulerConf = "scheduler-conf"
 	ns            = "default"
+)
+
+var (
+	logEntry = logrus.WithField("Test name", "SchedulerPatcherTest")
+
+	matchPodSecurityPolicyTemplate = rbacv1.PolicyRule{
+		Verbs:     []string{"use"},
+		APIGroups: []string{"policy"},
+		Resources: []string{"podsecuritypolicies"},
+	}
 )
 
 func Test_NewExtenderReadinessOptions(t *testing.T) {
@@ -256,7 +277,10 @@ func Test_updateReadinessStatuses(t *testing.T) {
 		pod3.Spec.NodeName = pod3.Spec.NodeName + "1"
 		pod3.Status.ContainerStatuses[0].State.Running.StartedAt.Time = curTime
 
-		sp := prepareSchedulerPatcher(pod1, pod2, pod3)
+		eventRecorder := new(mocks.EventRecorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(pod1, pod2, pod3), prepareValidatorClient(scheme, pod1, pod2, pod3))
 
 		statuses, err := sp.updateReadinessStatuses(ctx, "component=kube-scheduler", metav1.Time{Time: curTime})
 		assert.Nil(t, err)
@@ -312,12 +336,31 @@ func Test_IsPatchingEnabled(t *testing.T) {
 	assert.False(t, result)
 }
 
-func prepareSchedulerPatcher(objects ...runtime.Object) *SchedulerPatcher {
-	clientset := fake.NewSimpleClientset(objects...)
+func prepareNodeClientSet(objects ...runtime.Object) kubernetes.Interface {
+	return fake.NewSimpleClientset(objects...)
+}
+
+func prepareValidatorClient(scheme *runtime.Scheme, objects ...client.Object) client.Client {
+	builder := fakeClient.ClientBuilder{}
+	builderWithScheme := builder.WithScheme(scheme)
+	return builderWithScheme.WithObjects(objects...).Build()
+}
+
+func prepareSchedulerPatcher(eventRecorder events.EventRecorder, clientSet kubernetes.Interface, client client.Client) *SchedulerPatcher {
 	sp := &SchedulerPatcher{
-		clientset,
-		logrus.WithField("Test name", "SchedulerPatcherTest"),
+		clientSet,
+		logEntry,
 		nil,
+		securityverifier.NewPodSecurityPolicyVerifier(
+			validator.NewValidator(rbac.NewValidator(
+				client,
+				logEntry,
+				rbac.NewMatcher()),
+			),
+			eventRecorder,
+			matchPodSecurityPolicyTemplate,
+			logEntry,
+		),
 	}
 
 	return sp

@@ -4,20 +4,21 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/feature"
 )
 
 // SchedulerPatcher performs pacthing procedure depends on platform
 type SchedulerPatcher struct {
-	Clientset kubernetes.Interface
-	Log       *logrus.Entry
-	Client    client.Client
+	Clientset                 kubernetes.Interface
+	Log                       *logrus.Entry
+	Client                    client.Client
+	PodSecurityPolicyVerifier feature.SecurityVerifier
 }
 
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla

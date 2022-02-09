@@ -2,6 +2,7 @@ package patcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -15,6 +16,7 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
 )
 
 const (
@@ -42,6 +44,20 @@ func (p *SchedulerPatcher) updateVanilla(ctx context.Context, csi *csibaremetalv
 }
 
 func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
+	if csi.Spec.PodSecurityPolicy.Enable {
+		if err := p.PodSecurityPolicyVerifier.Verify(ctx,
+			csi, csi.Spec.Driver.Node.ServiceAccount,
+		); err != nil {
+			var verifierError securityverifier.Error
+			err = p.PodSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
+			if errors.As(err, &verifierError) {
+				return nil
+			}
+			return err
+		}
+	}
+
 	cfg, err := newPatcherConfiguration(csi)
 	if err != nil {
 		return err
@@ -190,6 +206,8 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
+					ServiceAccountName:            p.serviceAccount,
+					DeprecatedServiceAccount:      p.serviceAccount,
 					SecurityContext:               &corev1.PodSecurityContext{},
 					ImagePullSecrets:              common.MakeImagePullSecrets(p.registrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
@@ -245,6 +263,7 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			Resources:                common.ConstructResourceRequirements(p.resources),
+			SecurityContext:          p.createSecurityContext(),
 		},
 	}
 }
@@ -270,4 +289,12 @@ func (p patcherConfiguration) createPatcherVolumes() []corev1.Volume {
 		}},
 		constant.CrashVolume,
 	}
+}
+
+func (p patcherConfiguration) createSecurityContext() (context *corev1.SecurityContext) {
+	if !p.securityContext.Enable {
+		return
+	}
+	context.Privileged = p.securityContext.Privileged
+	return
 }
