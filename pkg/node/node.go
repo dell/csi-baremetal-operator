@@ -59,7 +59,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 			csi, csi.Spec.Driver.Node.ServiceAccount,
 		); err != nil {
 			var verifierError securityverifier.Error
-			err = n.securityContextConstraintsVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
+			err = n.securityContextConstraintsVerifier.HandleError(ctx, csi, csi.Spec.Driver.Node.ServiceAccount, err)
 			if errors.As(err, &verifierError) {
 				return nil
 			}
@@ -73,7 +73,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 			csi, csi.Spec.Driver.Node.ServiceAccount,
 		); err != nil {
 			var verifierError securityverifier.Error
-			err = n.podSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
+			err = n.podSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Driver.Node.ServiceAccount, err)
 			if errors.As(err, &verifierError) {
 				return nil
 			}
