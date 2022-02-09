@@ -302,10 +302,14 @@ func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher, matchP
 			return []reconcile.Request{}
 		}
 
+		// Reconcile roles for openshift platform and non default namespace
+		securityContextConstraintsCondition := deployments.Items[0].Spec.Platform == constant.PlatformOpenShift &&
+			deployments.Items[0].Namespace != constant.DefaultNamespace &&
+			deployments.Items[0].Namespace == role.Namespace
+		// Reconcile roles if pod security policy is enabled
+		podSecurityPolicyCondition := deployments.Items[0].Spec.PodSecurityPolicy.Enable
 		// Reconcile roles only for openshift platform and non default namespace
-		if deployments.Items[0].Spec.Platform != constant.PlatformOpenShift ||
-			deployments.Items[0].Namespace == constant.DefaultNamespace ||
-			deployments.Items[0].Namespace != role.Namespace ||
+		if (!securityContextConstraintsCondition && !podSecurityPolicyCondition) ||
 			!m.MatchPolicyRules(role.Rules, matchPolicies) {
 			return []reconcile.Request{}
 		}
@@ -352,10 +356,13 @@ func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher,
 			return []reconcile.Request{}
 		}
 
-		// Reconcile roles only for openshift platform and non default namespace
-		if deployments.Items[0].Spec.Platform != constant.PlatformOpenShift ||
-			deployments.Items[0].Namespace == constant.DefaultNamespace ||
-			deployments.Items[0].Namespace != roleBinding.Namespace ||
+		// Reconcile rolebindings for openshift platform and non default namespace
+		securityContextConstraintsCondition := deployments.Items[0].Spec.Platform == constant.PlatformOpenShift &&
+			deployments.Items[0].Namespace != constant.DefaultNamespace &&
+			deployments.Items[0].Namespace == roleBinding.Namespace
+		// Reconcile rolebindings if pod security policy is enabled
+		podSecurityPolicyCondition := deployments.Items[0].Spec.PodSecurityPolicy.Enable
+		if (!securityContextConstraintsCondition && !podSecurityPolicyCondition) ||
 			// Only reconcile on node and scheduler extender service accounts
 			(!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Driver.Node.ServiceAccount) &&
 				!m.MatchRoleBindingSubjects(roleBinding, deployments.Items[0].Namespace, deployments.Items[0].Spec.Scheduler.ServiceAccount)) {

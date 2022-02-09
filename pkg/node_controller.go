@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
@@ -115,6 +115,16 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
 			Resources:                common.ConstructResourceRequirements(resources),
+			SecurityContext:          createNodeControllerSecurityContext(csi.Spec.NodeController.SecurityContext),
 		},
 	}
+}
+
+func createNodeControllerSecurityContext(ctx *components.SecurityContext) (context *corev1.SecurityContext) {
+	if !ctx.Enable {
+		return
+	}
+	context.RunAsNonRoot = ctx.RunAsNonRoot
+	context.RunAsUser = ctx.RunAsUser
+	return
 }
