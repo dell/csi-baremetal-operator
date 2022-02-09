@@ -2,7 +2,7 @@ package securityverifier
 
 import "fmt"
 
-// Error is a custom rbac error type
+// Error is a custom security verifier error type
 type Error interface {
 	error
 }
@@ -15,7 +15,7 @@ func (r *verifierError) Error() string {
 	return fmt.Sprintf("failed to verify: %s", r.message)
 }
 
-// NewVerifierError is a constructor for rbac error
+// NewVerifierError is a constructor for security verifier error
 func NewVerifierError(message string) Error {
 	return &verifierError{
 		message: message,
