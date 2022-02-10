@@ -1,5 +1,6 @@
 [![PR validation](https://github.com/dell/csi-baremetal-operator/actions/workflows/pr.yml/badge.svg)](https://github.com/dell/csi-baremetal-operator/actions/workflows/pr.yml)
 [![codecov](https://codecov.io/gh/dell/csi-baremetal-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/dell/csi-baremetal-operator)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dell/csi-baremetal-operator)](https://goreportcard.com/report/github.com/dell/csi-baremetal-operator)
 
 Bare-metal CSI Operator
 =====================
