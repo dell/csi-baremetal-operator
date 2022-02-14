@@ -118,6 +118,95 @@ Installation process
       helm install csi-baremetal csi/csi-baremetal-deployment --set driver.drivemgr.type=halmgr \
       --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
       ```
+Feature Supporting
+------
+### CIS hardening
+For supporting CIS Hardening we need to add the following settings while installing CSI and CSI Baremetal Operator:
+* While installing CSI Baremetal Operator set SecurityContext:
+  ```
+  --set securityContext.enable=true --set securityContext.runAsNonRoot=true --set securityContext.runAsUser=1000
+  ```
+* While installing CSI:
+  * Set the following SecurityContexts at deployments.csi-baremetal.dell.com for Controller, NodeController components:
+    ```
+    --set driver.controller.securityContext.enable=true --set driver.controller.securityContext.runAsNonRoot=true --set driver.controller.securityContext.runAsUser=1000 \
+    --set driver.securityContext.securityContext.enable=true --set driver.securityContext.securityContext.runAsNonRoot=true --set driver.securityContext.securityContext.runAsUser=1000
+    ```
+  * Create (if not existed) privileged PodSecurityPolicy:
+    ```
+    apiVersion: policy/v1beta1
+    kind: PodSecurityPolicy
+    metadata:
+      name: privileged
+      annotations:
+        seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
+    spec:
+      privileged: true
+      allowPrivilegeEscalation: true
+      allowedCapabilities:
+      - '*'
+      volumes:
+      - '*'
+      hostNetwork: true
+      hostPorts:
+      - min: 0
+        max: 65535
+      hostIPC: true
+      hostPID: true
+      runAsUser:
+        rule: 'RunAsAny'
+      seLinux:
+        rule: 'RunAsAny'
+      supplementalGroups:
+        rule: 'RunAsAny'
+      fsGroup:
+        rule: 'RunAsAny'
+    ```
+  * Create Role for this policy usage:
+    ```
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: manager-role
+      namespace: atlantic
+    rules:
+    - apiGroups:
+      - policy
+        resourceNames:
+      - privileged
+        resources:
+      - podsecuritypolicies
+        verbs:
+      - use
+    ```
+  * Create RoleBinding for this policy usage:
+    ```
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: manager-rolebinding
+      namespace: atlantic
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: manager-role
+    subjects:
+    - kind: ServiceAccount
+      name: csi-node-sa
+      namespace: atlantic
+    - kind: ServiceAccount
+      name: csi-baremetal-extender-sa
+      namespace: atlantic
+    ```
+  * Set the following SecurityContexts at deployments.csi-baremetal.dell.com for Node, SchedulerExtender, SchedulerExtenderPatcher components:
+    ```
+    --set driver.node.securityContext.enable=true --set driver.node.securityContext.privileged=true \
+    --set driver.scheduler.securityContext.enable=true --set driver.scheduler.securityContext.privileged=true
+    ```
+  * Enable podSecurityPolicy at deployments.csi-baremetal.dell.com:
+    ```
+    --set feature.podSecurityPolicy=true --set podSecurityPolicy.resourceName=privileged
+    ```
 Usage
 ------
 
