@@ -100,10 +100,8 @@ spec:
                         description: SecurityContext represents security context
                         properties:
                           enable:
-                            default: false
                             type: boolean
                           privileged:
-                            default: false
                             type: boolean
                           runAsNonRoot:
                             default: true
@@ -319,10 +317,8 @@ spec:
                         description: SecurityContext represents security context
                         properties:
                           enable:
-                            default: false
                             type: boolean
                           privileged:
-                            default: false
                             type: boolean
                           runAsNonRoot:
                             default: true
@@ -455,10 +451,8 @@ spec:
                     description: SecurityContext represents security context
                     properties:
                       enable:
-                        default: false
                         type: boolean
                       privileged:
-                        default: false
                         type: boolean
                       runAsNonRoot:
                         default: true
@@ -636,10 +630,8 @@ spec:
                     description: SecurityContext represents security context
                     properties:
                       enable:
-                        default: false
                         type: boolean
                       privileged:
-                        default: false
                         type: boolean
                       runAsNonRoot:
                         default: true

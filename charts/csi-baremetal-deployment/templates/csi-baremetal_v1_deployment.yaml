@@ -77,10 +77,10 @@ spec:
         enable: {{ .Values.driver.node.securityContext.enable }}
         privileged: {{ .Values.driver.node.securityContext.privileged }}
       {{- end }}
-      {{- if .Values.node.podSecurityPolicy.enable }}
+      {{- if .Values.driver.node.podSecurityPolicy.enable }}
       podSecurityPolicy:
-        enable: {{ .Values.node.podSecurityPolicy.enable }}
-        resourceName: {{ .Values.node.podSecurityPolicy.resourceName }}
+        enable: {{ .Values.driver.node.podSecurityPolicy.enable }}
+        resourceName: {{ .Values.driver.node.podSecurityPolicy.resourceName }}
       {{- end }}
       log:
         format: {{ .Values.driver.log.format }}
