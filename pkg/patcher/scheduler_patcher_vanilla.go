@@ -17,6 +17,7 @@ import (
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 )
 
 const (
@@ -45,10 +46,8 @@ func (p *SchedulerPatcher) updateVanilla(ctx context.Context, csi *csibaremetalv
 
 func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
-	if csi.Spec.PodSecurityPolicy != nil && csi.Spec.PodSecurityPolicy.Enable {
-		if err := p.PodSecurityPolicyVerifier.Verify(ctx,
-			csi, csi.Spec.Scheduler.ServiceAccount,
-		); err != nil {
+	if csi.Spec.Scheduler.PodSecurityPolicy != nil && csi.Spec.Scheduler.PodSecurityPolicy.Enable {
+		if err := p.PodSecurityPolicyVerifier.Verify(ctx, csi, verifierModels.Scheduler); err != nil {
 			var verifierError securityverifier.Error
 			err = p.PodSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
 			if errors.As(err, &verifierError) {

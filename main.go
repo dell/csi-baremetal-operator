@@ -116,8 +116,9 @@ func main() {
 			matcher, matchSecurityContextConstraintsPolicies, matchPodSecurityPolicyTemplate,
 			eventRecorder, logger,
 		),
-		Matcher:       matcher,
-		MatchPolicies: matchSecurityContextConstraintsPolicies,
+		Matcher:                                 matcher,
+		MatchPodSecurityPolicyTemplate:          matchPodSecurityPolicyTemplate,
+		MatchSecurityContextConstraintsPolicies: matchSecurityContextConstraintsPolicies,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)

@@ -10,7 +10,7 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/feature"
+	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
 )
 
 // SchedulerPatcher performs pacthing procedure depends on platform
@@ -18,7 +18,7 @@ type SchedulerPatcher struct {
 	Clientset                 kubernetes.Interface
 	Log                       *logrus.Entry
 	Client                    client.Client
-	PodSecurityPolicyVerifier feature.SecurityVerifier
+	PodSecurityPolicyVerifier securityverifier.SecurityVerifier
 }
 
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla

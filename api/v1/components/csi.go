@@ -32,10 +32,9 @@ type DeploymentSpec struct {
 	// +kubebuilder:default:=IfNotPresent
 	PullPolicy string `json:"pullPolicy"`
 
-	NodeSelector             *NodeSelector      `json:"nodeSelector,omitempty"`
-	NodeIDAnnotation         bool               `json:"nodeIDAnnotation,omitempty"`
-	SequentialLVGReservation bool               `json:"sequentialLVGReservation,omitempty"`
-	PodSecurityPolicy        *PodSecurityPolicy `json:"podSecurityPolicy,omitempty"`
+	NodeSelector             *NodeSelector `json:"nodeSelector,omitempty"`
+	NodeIDAnnotation         bool          `json:"nodeIDAnnotation,omitempty"`
+	SequentialLVGReservation bool          `json:"sequentialLVGReservation,omitempty"`
 
 	// +kubebuilder:validation:Enum=rke;openshift;vanilla
 	// +kubebuilder:default:=vanilla

@@ -274,6 +274,18 @@ spec:
                         - format
                         - level
                         type: object
+                      podSecurityPolicy:
+                        description: PodSecurityPolicy encapsulates information about
+                          pod security policy
+                        properties:
+                          enable:
+                            type: boolean
+                          resourceName:
+                            type: string
+                        required:
+                        - enable
+                        - resourceName
+                        type: object
                       resources:
                         description: ResourceRequirements contain information for mem/cpu requirements
                         nullable: true
@@ -466,18 +478,6 @@ spec:
                 - openshift
                 - vanilla
                 type: string
-              podSecurityPolicy:
-                description: PodSecurityPolicy encapsulates information about pod
-                  security policy
-                properties:
-                  enable:
-                    type: boolean
-                  resourceName:
-                    type: string
-                required:
-                - enable
-                - resourceName
-                type: object
               pullPolicy:
                 default: IfNotPresent
                 enum:
@@ -582,6 +582,18 @@ spec:
                         type: boolean
                     required:
                     - enable
+                    type: object
+                  podSecurityPolicy:
+                    description: PodSecurityPolicy encapsulates information about
+                      pod security policy
+                    properties:
+                      enable:
+                        type: boolean
+                      resourceName:
+                        type: string
+                    required:
+                    - enable
+                    - resourceName
                     type: object
                   resources:
                     description: ResourceRequirements contain information for mem/cpu requirements

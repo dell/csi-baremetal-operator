@@ -3,6 +3,7 @@ package securityverifier
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/dell/csi-baremetal/pkg/eventing"
 	"github.com/dell/csi-baremetal/pkg/events"
@@ -10,11 +11,11 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	"github.com/dell/csi-baremetal-operator/pkg/feature"
+	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
+	validatorModels "github.com/dell/csi-baremetal-operator/pkg/validator/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
-	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
+	rbacModels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
 type securityContextConstraintsVerifier struct {
@@ -24,16 +25,26 @@ type securityContextConstraintsVerifier struct {
 	log           *logrus.Entry
 }
 
-func (v *securityContextConstraintsVerifier) Verify(ctx context.Context, csi *csibaremetalv1.Deployment, serviceAccount string) error {
-	return v.validator.ValidateRBAC(ctx, &models.RBACRules{
-		Data: &rbacmodels.ServiceAccountIsRoleBoundData{
+func (v *securityContextConstraintsVerifier) Verify(ctx context.Context, csi *csibaremetalv1.Deployment, component verifierModels.Component) error {
+	var serviceAccount string
+	switch component {
+	case verifierModels.Node:
+		serviceAccount = csi.Spec.Driver.Node.ServiceAccount
+	case verifierModels.Scheduler:
+		serviceAccount = csi.Spec.Scheduler.ServiceAccount
+	default:
+		return fmt.Errorf("unknown component was passed")
+	}
+
+	return v.validator.ValidateRBAC(ctx, &validatorModels.RBACRules{
+		Data: &rbacModels.ServiceAccountIsRoleBoundData{
 			ServiceAccountName: serviceAccount,
 			Namespace:          csi.Namespace,
 			Role: &rbacv1.Role{
 				Rules: v.matchPolicies,
 			},
 		},
-		Type: models.ServiceAccountIsRoleBound,
+		Type: validatorModels.ServiceAccountIsRoleBound,
 	})
 }
 
@@ -56,7 +67,7 @@ func NewSecurityContextConstraintsVerifier(
 	eventRecorder events.EventRecorder,
 	matchPolicies []rbacv1.PolicyRule,
 	log *logrus.Entry,
-) feature.SecurityVerifier {
+) SecurityVerifier {
 	return &securityContextConstraintsVerifier{
 		validator:     validator,
 		eventRecorder: eventRecorder,

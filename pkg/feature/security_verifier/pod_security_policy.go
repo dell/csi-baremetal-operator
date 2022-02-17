@@ -3,6 +3,7 @@ package securityverifier
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/dell/csi-baremetal/pkg/eventing"
 	"github.com/dell/csi-baremetal/pkg/events"
@@ -10,11 +11,11 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	"github.com/dell/csi-baremetal-operator/pkg/feature"
+	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
+	validatorModels "github.com/dell/csi-baremetal-operator/pkg/validator/models"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
-	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
+	rbacModels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
 type podSecurityPolicyVerifier struct {
@@ -24,18 +25,29 @@ type podSecurityPolicyVerifier struct {
 	log                 *logrus.Entry
 }
 
-func (v *podSecurityPolicyVerifier) Verify(ctx context.Context, csi *csibaremetalv1.Deployment, serviceAccount string) error {
+func (v *podSecurityPolicyVerifier) Verify(ctx context.Context, csi *csibaremetalv1.Deployment, component verifierModels.Component) error {
+	var serviceAccount string
 	var policyRule = v.matchPolicyTemplate
-	policyRule.ResourceNames = []string{csi.Spec.PodSecurityPolicy.ResourceName}
-	return v.validator.ValidateRBAC(ctx, &models.RBACRules{
-		Data: &rbacmodels.ServiceAccountIsRoleBoundData{
+	switch component {
+	case verifierModels.Node:
+		policyRule.ResourceNames = []string{csi.Spec.Driver.Node.PodSecurityPolicy.ResourceName}
+		serviceAccount = csi.Spec.Driver.Node.ServiceAccount
+	case verifierModels.Scheduler:
+		policyRule.ResourceNames = []string{csi.Spec.Scheduler.PodSecurityPolicy.ResourceName}
+		serviceAccount = csi.Spec.Scheduler.ServiceAccount
+	default:
+		return fmt.Errorf("unknown component was passed")
+	}
+
+	return v.validator.ValidateRBAC(ctx, &validatorModels.RBACRules{
+		Data: &rbacModels.ServiceAccountIsRoleBoundData{
 			ServiceAccountName: serviceAccount,
 			Namespace:          csi.Namespace,
 			Role: &rbacv1.Role{
 				Rules: []rbacv1.PolicyRule{policyRule},
 			},
 		},
-		Type: models.ServiceAccountIsRoleBound,
+		Type: validatorModels.ServiceAccountIsRoleBound,
 	})
 }
 
@@ -58,7 +70,7 @@ func NewPodSecurityPolicyVerifier(
 	eventRecorder events.EventRecorder,
 	matchPolicyTemplate rbacv1.PolicyRule,
 	log *logrus.Entry,
-) feature.SecurityVerifier {
+) SecurityVerifier {
 	return &podSecurityPolicyVerifier{
 		validator:           validator,
 		eventRecorder:       eventRecorder,

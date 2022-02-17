@@ -24,8 +24,6 @@ feature:
   usenodeannotation: true
   useexternalannotation: false
   nodeIDAnnotation:
-  # enable podSecurityPolicy for hardening pods service accounts' security policies
-  podSecurityPolicy: false
 
 # to deploy on specific nodes kubeclt get nodes -l <key>=<value>
 # more then one key-value pair is not supported
@@ -71,6 +69,9 @@ driver:
     securityContext:
       enable: true
       privileged: true
+    podSecurityPolicy:
+      enable: true
+      resourceName: privileged
 
   drivemgr:
     type: basemgr
@@ -174,6 +175,9 @@ scheduler:
   securityContext:
     enable: true
     privileged: true
+  podSecurityPolicy:
+    enable: true
+    resourceName: privileged
   image:
     tag:
   resources:
@@ -245,10 +249,6 @@ nodeController:
     enable: true
     runAsNonRoot: true
     runAsUser: 1000
-
-# PodSecurityPolicy parameters
-podSecurityPolicy:
-  resourceName: privileged
 
 # TODO Move parameter to Operator chart - https://github.com/dell/csi-baremetal/issues/422
 # platform field must be set to the one of supported from pkg/constant/platforms.go

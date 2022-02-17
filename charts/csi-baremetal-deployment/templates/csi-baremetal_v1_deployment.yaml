@@ -9,11 +9,6 @@ metadata:
     app.kubernetes.io/version: 1.0.0
 spec:
   platform: {{ .Values.platform }}
-  {{- if .Values.feature.podSecurityPolicy }}
-  podSecurityPolicy:
-    enable: {{ .Values.feature.podSecurityPolicy }}
-    resourceName: {{ .Values.podSecurityPolicy.resourceName }}
-  {{- end }}
   globalRegistry: {{ .Values.global.registry }}
   registrySecret: {{ .Values.global.registrySecret }}
   pullPolicy: {{ .Values.image.pullPolicy }}
@@ -82,6 +77,11 @@ spec:
         enable: {{ .Values.driver.node.securityContext.enable }}
         privileged: {{ .Values.driver.node.securityContext.privileged }}
       {{- end }}
+      {{- if .Values.node.podSecurityPolicy.enable }}
+      podSecurityPolicy:
+        enable: {{ .Values.node.podSecurityPolicy.enable }}
+        resourceName: {{ .Values.node.podSecurityPolicy.resourceName }}
+      {{- end }}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
@@ -137,6 +137,11 @@ spec:
     securityContext:
       enable: {{ .Values.scheduler.securityContext.enable }}
       privileged: {{ .Values.scheduler.securityContext.privileged }}
+    {{- end }}
+    {{- if .Values.scheduler.podSecurityPolicy.enable }}
+    podSecurityPolicy:
+      enable: {{ .Values.scheduler.podSecurityPolicy.enable }}
+      resourceName: {{ .Values.scheduler.podSecurityPolicy.resourceName }}
     {{- end }}
   nodeController:
     enable: {{ .Values.nodeController.enable }}

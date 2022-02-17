@@ -15,8 +15,9 @@ import (
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/feature"
 	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	"github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
+	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 )
 
 const (
@@ -27,14 +28,14 @@ const (
 type Node struct {
 	clientset                          kubernetes.Interface
 	log                                *logrus.Entry
-	podSecurityPolicyVerifier          feature.SecurityVerifier
-	securityContextConstraintsVerifier feature.SecurityVerifier
+	podSecurityPolicyVerifier          securityverifier.SecurityVerifier
+	securityContextConstraintsVerifier securityverifier.SecurityVerifier
 }
 
 // NewNode creates a Node object
 func NewNode(clientset kubernetes.Interface,
-	podSecurityPolicyVerifier feature.SecurityVerifier,
-	securityContextConstraintsVerifier feature.SecurityVerifier,
+	podSecurityPolicyVerifier securityverifier.SecurityVerifier,
+	securityContextConstraintsVerifier securityverifier.SecurityVerifier,
 	logger *logrus.Entry,
 ) *Node {
 	return &Node{
@@ -48,16 +49,14 @@ func NewNode(clientset kubernetes.Interface,
 // Update updates csi-baremetal-node or creates if not found
 func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	var (
-		// need to trying security_verifier each daemonset
+		// need to trying verifier each daemonset
 		// return err != nil to request reconcile again if one ore more daemonsets failed
 		resultErr error
 	)
 
 	// in case of Openshift deployment and non default namespace - validate node service accounts security bindings
 	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
-		if err := n.securityContextConstraintsVerifier.Verify(ctx,
-			csi, csi.Spec.Driver.Node.ServiceAccount,
-		); err != nil {
+		if err := n.securityContextConstraintsVerifier.Verify(ctx, csi, verifierModels.Node); err != nil {
 			var verifierError securityverifier.Error
 			err = n.securityContextConstraintsVerifier.HandleError(ctx, csi, csi.Spec.Driver.Node.ServiceAccount, err)
 			if errors.As(err, &verifierError) {
@@ -68,10 +67,8 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 	}
 
 	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
-	if csi.Spec.PodSecurityPolicy != nil && csi.Spec.PodSecurityPolicy.Enable {
-		if err := n.podSecurityPolicyVerifier.Verify(ctx,
-			csi, csi.Spec.Driver.Node.ServiceAccount,
-		); err != nil {
+	if csi.Spec.Driver.Node.PodSecurityPolicy != nil && csi.Spec.Driver.Node.PodSecurityPolicy.Enable {
+		if err := n.podSecurityPolicyVerifier.Verify(ctx, csi, models.Node); err != nil {
 			var verifierError securityverifier.Error
 			err = n.podSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Driver.Node.ServiceAccount, err)
 			if errors.As(err, &verifierError) {

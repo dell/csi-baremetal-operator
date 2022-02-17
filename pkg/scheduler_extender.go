@@ -18,8 +18,8 @@ import (
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/feature"
 	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
 )
 
@@ -35,17 +35,15 @@ const (
 type SchedulerExtender struct {
 	Clientset kubernetes.Interface
 	*logrus.Entry
-	PodSecurityPolicyVerifier          feature.SecurityVerifier
-	SecurityContextConstraintsVerifier feature.SecurityVerifier
+	PodSecurityPolicyVerifier          securityverifier.SecurityVerifier
+	SecurityContextConstraintsVerifier securityverifier.SecurityVerifier
 }
 
 // Update updates csi-baremetal-se or creates if not found
 func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	// in case of Openshift deployment and non default namespace - validate node service accounts security bindings
 	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
-		if err := n.SecurityContextConstraintsVerifier.Verify(ctx,
-			csi, csi.Spec.Scheduler.ServiceAccount,
-		); err != nil {
+		if err := n.SecurityContextConstraintsVerifier.Verify(ctx, csi, verifierModels.Scheduler); err != nil {
 			var verifierError securityverifier.Error
 			err = n.SecurityContextConstraintsVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
 			if errors.As(err, &verifierError) {
@@ -56,10 +54,8 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 	}
 
 	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
-	if csi.Spec.PodSecurityPolicy != nil && csi.Spec.PodSecurityPolicy.Enable {
-		if err := n.PodSecurityPolicyVerifier.Verify(ctx,
-			csi, csi.Spec.Scheduler.ServiceAccount,
-		); err != nil {
+	if csi.Spec.Scheduler.PodSecurityPolicy != nil && csi.Spec.Scheduler.PodSecurityPolicy.Enable {
+		if err := n.PodSecurityPolicyVerifier.Verify(ctx, csi, verifierModels.Scheduler); err != nil {
 			var verifierError securityverifier.Error
 			err = n.PodSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
 			if errors.As(err, &verifierError) {
