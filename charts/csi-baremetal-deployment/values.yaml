@@ -53,7 +53,7 @@ driver:
         cpu:
         memory:
     securityContext:
-      enable: false
+      enable: true
       runAsNonRoot: true
       runAsUser: 1000
 
@@ -242,7 +242,7 @@ nodeController:
     path: /metrics
     port: 8787
   securityContext:
-    enable: false
+    enable: true
     runAsNonRoot: true
     runAsUser: 1000
 
