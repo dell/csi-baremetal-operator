@@ -18,8 +18,12 @@ package components
 
 // SecurityContext represents security context
 type SecurityContext struct {
-	Enable       bool   `json:"enable"`
-	Privileged   *bool  `json:"privileged,omitempty"`
-	RunAsNonRoot *bool  `json:"runAsNonRoot,omitempty"`
-	RunAsUser    *int64 `json:"runAsUser,omitempty"`
+	// +kubebuilder:default:=false
+	Enable bool `json:"enable"`
+	// +kubebuilder:default:=false
+	Privileged *bool `json:"privileged,omitempty"`
+	// +kubebuilder:default:=true
+	RunAsNonRoot *bool `json:"runAsNonRoot,omitempty"`
+	// +kubebuilder:default:=1000
+	RunAsUser *int64 `json:"runAsUser,omitempty"`
 }

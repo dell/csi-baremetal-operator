@@ -53,7 +53,6 @@ driver:
     securityContext:
       enable: true
       runAsNonRoot: true
-      runAsUser: 1000
 
   node:
     serviceAccount: csi-node-sa
@@ -248,7 +247,6 @@ nodeController:
   securityContext:
     enable: true
     runAsNonRoot: true
-    runAsUser: 1000
 
 # TODO Move parameter to Operator chart - https://github.com/dell/csi-baremetal/issues/422
 # platform field must be set to the one of supported from pkg/constant/platforms.go
