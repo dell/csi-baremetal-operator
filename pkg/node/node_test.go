@@ -222,6 +222,20 @@ func Test_ValidateRBACPodSecurityPolicy(t *testing.T) {
 		err := node.Update(ctx, deployment, scheme)
 		assert.Nil(t, err)
 	})
+
+	t.Run("k8s client scheme error during PSP verification", func(t *testing.T) {
+		var (
+			ctx        = context.Background()
+			deployment = testDeployment.DeepCopy()
+		)
+		deployment.Spec.Platform = constant.PlatformVanilla
+
+		eventRecorder := new(mocks.EventRecorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(&runtime.Scheme{}))
+		err := node.Update(ctx, deployment, &runtime.Scheme{})
+		assert.NotNil(t, err)
+	})
 }
 
 func Test_updateNodeLabels(t *testing.T) {

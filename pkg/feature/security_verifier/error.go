@@ -5,10 +5,15 @@ import "fmt"
 // Error is a custom security verifier error type
 type Error interface {
 	error
+	OrigError() error
 }
 
 type verifierError struct {
 	message string
+}
+
+func (r *verifierError) OrigError() error {
+	return fmt.Errorf(r.message)
 }
 
 func (r *verifierError) Error() string {
