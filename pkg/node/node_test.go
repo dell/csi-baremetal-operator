@@ -66,10 +66,11 @@ var (
 			ResourceNames: []string{"privileged"},
 		},
 	}
-	matchPodSecurityPolicyTemplate = rbacv1.PolicyRule{
-		Verbs:     []string{"use"},
-		APIGroups: []string{"policy"},
-		Resources: []string{"podsecuritypolicies"},
+	matchPodSecurityPolicyPolicy = rbacv1.PolicyRule{
+		Verbs:         []string{"use"},
+		APIGroups:     []string{"policy"},
+		Resources:     []string{"podsecuritypolicies"},
+		ResourceNames: []string{"privileged"},
 	}
 
 	testRoleBinding = rbacv1.RoleBinding{
@@ -90,12 +91,19 @@ var (
 			Name:     "test-role",
 		},
 	}
-	testRole = rbacv1.Role{
+	testRoleSecurityContextConstraints = rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-role",
 			Namespace: "test-csi",
 		},
 		Rules: matchSecurityContextConstraintsPolicies,
+	}
+	testRolePodSecurityPolicy = rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-role",
+			Namespace: "test-csi",
+		},
+		Rules: []rbacv1.PolicyRule{matchPodSecurityPolicyPolicy},
 	}
 
 	testDeployment = v1.Deployment{
@@ -107,6 +115,10 @@ var (
 			Driver: &components.Driver{
 				Node: &components.Node{
 					ServiceAccount: "csi-node-sa",
+					PodSecurityPolicy: &components.PodSecurityPolicy{
+						Enable:       true,
+						ResourceName: "privileged",
+					},
 				},
 			},
 			Platform: constant.PlatformOpenShift,
@@ -128,7 +140,7 @@ func TestNewNode(t *testing.T) {
 			securityverifier.NewPodSecurityPolicyVerifier(
 				validator.NewValidator(rbac.NewValidator(cl, logEntry, rbac.NewMatcher())),
 				new(mocks.EventRecorder),
-				matchPodSecurityPolicyTemplate,
+				matchPodSecurityPolicyPolicy,
 				logEntry,
 			),
 			securityverifier.NewSecurityContextConstraintsVerifier(
@@ -146,7 +158,7 @@ func TestNewNode(t *testing.T) {
 	})
 }
 
-func Test_ValidateRBAC(t *testing.T) {
+func Test_ValidateRBACSecurityContextConstraints(t *testing.T) {
 	t.Run("Not Existing Role and RoleBinding for node ServiceAccount", func(t *testing.T) {
 		var (
 			ctx        = context.Background()
@@ -166,8 +178,42 @@ func Test_ValidateRBAC(t *testing.T) {
 			ctx         = context.Background()
 			deployment  = testDeployment.DeepCopy()
 			roleBinding = testRoleBinding.DeepCopy()
-			role        = testRole.DeepCopy()
+			role        = testRoleSecurityContextConstraints.DeepCopy()
 		)
+
+		eventRecorder := new(mocks.EventRecorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, roleBinding, role))
+		err := node.Update(ctx, deployment, scheme)
+		assert.Nil(t, err)
+	})
+}
+
+func Test_ValidateRBACPodSecurityPolicy(t *testing.T) {
+	t.Run("Not Existing Role and RoleBinding for node ServiceAccount", func(t *testing.T) {
+		var (
+			ctx        = context.Background()
+			deployment = testDeployment.DeepCopy()
+		)
+		deployment.Spec.Platform = constant.PlatformVanilla
+
+		eventRecorder := new(mocks.EventRecorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+		node := prepareNode(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
+		err := node.Update(ctx, deployment, scheme)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Existing Role and RoleBinding for node ServiceAccount", func(t *testing.T) {
+		var (
+			ctx         = context.Background()
+			deployment  = testDeployment.DeepCopy()
+			roleBinding = testRoleBinding.DeepCopy()
+			role        = testRolePodSecurityPolicy.DeepCopy()
+		)
+		deployment.Spec.Platform = constant.PlatformVanilla
 
 		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
@@ -362,7 +408,7 @@ func prepareNode(eventRecorder events.EventRecorder, clientSet kubernetes.Interf
 		securityverifier.NewPodSecurityPolicyVerifier(
 			validator.NewValidator(rbac.NewValidator(client, logEntry, rbac.NewMatcher())),
 			eventRecorder,
-			matchPodSecurityPolicyTemplate,
+			matchPodSecurityPolicyPolicy,
 			logEntry,
 		),
 		securityverifier.NewSecurityContextConstraintsVerifier(
