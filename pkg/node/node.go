@@ -49,7 +49,7 @@ func NewNode(clientset kubernetes.Interface,
 // Update updates csi-baremetal-node or creates if not found
 func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
 	var (
-		// need to trying verifier each daemonset
+		// need to trying deploy each daemonset
 		// return err != nil to request reconcile again if one ore more daemonsets failed
 		resultErr error
 	)
