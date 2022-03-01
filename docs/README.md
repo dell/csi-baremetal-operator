@@ -168,7 +168,7 @@ For supporting CIS Hardening we need to add the following settings while install
     kind: Role
     metadata:
       name: manager-role
-      namespace: atlantic
+      namespace: test-namespace
     rules:
     - apiGroups:
       - policy
@@ -185,7 +185,7 @@ For supporting CIS Hardening we need to add the following settings while install
     kind: RoleBinding
     metadata:
       name: manager-rolebinding
-      namespace: atlantic
+      namespace: test-namespace
     roleRef:
       apiGroup: rbac.authorization.k8s.io
       kind: Role
@@ -193,10 +193,10 @@ For supporting CIS Hardening we need to add the following settings while install
     subjects:
     - kind: ServiceAccount
       name: csi-node-sa
-      namespace: atlantic
+      namespace: test-namespace
     - kind: ServiceAccount
       name: csi-baremetal-extender-sa
-      namespace: atlantic
+      namespace: test-namespace
     ```
   * Set the following SecurityContexts at deployments.csi-baremetal.dell.com for Node, SchedulerExtender, SchedulerExtenderPatcher components:
     ```
