@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
@@ -73,7 +72,6 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					ServiceAccountName:            nodeControllerServiceAccountName,
 					DeprecatedServiceAccount:      nodeControllerServiceAccountName,
-					SecurityContext:               createNodeControllerSecurityContext(csi.Spec.NodeController.SecurityContext),
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 					Volumes:                       []corev1.Volume{constant.CrashVolume},
@@ -99,7 +97,6 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 	if ns != nil {
 		args = append(args, "--nodeselector="+ns.Key+":"+ns.Value)
 	}
-
 	return []corev1.Container{
 		{
 			Name:            nodeController,
@@ -116,15 +113,5 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
 			Resources:                common.ConstructResourceRequirements(resources),
 		},
-	}
-}
-
-func createNodeControllerSecurityContext(ctx *components.SecurityContext) *corev1.PodSecurityContext {
-	if ctx == nil || !ctx.Enable {
-		return nil
-	}
-	return &corev1.PodSecurityContext{
-		RunAsNonRoot: ctx.RunAsNonRoot,
-		RunAsUser:    ctx.RunAsUser,
 	}
 }

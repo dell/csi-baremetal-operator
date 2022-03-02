@@ -32,12 +32,6 @@ spec:
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
-      {{- if .Values.driver.controller.securityContext.enable }}
-      securityContext:
-        enable: {{ .Values.driver.controller.securityContext.enable }}
-        runAsNonRoot: {{ .Values.driver.controller.securityContext.runAsNonRoot }}
-        runAsUser: {{ .Values.driver.controller.securityContext.runAsUser }}
-      {{- end }}
       sidecars:
         livenessprobe:
           image:
@@ -153,9 +147,3 @@ spec:
     log:
       format: {{ .Values.nodeController.log.format }}
       level: {{ .Values.nodeController.log.level }}
-    {{- if .Values.nodeController.securityContext.enable }}
-    securityContext:
-      enable: {{ .Values.nodeController.securityContext.enable }}
-      runAsNonRoot: {{ .Values.nodeController.securityContext.runAsNonRoot }}
-      runAsUser: {{ .Values.nodeController.securityContext.runAsUser }}
-    {{- end }}

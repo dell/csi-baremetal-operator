@@ -50,9 +50,6 @@ driver:
       requests:
         cpu:
         memory:
-    securityContext:
-      enable: true
-      runAsNonRoot: true
 
   node:
     serviceAccount: csi-node-sa
@@ -244,9 +241,6 @@ nodeController:
   metrics:
     path: /metrics
     port: 8787
-  securityContext:
-    enable: true
-    runAsNonRoot: true
 
 # TODO Move parameter to Operator chart - https://github.com/dell/csi-baremetal/issues/422
 # platform field must be set to the one of supported from pkg/constant/platforms.go

@@ -84,4 +84,7 @@ var (
 	CrashMountVolume = corev1.VolumeMount{
 		Name: "crash-dump", MountPath: "/crash-dump",
 	}
+
+	// ContainerSidecarUUID - sidecar containers' processes uuids
+	ContainerSidecarUUID int64 = 1000
 )

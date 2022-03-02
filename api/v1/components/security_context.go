@@ -20,8 +20,4 @@ package components
 type SecurityContext struct {
 	Enable     bool  `json:"enable"`
 	Privileged *bool `json:"privileged,omitempty"`
-	// +kubebuilder:default:=true
-	RunAsNonRoot *bool `json:"runAsNonRoot,omitempty"`
-	// +kubebuilder:default:=1000
-	RunAsUser *int64 `json:"runAsUser,omitempty"`
 }
