@@ -12,7 +12,6 @@ import (
 	"k8s.io/utils/pointer"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
@@ -300,7 +299,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.name"},
 				}},
 			},
-			SecurityContext:          createNodeSecurityContext(csi.Spec.Driver.Node.SecurityContext),
+			SecurityContext:          &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
 			VolumeMounts:             nodeMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -317,20 +316,11 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
 			},
-			SecurityContext:          createNodeSecurityContext(csi.Spec.Driver.Node.SecurityContext),
+			SecurityContext:          &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
 			VolumeMounts:             driveMgrMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			Resources:                common.ConstructResourceRequirements(driveMgr.Resources),
 		},
-	}
-}
-
-func createNodeSecurityContext(ctx *components.SecurityContext) *corev1.SecurityContext {
-	if ctx == nil || !ctx.Enable {
-		return nil
-	}
-	return &corev1.SecurityContext{
-		Privileged: ctx.Privileged,
 	}
 }

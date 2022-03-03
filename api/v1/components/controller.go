@@ -29,6 +29,5 @@ type Controller struct {
 	// SlowDelay is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
 	SlowDelay string `json:"slowDelay,omitempty"`
 	// MaxFastAttempts is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
-	MaxFastAttempts uint             `json:"maxFastAttempts,omitempty"`
-	SecurityContext *SecurityContext `json:"securityContext,omitempty"`
+	MaxFastAttempts uint `json:"maxFastAttempts,omitempty"`
 }

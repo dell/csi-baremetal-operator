@@ -96,16 +96,6 @@ spec:
                             nullable: true
                             type: object
                         type: object
-                      securityContext:
-                        description: SecurityContext represents security context
-                        properties:
-                          enable:
-                            type: boolean
-                          privileged:
-                            type: boolean
-                        required:
-                        - enable
-                        type: object
                       sidecars:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
@@ -305,16 +295,6 @@ spec:
                             description: ResourceList is a set of (resource name, quantity) pairs.
                             nullable: true
                             type: object
-                        type: object
-                      securityContext:
-                        description: SecurityContext represents security context
-                        properties:
-                          enable:
-                            type: boolean
-                          privileged:
-                            type: boolean
-                        required:
-                        - enable
                         type: object
                       serviceAccount:
                         type: string

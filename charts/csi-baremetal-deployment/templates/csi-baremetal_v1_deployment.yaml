@@ -66,11 +66,6 @@ spec:
         tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}
       resources:
         {{- include "setResources" .Values.driver.node | indent 8 }}
-      {{- if .Values.driver.node.securityContext.enable }}
-      securityContext:
-        enable: {{ .Values.driver.node.securityContext.enable }}
-        privileged: {{ .Values.driver.node.securityContext.privileged }}
-      {{- end }}
       {{- if .Values.driver.node.podSecurityPolicy.enable }}
       podSecurityPolicy:
         enable: {{ .Values.driver.node.podSecurityPolicy.enable }}

@@ -63,11 +63,11 @@ driver:
         cpu:
         memory:
     securityContext:
-      enable: true
-      privileged: true
+      enable:
+      privileged:
     podSecurityPolicy:
-      enable: false
-      resourceName: privileged
+      enable:
+      resourceName:
 
   drivemgr:
     type: basemgr
@@ -169,11 +169,11 @@ scheduler:
   enable: true
   serviceAccount: csi-baremetal-extender-sa
   securityContext:
-    enable: true
-    privileged: true
+    enable:
+    privileged:
   podSecurityPolicy:
-    enable: false
-    resourceName: privileged
+    enable:
+    resourceName:
   image:
     tag:
   resources:

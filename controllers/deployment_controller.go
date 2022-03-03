@@ -311,13 +311,17 @@ func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher,
 			deployments.Items[0].Namespace != constant.DefaultNamespace &&
 			deployments.Items[0].Namespace == role.Namespace && m.MatchPolicyRules(role.Rules, matchSecurityContextConstraintsPolicies)
 		// Reconcile roles if pod security policy is enabled for node
-		matchPodSecurityPolicyTemplate.ResourceNames = []string{deployments.Items[0].Spec.Driver.Node.PodSecurityPolicy.ResourceName}
-		podNodeSecurityPolicyCondition := deployments.Items[0].Spec.Driver.Node.PodSecurityPolicy != nil &&
-			deployments.Items[0].Spec.Driver.Node.PodSecurityPolicy.Enable && m.MatchPolicyRules(role.Rules, matchSecurityContextConstraintsPolicies)
+		var podNodeSecurityPolicyCondition bool
+		if deployments.Items[0].Spec.Driver.Node.PodSecurityPolicy != nil && deployments.Items[0].Spec.Driver.Node.PodSecurityPolicy.Enable {
+			matchPodSecurityPolicyTemplate.ResourceNames = []string{deployments.Items[0].Spec.Driver.Node.PodSecurityPolicy.ResourceName}
+			podNodeSecurityPolicyCondition = m.MatchPolicyRules(role.Rules, matchSecurityContextConstraintsPolicies)
+		}
 		// Reconcile roles if pod security policy is enabled for scheduler
-		matchPodSecurityPolicyTemplate.ResourceNames = []string{deployments.Items[0].Spec.Scheduler.PodSecurityPolicy.ResourceName}
-		podSchedulerSecurityPolicyCondition := deployments.Items[0].Spec.Scheduler.PodSecurityPolicy != nil &&
-			deployments.Items[0].Spec.Scheduler.PodSecurityPolicy.Enable && m.MatchPolicyRules(role.Rules, matchSecurityContextConstraintsPolicies)
+		var podSchedulerSecurityPolicyCondition bool
+		if deployments.Items[0].Spec.Scheduler.PodSecurityPolicy != nil && deployments.Items[0].Spec.Scheduler.PodSecurityPolicy.Enable {
+			matchPodSecurityPolicyTemplate.ResourceNames = []string{deployments.Items[0].Spec.Scheduler.PodSecurityPolicy.ResourceName}
+			podSchedulerSecurityPolicyCondition = m.MatchPolicyRules(role.Rules, matchSecurityContextConstraintsPolicies)
+		}
 		if !securityContextConstraintsCondition && !podNodeSecurityPolicyCondition && !podSchedulerSecurityPolicyCondition {
 			return []reconcile.Request{}
 		}

@@ -26,6 +26,5 @@ type Node struct {
 	// +nullable
 	// +optional
 	Resources         *ResourceRequirements `json:"resources,omitempty"`
-	SecurityContext   *SecurityContext      `json:"securityContext,omitempty"`
 	PodSecurityPolicy *PodSecurityPolicy    `json:"podSecurityPolicy,omitempty"`
 }
