@@ -62,9 +62,6 @@ driver:
       requests:
         cpu:
         memory:
-    securityContext:
-      enable:
-      privileged:
     podSecurityPolicy:
       enable:
       resourceName:

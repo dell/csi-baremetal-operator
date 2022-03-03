@@ -198,14 +198,14 @@ For supporting CIS Hardening we need to add the following settings while install
       name: csi-baremetal-extender-sa
       namespace: test-namespace
     ```
-  * Set the following SecurityContexts at deployments.csi-baremetal.dell.com for Node, SchedulerExtender, SchedulerExtenderPatcher components:
+  * Set the following SecurityContexts at deployments.csi-baremetal.dell.com for SchedulerExtender, SchedulerExtenderPatcher components:
     ```
-    --set driver.node.securityContext.enable=true --set driver.node.securityContext.privileged=true \
-    --set driver.scheduler.securityContext.enable=true --set driver.scheduler.securityContext.privileged=true
+    --set scheduler.securityContext.enable=true --set scheduler.securityContext.privileged=true
     ```
-  * Enable podSecurityPolicy at deployments.csi-baremetal.dell.com:
+  * Enable podSecurityPolicy at deployments.csi-baremetal.dell.com for Node, SchedulerExtender, SchedulerExtenderPatcher components:
     ```
-    --set feature.podSecurityPolicy=true --set podSecurityPolicy.resourceName=privileged
+    --set driver.node.podSecurityPolicy.enable=true --set driver.node.podSecurityPolicy.resourceName=privileged \
+    --set scheduler.podSecurityPolicy.enable=true --set scheduler.podSecurityPolicy.resourceName=privileged
     ```
 Usage
 ------
