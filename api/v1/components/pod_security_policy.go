@@ -16,15 +16,8 @@ limitations under the License.
 
 package components
 
-// Node encapsulates information for CSI node components
-type Node struct {
-	ServiceAccount string              `json:"serviceAccount"`
-	DriveMgr       *DriveMgr           `json:"driveMgr,omitempty"`
-	Image          *Image              `json:"image,omitempty"`
-	Log            *Log                `json:"log,omitempty"`
-	Sidecars       map[string]*Sidecar `json:"sidecars,omitempty"`
-	// +nullable
-	// +optional
-	Resources         *ResourceRequirements `json:"resources,omitempty"`
-	PodSecurityPolicy *PodSecurityPolicy    `json:"podSecurityPolicy,omitempty"`
+// PodSecurityPolicy encapsulates information about pod security policy
+type PodSecurityPolicy struct {
+	Enable       bool   `json:"enable"`
+	ResourceName string `json:"resourceName"`
 }

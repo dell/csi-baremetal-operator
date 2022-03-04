@@ -96,6 +96,23 @@ spec:
                             nullable: true
                             type: object
                         type: object
+                      securityContext:
+                        description: SecurityContext represents security context
+                        properties:
+                          enable:
+                            type: boolean
+                          privileged:
+                            type: boolean
+                          runAsNonRoot:
+                            default: true
+                            type: boolean
+                          runAsUser:
+                            default: 1000
+                            format: int64
+                            type: integer
+                        required:
+                        - enable
+                        type: object
                       sidecars:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
@@ -258,6 +275,18 @@ spec:
                         required:
                         - format
                         - level
+                        type: object
+                      podSecurityPolicy:
+                        description: PodSecurityPolicy encapsulates information about
+                          pod security policy
+                        properties:
+                          enable:
+                            type: boolean
+                          resourceName:
+                            type: string
+                        required:
+                        - enable
+                        - resourceName
                         type: object
                       resources:
                         description: ResourceRequirements contain information for mem/cpu requirements
@@ -526,6 +555,18 @@ spec:
                     required:
                     - enable
                     type: object
+                  podSecurityPolicy:
+                    description: PodSecurityPolicy encapsulates information about
+                      pod security policy
+                    properties:
+                      enable:
+                        type: boolean
+                      resourceName:
+                        type: string
+                    required:
+                    - enable
+                    - resourceName
+                    type: object
                   resources:
                     description: ResourceRequirements contain information for mem/cpu requirements
                     nullable: true
@@ -550,6 +591,23 @@ spec:
                         description: ResourceList is a set of (resource name, quantity) pairs.
                         nullable: true
                         type: object
+                    type: object
+                  securityContext:
+                    description: SecurityContext represents security context
+                    properties:
+                      enable:
+                        type: boolean
+                      privileged:
+                        type: boolean
+                      runAsNonRoot:
+                        default: true
+                        type: boolean
+                      runAsUser:
+                        default: 1000
+                        format: int64
+                        type: integer
+                    required:
+                    - enable
                     type: object
                   serviceAccount:
                     type: string

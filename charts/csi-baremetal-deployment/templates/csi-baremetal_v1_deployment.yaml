@@ -32,6 +32,12 @@ spec:
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
+      {{- if .Values.driver.controller.securityContext.enable }}
+      securityContext:
+        enable: {{ .Values.driver.controller.securityContext.enable }}
+        runAsNonRoot: {{ .Values.driver.controller.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.driver.controller.securityContext.runAsUser }}
+      {{- end }}
       sidecars:
         livenessprobe:
           image:
@@ -66,6 +72,11 @@ spec:
         tag: {{ .Values.driver.node.image.tag | default .Values.image.tag }}
       resources:
         {{- include "setResources" .Values.driver.node | indent 8 }}
+      {{- if .Values.driver.node.podSecurityPolicy.enable }}
+      podSecurityPolicy:
+        enable: {{ .Values.driver.node.podSecurityPolicy.enable }}
+        resourceName: {{ .Values.driver.node.podSecurityPolicy.resourceName }}
+      {{- end }}
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
@@ -117,6 +128,16 @@ spec:
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
       readinessTimeout: {{ .Values.scheduler.patcher.readinessTimeout }}
     storageProvisioner: {{ .Values.scheduler.provisioner }}
+    {{- if .Values.scheduler.securityContext.enable }}
+    securityContext:
+      enable: {{ .Values.scheduler.securityContext.enable }}
+      privileged: {{ .Values.scheduler.securityContext.privileged }}
+    {{- end }}
+    {{- if .Values.scheduler.podSecurityPolicy.enable }}
+    podSecurityPolicy:
+      enable: {{ .Values.scheduler.podSecurityPolicy.enable }}
+      resourceName: {{ .Values.scheduler.podSecurityPolicy.resourceName }}
+    {{- end }}
   nodeController:
     enable: {{ .Values.nodeController.enable }}
     image:

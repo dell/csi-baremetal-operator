@@ -1,0 +1,9 @@
+coverage:
+  status:
+    project:
+      default:
+        threshold: 1%
+# TODO: improve code coverage - https://github.com/dell/csi-baremetal/issues/658
+ignore:
+  - "pkg/node/node_daemonset.go"
+  - "pkg/patcher/scheduler_patcher_vanilla.go"

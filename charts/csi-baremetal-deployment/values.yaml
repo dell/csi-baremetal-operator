@@ -50,6 +50,9 @@ driver:
       requests:
         cpu:
         memory:
+    securityContext:
+      enable:
+      runAsNonRoot:
 
   node:
     serviceAccount: csi-node-sa
@@ -62,6 +65,9 @@ driver:
       requests:
         cpu:
         memory:
+    podSecurityPolicy:
+      enable:
+      resourceName:
 
   drivemgr:
     type: basemgr
@@ -162,6 +168,12 @@ driver:
 scheduler:
   enable: true
   serviceAccount: csi-baremetal-extender-sa
+  securityContext:
+    enable:
+    privileged:
+  podSecurityPolicy:
+    enable:
+    resourceName:
   image:
     tag:
   resources:

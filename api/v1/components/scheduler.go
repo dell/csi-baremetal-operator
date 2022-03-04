@@ -28,5 +28,7 @@ type Scheduler struct {
 	StorageProvisioner string   `json:"storageProvisioner"`
 	// +nullable
 	// +optional
-	Resources *ResourceRequirements `json:"resources,omitempty"`
+	Resources         *ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext   *SecurityContext      `json:"securityContext,omitempty"`
+	PodSecurityPolicy *PodSecurityPolicy    `json:"podSecurityPolicy,omitempty"`
 }

@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
@@ -109,7 +110,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 					NodeSelector:                  common.MakeNodeSelectorMap(csi.Spec.NodeSelector),
 					ServiceAccountName:            controllerServiceAccountName,
 					DeprecatedServiceAccount:      controllerServiceAccountName,
-					SecurityContext:               &corev1.PodSecurityContext{},
+					SecurityContext:               createControllerSecurityContext(csi.Spec.Driver.Controller.SecurityContext),
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 				},
@@ -194,9 +195,8 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			Resources:                common.ConstructResourceRequirements(c.Resources),
 		},
 		{
-			Name:            constant.ProvisionerName,
-			Image:           common.ConstructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
-			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
+			Name:  constant.ProvisionerName,
+			Image: common.ConstructFullImageName(provisioner.Image, csi.Spec.GlobalRegistry),
 			Args: append(
 				[]string{
 					// default csi-provisioner args
@@ -215,13 +215,14 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			Env: []corev1.EnvVar{
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
 			},
+			Resources: common.ConstructResourceRequirements(provisioner.Resources),
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
 				constant.CrashMountVolume,
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			Resources:                common.ConstructResourceRequirements(provisioner.Resources),
+			ImagePullPolicy:          corev1.PullPolicy(csi.Spec.PullPolicy),
 		},
 		{
 			Name:            constant.ResizerName,
@@ -260,5 +261,15 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			Resources:                common.ConstructResourceRequirements(liveness.Resources),
 		},
+	}
+}
+
+func createControllerSecurityContext(ctx *components.SecurityContext) *corev1.PodSecurityContext {
+	if ctx == nil || !ctx.Enable {
+		return nil
+	}
+	return &corev1.PodSecurityContext{
+		RunAsNonRoot: ctx.RunAsNonRoot,
+		RunAsUser:    ctx.RunAsUser,
 	}
 }

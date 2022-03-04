@@ -13,6 +13,7 @@ import (
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
 	"github.com/dell/csi-baremetal-operator/pkg/node"
 	"github.com/dell/csi-baremetal-operator/pkg/nodeoperations"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
@@ -33,19 +34,32 @@ type CSIDeployment struct {
 
 // NewCSIDeployment creates CSIDeployment
 func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client,
-	matcher rbac.Matcher, matchPolicies []rbacv1.PolicyRule,
+	matcher rbac.Matcher, matchSecurityContextConstraintsPolicies []rbacv1.PolicyRule, matchPodSecurityPolicyTemplate rbacv1.PolicyRule,
 	eventRecorder events.EventRecorder, log *logrus.Logger,
 ) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
 			&clientSet,
-			eventRecorder,
-			validator.NewValidator(rbac.NewValidator(
-				client,
-				log.WithField(constant.CSIName, "rbacNodeValidator"),
-				matcher),
+			securityverifier.NewPodSecurityPolicyVerifier(
+				validator.NewValidator(rbac.NewValidator(
+					client,
+					log.WithField(constant.CSIName, "rbacNodeValidator"),
+					matcher),
+				),
+				eventRecorder,
+				matchPodSecurityPolicyTemplate,
+				log.WithField(constant.CSIName, "node"),
 			),
-			matchPolicies,
+			securityverifier.NewSecurityContextConstraintsVerifier(
+				validator.NewValidator(rbac.NewValidator(
+					client,
+					log.WithField(constant.CSIName, "rbacNodeValidator"),
+					matcher),
+				),
+				eventRecorder,
+				matchSecurityContextConstraintsPolicies,
+				log.WithField(constant.CSIName, "node"),
+			),
 			log.WithField(constant.CSIName, "node"),
 		),
 		controller: Controller{
@@ -55,18 +69,41 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client,
 		extender: SchedulerExtender{
 			Clientset: &clientSet,
 			Entry:     log.WithField(constant.CSIName, "extender"),
-			Validator: validator.NewValidator(rbac.NewValidator(
-				client,
-				log.WithField(constant.CSIName, "rbacExtenderValidator"),
-				rbac.NewMatcher()),
+			PodSecurityPolicyVerifier: securityverifier.NewPodSecurityPolicyVerifier(
+				validator.NewValidator(rbac.NewValidator(
+					client,
+					log.WithField(constant.CSIName, "rbacExtenderValidator"),
+					rbac.NewMatcher()),
+				),
+				eventRecorder,
+				matchPodSecurityPolicyTemplate,
+				log.WithField(constant.CSIName, "extender"),
 			),
-			EventRecorder: eventRecorder,
-			MatchPolicies: matchPolicies,
+			SecurityContextConstraintsVerifier: securityverifier.NewSecurityContextConstraintsVerifier(
+				validator.NewValidator(rbac.NewValidator(
+					client,
+					log.WithField(constant.CSIName, "rbacExtenderValidator"),
+					rbac.NewMatcher()),
+				),
+				eventRecorder,
+				matchSecurityContextConstraintsPolicies,
+				log.WithField(constant.CSIName, "extender"),
+			),
 		},
 		patcher: patcher.SchedulerPatcher{
 			Clientset: &clientSet,
-			Client:    client,
 			Log:       log.WithField(constant.CSIName, "patcher"),
+			Client:    client,
+			PodSecurityPolicyVerifier: securityverifier.NewPodSecurityPolicyVerifier(
+				validator.NewValidator(rbac.NewValidator(
+					client,
+					log.WithField(constant.CSIName, "rbacPatcherValidator"),
+					rbac.NewMatcher()),
+				),
+				eventRecorder,
+				matchPodSecurityPolicyTemplate,
+				log.WithField(constant.CSIName, "patcher"),
+			),
 		},
 		nodeController: NodeController{
 			Clientset: &clientSet,

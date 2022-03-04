@@ -94,7 +94,7 @@ func main() {
 		os.Exit(1)
 	}
 	matcher := rbac.NewMatcher()
-	matchPolicies := []rbacv1.PolicyRule{
+	matchSecurityContextConstraintsPolicies := []rbacv1.PolicyRule{
 		{
 			Verbs:         []string{"use"},
 			APIGroups:     []string{"security.openshift.io"},
@@ -102,14 +102,23 @@ func main() {
 			ResourceNames: []string{"privileged"},
 		},
 	}
+	matchPodSecurityPolicyTemplate := rbacv1.PolicyRule{
+		Verbs:     []string{"use"},
+		APIGroups: []string{"policy"},
+		Resources: []string{"podsecuritypolicies"},
+	}
 	if err = (&controllers.DeploymentReconciler{
 		Client: mgr.GetClient(),
 		Log: logrus.WithFields(logrus.Fields{
 			"module": "controllers", "component": "DeploymentReconciler"}),
-		Scheme:        mgr.GetScheme(),
-		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(), matcher, matchPolicies, eventRecorder, logger),
-		Matcher:       matcher,
-		MatchPolicies: matchPolicies,
+		Scheme: mgr.GetScheme(),
+		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(),
+			matcher, matchSecurityContextConstraintsPolicies, matchPodSecurityPolicyTemplate,
+			eventRecorder, logger,
+		),
+		Matcher:                                 matcher,
+		MatchPodSecurityPolicyTemplate:          matchPodSecurityPolicyTemplate,
+		MatchSecurityContextConstraintsPolicies: matchSecurityContextConstraintsPolicies,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Deployment")
 		os.Exit(1)

@@ -5,12 +5,9 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/dell/csi-baremetal/pkg/eventing"
-	"github.com/dell/csi-baremetal/pkg/events"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -18,13 +15,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 	"github.com/dell/csi-baremetal-operator/pkg/patcher"
-	"github.com/dell/csi-baremetal-operator/pkg/validator"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
-	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
 )
 
 const (
@@ -39,34 +35,32 @@ const (
 type SchedulerExtender struct {
 	Clientset kubernetes.Interface
 	*logrus.Entry
-	Validator     validator.Validator
-	EventRecorder events.EventRecorder
-	MatchPolicies []rbacv1.PolicyRule
+	PodSecurityPolicyVerifier          securityverifier.SecurityVerifier
+	SecurityContextConstraintsVerifier securityverifier.SecurityVerifier
 }
 
 // Update updates csi-baremetal-se or creates if not found
 func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	// in case of Openshift deployment and non default namespace - validate extender service accounts security bindings
+	// in case of Openshift deployment and non default namespace - validate node service accounts security bindings
 	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
-		var rbacError rbac.Error
-		if err := n.Validator.ValidateRBAC(ctx, &models.RBACRules{
-			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
-				ServiceAccountName: csi.Spec.Scheduler.ServiceAccount,
-				Namespace:          csi.Namespace,
-				Role: &rbacv1.Role{
-					Rules: n.MatchPolicies,
-				},
-			},
-			Type: models.ServiceAccountIsRoleBound,
-		}); err != nil {
-			if errors.As(err, &rbacError) {
-				n.EventRecorder.Eventf(csi, eventing.WarningType, "ExtenderRoleValidationFailed",
-					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
-					csi.Spec.Scheduler.ServiceAccount)
-				n.Warn(rbacError, "Extender service account has insufficient securityContextConstraints, should have privileged")
+		if err := n.SecurityContextConstraintsVerifier.Verify(ctx, csi, verifierModels.Scheduler); err != nil {
+			var verifierError securityverifier.Error
+			err = n.SecurityContextConstraintsVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
+			if errors.As(err, &verifierError) {
 				return nil
 			}
-			n.Error(err, "Error occurred while validating extender service account security context bindings")
+			return err
+		}
+	}
+
+	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
+	if csi.Spec.Scheduler.PodSecurityPolicy != nil && csi.Spec.Scheduler.PodSecurityPolicy.Enable {
+		if err := n.PodSecurityPolicyVerifier.Verify(ctx, csi, verifierModels.Scheduler); err != nil {
+			var verifierError securityverifier.Error
+			err = n.PodSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
+			if errors.As(err, &verifierError) {
+				return nil
+			}
 			return err
 		}
 	}
@@ -212,6 +206,16 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled 
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			VolumeMounts:             volumeMounts,
 			Resources:                common.ConstructResourceRequirements(csi.Spec.Scheduler.Resources),
+			SecurityContext:          createExtenderSecurityContext(csi.Spec.Scheduler.SecurityContext),
 		},
+	}
+}
+
+func createExtenderSecurityContext(ctx *components.SecurityContext) *corev1.SecurityContext {
+	if ctx == nil || !ctx.Enable {
+		return nil
+	}
+	return &corev1.SecurityContext{
+		Privileged: ctx.Privileged,
 	}
 }

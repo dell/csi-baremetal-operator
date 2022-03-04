@@ -5,10 +5,7 @@ import (
 	"errors"
 
 	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
-	"github.com/dell/csi-baremetal/pkg/eventing"
-	"github.com/dell/csi-baremetal/pkg/events"
 	"github.com/sirupsen/logrus"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -18,10 +15,9 @@ import (
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	"github.com/dell/csi-baremetal-operator/pkg/validator"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/models"
-	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
-	rbacmodels "github.com/dell/csi-baremetal-operator/pkg/validator/rbac/models"
+	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	"github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
+	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 )
 
 const (
@@ -30,26 +26,23 @@ const (
 
 // Node controls csi-baremetal-node
 type Node struct {
-	clientset     kubernetes.Interface
-	log           *logrus.Entry
-	validator     validator.Validator
-	eventRecorder events.EventRecorder
-	matchPolicies []rbacv1.PolicyRule
+	clientset                          kubernetes.Interface
+	log                                *logrus.Entry
+	podSecurityPolicyVerifier          securityverifier.SecurityVerifier
+	securityContextConstraintsVerifier securityverifier.SecurityVerifier
 }
 
 // NewNode creates a Node object
 func NewNode(clientset kubernetes.Interface,
-	eventRecorder events.EventRecorder,
-	validator validator.Validator,
-	matchPolicies []rbacv1.PolicyRule,
+	podSecurityPolicyVerifier securityverifier.SecurityVerifier,
+	securityContextConstraintsVerifier securityverifier.SecurityVerifier,
 	logger *logrus.Entry,
 ) *Node {
 	return &Node{
-		clientset:     clientset,
-		log:           logger,
-		validator:     validator,
-		eventRecorder: eventRecorder,
-		matchPolicies: matchPolicies,
+		clientset:                          clientset,
+		log:                                logger,
+		podSecurityPolicyVerifier:          podSecurityPolicyVerifier,
+		securityContextConstraintsVerifier: securityContextConstraintsVerifier,
 	}
 }
 
@@ -63,26 +56,25 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 
 	// in case of Openshift deployment and non default namespace - validate node service accounts security bindings
 	if csi.Spec.Platform == constant.PlatformOpenShift && csi.Namespace != constant.DefaultNamespace {
-		var rbacError rbac.Error
-		if resultErr = n.validator.ValidateRBAC(ctx, &models.RBACRules{
-			Data: &rbacmodels.ServiceAccountIsRoleBoundData{
-				ServiceAccountName: csi.Spec.Driver.Node.ServiceAccount,
-				Namespace:          csi.Namespace,
-				Role: &rbacv1.Role{
-					Rules: n.matchPolicies,
-				},
-			},
-			Type: models.ServiceAccountIsRoleBound,
-		}); resultErr != nil {
-			if errors.As(resultErr, &rbacError) {
-				n.eventRecorder.Eventf(csi, eventing.WarningType, "NodeRoleValidationFailed",
-					"ServiceAccount %s has insufficient securityContextConstraints, should have privileged",
-					csi.Spec.Driver.Node.ServiceAccount)
-				n.log.Warning(rbacError, "Node service account has insufficient securityContextConstraints, should have privileged")
+		if err := n.securityContextConstraintsVerifier.Verify(ctx, csi, verifierModels.Node); err != nil {
+			var verifierError securityverifier.Error
+			err = n.securityContextConstraintsVerifier.HandleError(ctx, csi, csi.Spec.Driver.Node.ServiceAccount, err)
+			if errors.As(err, &verifierError) {
 				return nil
 			}
-			n.log.Error(resultErr, "Error occurred while validating node service account security context bindings")
-			return resultErr
+			return err
+		}
+	}
+
+	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
+	if csi.Spec.Driver.Node.PodSecurityPolicy != nil && csi.Spec.Driver.Node.PodSecurityPolicy.Enable {
+		if err := n.podSecurityPolicyVerifier.Verify(ctx, csi, models.Node); err != nil {
+			var verifierError securityverifier.Error
+			err = n.podSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Driver.Node.ServiceAccount, err)
+			if errors.As(err, &verifierError) {
+				return nil
+			}
+			return err
 		}
 	}
 

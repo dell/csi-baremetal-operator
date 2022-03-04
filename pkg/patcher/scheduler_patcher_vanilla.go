@@ -2,6 +2,7 @@ package patcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -15,6 +16,8 @@ import (
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	securityverifier "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier"
+	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 )
 
 const (
@@ -42,6 +45,18 @@ func (p *SchedulerPatcher) updateVanilla(ctx context.Context, csi *csibaremetalv
 }
 
 func (p *SchedulerPatcher) updateVanillaDaemonset(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
+	// in case of podSecurityPolicy feature enabled - validate node service accounts security bindings
+	if csi.Spec.Scheduler.PodSecurityPolicy != nil && csi.Spec.Scheduler.PodSecurityPolicy.Enable {
+		if err := p.PodSecurityPolicyVerifier.Verify(ctx, csi, verifierModels.Scheduler); err != nil {
+			var verifierError securityverifier.Error
+			err = p.PodSecurityPolicyVerifier.HandleError(ctx, csi, csi.Spec.Scheduler.ServiceAccount, err)
+			if errors.As(err, &verifierError) {
+				return nil
+			}
+			return err
+		}
+	}
+
 	cfg, err := newPatcherConfiguration(csi)
 	if err != nil {
 		return err
@@ -190,6 +205,8 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
+					ServiceAccountName:            p.serviceAccount,
+					DeprecatedServiceAccount:      p.serviceAccount,
 					SecurityContext:               &corev1.PodSecurityContext{},
 					ImagePullSecrets:              common.MakeImagePullSecrets(p.registrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
@@ -245,6 +262,7 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			Resources:                common.ConstructResourceRequirements(p.resources),
+			SecurityContext:          p.createSecurityContext(),
 		},
 	}
 }
@@ -269,5 +287,14 @@ func (p patcherConfiguration) createPatcherVolumes() []corev1.Volume {
 			HostPath: &corev1.HostPathVolumeSource{Path: p.manifestsFolder, Type: &unset},
 		}},
 		constant.CrashVolume,
+	}
+}
+
+func (p patcherConfiguration) createSecurityContext() *corev1.SecurityContext {
+	if p.securityContext == nil || !p.securityContext.Enable {
+		return nil
+	}
+	return &corev1.SecurityContext{
+		Privileged: p.securityContext.Privileged,
 	}
 }

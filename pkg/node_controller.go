@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,7 +72,6 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
 					ServiceAccountName:            nodeControllerServiceAccountName,
 					DeprecatedServiceAccount:      nodeControllerServiceAccountName,
-					SecurityContext:               &corev1.PodSecurityContext{},
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
 					Volumes:                       []corev1.Volume{constant.CrashVolume},
@@ -99,7 +97,6 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 	if ns != nil {
 		args = append(args, "--nodeselector="+ns.Key+":"+ns.Value)
 	}
-
 	return []corev1.Container{
 		{
 			Name:            nodeController,

@@ -65,6 +65,8 @@ func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 	config.loglevel = csi.Spec.Scheduler.Log.Level
 	config.configFolder = configurationPath
 	config.resources = csi.Spec.Scheduler.Patcher.Resources
+	config.securityContext = csi.Spec.Scheduler.SecurityContext
+	config.serviceAccount = csi.Spec.Scheduler.ServiceAccount
 	return &config, nil
 }
 
@@ -78,6 +80,7 @@ type patcherConfiguration struct {
 	interval          int
 	restoreOnShutdown bool
 	resources         *components.ResourceRequirements
+	securityContext   *components.SecurityContext
 
 	platform        string
 	targetConfig    string
@@ -88,4 +91,5 @@ type patcherConfiguration struct {
 	configMapName   string
 	configFolder    string
 	kubeconfig      string
+	serviceAccount  string
 }

@@ -67,8 +67,8 @@ Installation process
       csi-node-sa and csi-baremetal-extender-sa will require Privileged SCC. In case there are no such permissions \
       CSI Operator will not deploy node and scheduler extender daemonsets. You can see the following events in such case:
       ```
-      65m         Warning   NodeRoleValidationFailed       deployment/csi-baremetal                              ServiceAccount csi-node-sa has insufficient securityContextConstraints, should have privileged
-      65m         Warning   ExtenderRoleValidationFailed   deployment/csi-baremetal                              ServiceAccount csi-baremetal-extender-sa has insufficient securityContextConstraints, should have privileged
+      65m         Warning   SecurityContextConstraintsVerificationFailed       deployment/csi-baremetal                              ServiceAccount csi-node-sa has insufficient securityContextConstraints, should have privileged
+      65m         Warning   SecurityContextConstraintsVerificationFailed       deployment/csi-baremetal                              ServiceAccount csi-baremetal-extender-sa has insufficient securityContextConstraints, should have privileged
       ```
       To make them deployable - create the following role and rolebinding in deployed namespace:
       ```yaml
@@ -118,6 +118,96 @@ Installation process
       helm install csi-baremetal csi/csi-baremetal-deployment --set driver.drivemgr.type=halmgr \
       --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
       ```
+Feature Supporting
+------
+### CIS hardening
+For supporting CIS Hardening we need to add the following settings while installing CSI and CSI Baremetal Operator:
+* While installing CSI Baremetal Operator set SecurityContext:
+  ```
+  --set securityContext.enable=true --set securityContext.runAsNonRoot=true --set securityContext.runAsUser=1000
+  ```
+* While installing CSI:
+  * Set the following SecurityContexts at deployments.csi-baremetal.dell.com for Controller, NodeController components:
+    ```
+    --set driver.controller.securityContext.enable=true --set driver.controller.securityContext.runAsNonRoot=true --set driver.controller.securityContext.runAsUser=1000 \
+    --set driver.securityContext.securityContext.enable=true --set driver.securityContext.securityContext.runAsNonRoot=true --set driver.securityContext.securityContext.runAsUser=1000
+    ```
+  * Create (if not existed) privileged PodSecurityPolicy:
+    ```
+    apiVersion: policy/v1beta1
+    kind: PodSecurityPolicy
+    metadata:
+      name: privileged
+      annotations:
+        seccomp.security.alpha.kubernetes.io/allowedProfileNames: '*'
+    spec:
+      privileged: true
+      allowPrivilegeEscalation: true
+      allowedCapabilities:
+      - '*'
+      volumes:
+      - '*'
+      hostNetwork: true
+      hostPorts:
+      - min: 0
+        max: 65535
+      hostIPC: true
+      hostPID: true
+      runAsUser:
+        rule: 'RunAsAny'
+      seLinux:
+        rule: 'RunAsAny'
+      supplementalGroups:
+        rule: 'RunAsAny'
+      fsGroup:
+        rule: 'RunAsAny'
+    ```
+  * Create Role for this policy usage:
+    ```
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: manager-role
+      namespace: test-namespace
+    rules:
+    - apiGroups:
+      - policy
+        resourceNames:
+      - privileged
+        resources:
+      - podsecuritypolicies
+        verbs:
+      - use
+    ```
+  * Create RoleBinding for this policy usage:
+    ```
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: manager-rolebinding
+      namespace: test-namespace
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: manager-role
+    subjects:
+    - kind: ServiceAccount
+      name: csi-node-sa
+      namespace: test-namespace
+    - kind: ServiceAccount
+      name: csi-baremetal-extender-sa
+      namespace: test-namespace
+    ```
+  * Set the following SecurityContexts at deployments.csi-baremetal.dell.com for SchedulerExtender, SchedulerExtenderPatcher components:
+    ```
+    --set scheduler.securityContext.enable=true --set scheduler.securityContext.privileged=true
+    ```
+  * Enable podSecurityPolicy at deployments.csi-baremetal.dell.com for Controller, Node, SchedulerExtender, SchedulerExtenderPatcher components:
+    ```
+    --set driver.controller.securityContext.enable=true --set driver.controller.securityContext.runAsNonRoot=true --set driver.controller.securityContext.runAsUser=1000 \
+    --set driver.node.podSecurityPolicy.enable=true --set driver.node.podSecurityPolicy.resourceName=privileged \
+    --set scheduler.podSecurityPolicy.enable=true --set scheduler.podSecurityPolicy.resourceName=privileged
+    ```
 Usage
 ------
 
