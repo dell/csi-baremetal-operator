@@ -50,6 +50,9 @@ driver:
       requests:
         cpu:
         memory:
+    securityContext:
+      enable:
+      runAsNonRoot:
 
   node:
     serviceAccount: csi-node-sa

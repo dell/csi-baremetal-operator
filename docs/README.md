@@ -202,8 +202,9 @@ For supporting CIS Hardening we need to add the following settings while install
     ```
     --set scheduler.securityContext.enable=true --set scheduler.securityContext.privileged=true
     ```
-  * Enable podSecurityPolicy at deployments.csi-baremetal.dell.com for Node, SchedulerExtender, SchedulerExtenderPatcher components:
+  * Enable podSecurityPolicy at deployments.csi-baremetal.dell.com for Controller, Node, SchedulerExtender, SchedulerExtenderPatcher components:
     ```
+    --set driver.controller.securityContext.enable=true --set driver.controller.securityContext.runAsNonRoot=true --set driver.controller.securityContext.runAsUser=1000 \
     --set driver.node.podSecurityPolicy.enable=true --set driver.node.podSecurityPolicy.resourceName=privileged \
     --set scheduler.podSecurityPolicy.enable=true --set scheduler.podSecurityPolicy.resourceName=privileged
     ```

@@ -32,6 +32,12 @@ spec:
       log:
         format: {{ .Values.driver.log.format }}
         level: {{ .Values.driver.log.level }}
+      {{- if .Values.driver.controller.securityContext.enable }}
+      securityContext:
+        enable: {{ .Values.driver.controller.securityContext.enable }}
+        runAsNonRoot: {{ .Values.driver.controller.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.driver.controller.securityContext.runAsUser }}
+      {{- end }}
       sidecars:
         livenessprobe:
           image:

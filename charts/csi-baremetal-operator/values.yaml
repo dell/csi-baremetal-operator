@@ -18,6 +18,6 @@ resources:
     memory: 20Mi
 
 securityContext:
-  enable: true
-  runAsNonRoot: true
-  runAsUser: 1000
+  enable:
+  runAsNonRoot:
+  runAsUser:

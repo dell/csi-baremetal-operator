@@ -96,6 +96,23 @@ spec:
                             nullable: true
                             type: object
                         type: object
+                      securityContext:
+                        description: SecurityContext represents security context
+                        properties:
+                          enable:
+                            type: boolean
+                          privileged:
+                            type: boolean
+                          runAsNonRoot:
+                            default: true
+                            type: boolean
+                          runAsUser:
+                            default: 1000
+                            format: int64
+                            type: integer
+                        required:
+                        - enable
+                        type: object
                       sidecars:
                         additionalProperties:
                           description: Sidecar represent CSI sidecar containers
@@ -413,16 +430,6 @@ spec:
                         nullable: true
                         type: object
                     type: object
-                  securityContext:
-                    description: SecurityContext represents security context
-                    properties:
-                      enable:
-                        type: boolean
-                      privileged:
-                        type: boolean
-                    required:
-                    - enable
-                    type: object
                 required:
                 - enable
                 type: object
@@ -592,6 +599,13 @@ spec:
                         type: boolean
                       privileged:
                         type: boolean
+                      runAsNonRoot:
+                        default: true
+                        type: boolean
+                      runAsUser:
+                        default: 1000
+                        format: int64
+                        type: integer
                     required:
                     - enable
                     type: object
