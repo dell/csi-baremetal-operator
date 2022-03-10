@@ -126,8 +126,7 @@ leaderElection:
 clientConnection:
   kubeconfig: %s`, cfg.targetPolicy, cfg.kubeconfig)
 
-	vanillaConfig19 :=
-		fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta1
+	vanillaNewConfigTemplate := `apiVersion: kubescheduler.config.k8s.io/%s
 kind: KubeSchedulerConfiguration
 extenders:
   - urlPrefix: "http://127.0.0.1:%s"
@@ -142,7 +141,10 @@ extenders:
 leaderElection:
   leaderElect: true
 clientConnection:
-  kubeconfig: %s`, csi.Spec.Scheduler.ExtenderPort, cfg.kubeconfig)
+  kubeconfig: %s`
+
+	vanillaConfig19 := fmt.Sprintf(vanillaNewConfigTemplate, "v1beta1", csi.Spec.Scheduler.ExtenderPort, cfg.kubeconfig)
+	vanillaConfig23 := fmt.Sprintf(vanillaNewConfigTemplate, "v1beta3", csi.Spec.Scheduler.ExtenderPort, cfg.kubeconfig)
 
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{},
@@ -154,6 +156,7 @@ clientConnection:
 			policyFile:   vanillaPolicy,
 			configFile:   vanillaConfig,
 			config19File: vanillaConfig19,
+			config23File: vanillaConfig23,
 		}}, nil
 }
 
@@ -250,6 +253,8 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				"--source-policy-path=" + p.configFolder + "/" + policyFile,
 				"--source_config_19_path=" + configurationPath + "/" + config19File,
 				"--target_config_19_path=" + p.targetConfig19,
+				"--source_config_23_path=" + configurationPath + "/" + config23File,
+				"--target_config_23_path=" + p.targetConfig23,
 				"--backup-path=" + p.schedulerFolder,
 				"--platform=" + p.platform,
 			},

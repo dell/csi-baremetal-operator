@@ -21,10 +21,12 @@ const (
 	policyFile   = "policy.yaml"
 	configFile   = "config.yaml"
 	config19File = "config-19.yaml"
+	config23File = "config-23.yaml"
 
 	policyPath   = schedulerFolder + "/" + policyFile
 	configPath   = schedulerFolder + "/" + configFile
 	config19Path = schedulerFolder + "/" + config19File
+	config23Path = schedulerFolder + "/" + config23File
 )
 
 // newPatcherConfiguration creates patcherConfiguration
@@ -37,6 +39,7 @@ func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 			targetConfig:    path.Join(vanillaManifestsFolder, configPath),
 			targetPolicy:    path.Join(vanillaManifestsFolder, policyPath),
 			targetConfig19:  path.Join(vanillaManifestsFolder, config19Path),
+			targetConfig23:  path.Join(vanillaManifestsFolder, config23Path),
 			schedulerFolder: path.Join(vanillaManifestsFolder, schedulerFolder),
 			manifestsFolder: vanillaManifestsFolder,
 			kubeconfig:      vanillaKubeconfig,
@@ -47,6 +50,7 @@ func newPatcherConfiguration(csi *csibaremetalv1.Deployment) (*patcherConfigurat
 			targetConfig:    path.Join(rke2ManifestsFolder, configPath),
 			targetPolicy:    path.Join(rke2ManifestsFolder, policyPath),
 			targetConfig19:  path.Join(rke2ManifestsFolder, config19Path),
+			targetConfig23:  path.Join(rke2ManifestsFolder, config23Path),
 			schedulerFolder: path.Join(rke2ManifestsFolder, schedulerFolder),
 			manifestsFolder: rke2ManifestsFolder,
 			kubeconfig:      rke2Kubeconfig,
@@ -86,6 +90,7 @@ type patcherConfiguration struct {
 	targetConfig    string
 	targetPolicy    string
 	targetConfig19  string
+	targetConfig23  string
 	schedulerFolder string
 	manifestsFolder string
 	configMapName   string
