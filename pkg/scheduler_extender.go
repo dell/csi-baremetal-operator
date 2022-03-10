@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -176,6 +177,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled 
 				"--privateKeyFile=",
 				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
 				"--metrics-path=/metrics",
+				"--nodeselector=" + fmt.Sprintf("%s=%s", csi.Spec.NodeSelector.Key, csi.Spec.NodeSelector.Value),
 				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
 				"--isPatchingEnabled=" + strconv.FormatBool(isPatchingEnabled),
 			},
