@@ -161,26 +161,32 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled 
 			MountPath: patcher.ExtenderConfigMapPath,
 			ReadOnly:  true})
 	}
+	args := []string{
+		"--namespace=$(NAMESPACE)",
+		"--provisioner=" + constant.CSIName,
+		"--port=" + strconv.Itoa(extenderPort),
+		"--healthport=" + strconv.Itoa(healthPort),
+		"--loglevel=" + common.MatchLogLevel(csi.Spec.Scheduler.Log.Level),
+		"--certFile=",
+		"--privateKeyFile=",
+		"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
+		"--metrics-path=/metrics",
+		"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
+		"--isPatchingEnabled=" + strconv.FormatBool(isPatchingEnabled),
+	}
+	if csi.Spec.NodeSelector != nil {
+		args = append(
+			args,
+			"--nodeselector="+fmt.Sprintf("%s=%s", csi.Spec.NodeSelector.Key, csi.Spec.NodeSelector.Value),
+		)
+	}
 
 	return []corev1.Container{
 		{
 			Name:            extenderContainerName,
 			Image:           common.ConstructFullImageName(csi.Spec.Scheduler.Image, csi.Spec.GlobalRegistry),
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
-			Args: []string{
-				"--namespace=$(NAMESPACE)",
-				"--provisioner=" + constant.CSIName,
-				"--port=" + strconv.Itoa(extenderPort),
-				"--healthport=" + strconv.Itoa(healthPort),
-				"--loglevel=" + common.MatchLogLevel(csi.Spec.Scheduler.Log.Level),
-				"--certFile=",
-				"--privateKeyFile=",
-				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
-				"--metrics-path=/metrics",
-				"--nodeselector=" + fmt.Sprintf("%s=%s", csi.Spec.NodeSelector.Key, csi.Spec.NodeSelector.Value),
-				"--usenodeannotation=" + strconv.FormatBool(csi.Spec.NodeIDAnnotation),
-				"--isPatchingEnabled=" + strconv.FormatBool(isPatchingEnabled),
-			},
+			Args:            args,
 			Env: []corev1.EnvVar{
 				{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
