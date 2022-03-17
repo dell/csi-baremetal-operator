@@ -1,6 +1,7 @@
 [![PR validation](https://github.com/dell/csi-baremetal-operator/actions/workflows/pr.yml/badge.svg)](https://github.com/dell/csi-baremetal-operator/actions/workflows/pr.yml)
 [![codecov](https://codecov.io/gh/dell/csi-baremetal-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/dell/csi-baremetal-operator)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dell/csi-baremetal-operator)](https://goreportcard.com/report/github.com/dell/csi-baremetal-operator)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.18--v1.23-success?logo=kubernetes&logoColor=lightgrey)
 
 Bare-metal CSI Operator
 =====================
@@ -9,11 +10,12 @@ Kubernetes Operator to deploy and manage lifecycle of [Bare-Metal CSI Driver](ht
 
 Supported environments
 ----------------------
-- **Kubernetes**: 1.18, 1.19, 1.20, 1.21, 1.22
 - **OpenShift**: 4.6
+- **RKE2r1**: 1.21-1.23
 - **Node OS**:
   - Ubuntu 18.04 / 20.04 LTS
-  - Red Hat Enterprise Linux 7.7 / CoreOS 4.6
+  - Red Hat Enterprise Linux 7.7 / 8.x
+  - Red Hat Enterprise Linux CoreOS 4.6
   - CentOS Linux 7 / 8
 - **Helm**: 3.0
 
