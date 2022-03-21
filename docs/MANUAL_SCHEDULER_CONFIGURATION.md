@@ -78,8 +78,8 @@ following manual steps are required. Note that user must wait for all scheduler 
                ...
                - --config=/etc/kubernetes/manifests/scheduler/config.yaml
             ```
-    * To manually patch version 1.19 and above perform the following steps on all master nodes of your cluster
-        * Create configuration file _/etc/kubernetes/manifests/scheduler/config-19.yaml_
+    * To manually patch version 1.19-22 perform the following steps on all master nodes of your cluster
+        * Create configuration file _/etc/kubernetes/manifests/scheduler/config.yaml_
         ```yaml
         apiVersion: kubescheduler.config.k8s.io/v1beta1
         kind: KubeSchedulerConfiguration
@@ -102,15 +102,15 @@ following manual steps are required. Note that user must wait for all scheduler 
             ```yaml
             volumes:
             - hostPath:
-                path: /etc/kubernetes/manifests/scheduler/config-19.yaml
+                path: /etc/kubernetes/manifests/scheduler/config.yaml
                 type: File
-              name: scheduler-config-19
+              name: scheduler-config
             ```
             * Volume mount
             ```yaml
             volumeMounts:
-            - mountPath: /etc/kubernetes/manifests/scheduler/config-19.yaml
-              name: scheduler-config-19
+            - mountPath: /etc/kubernetes/manifests/scheduler/config.yaml
+              name: scheduler-config
               readOnly: true
             ```
             * Command parameter
@@ -120,8 +120,9 @@ following manual steps are required. Note that user must wait for all scheduler 
               - command:
                - kube-scheduler
                ...
-               - --config=/etc/kubernetes/manifests/scheduler/config-19.yaml
+               - --config=/etc/kubernetes/manifests/scheduler/config.yaml
             ```
+    * To manually patch version 1.23 and above use new _apiVersion_ `kubescheduler.config.k8s.io/v1beta3` in the configuration manifest
 * RKE2
     * Follow instructions for vanilla Kubernetes, but use the following path to the scheduler configuration file
     `/var/lib/rancher/rke2/agent/pod-manifests/`
