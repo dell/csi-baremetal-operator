@@ -25,10 +25,13 @@ type Controller struct {
 	// +optional
 	Resources *ResourceRequirements `json:"resources,omitempty"`
 	// FastDelay is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
+	// +kubebuilder:default:="1500ms"
 	FastDelay string `json:"fastDelay,omitempty"`
 	// SlowDelay is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
+	// +kubebuilder:default:="12s"
 	SlowDelay string `json:"slowDelay,omitempty"`
 	// MaxFastAttempts is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
+	// +kubebuilder:default:=30
 	MaxFastAttempts uint             `json:"maxFastAttempts,omitempty"`
 	SecurityContext *SecurityContext `json:"securityContext,omitempty"`
 }
