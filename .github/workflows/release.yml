@@ -45,7 +45,9 @@ jobs:
           echo "::set-output name=sha::${{ steps.target.outputs._3 }}"
           app_version=$(awk '{ sub(/.*v/, ""); sub(/-.*/, ""); print }' <<< ${{ github.event.inputs.release_tag }})
           echo "::set-output name=app_version::${app_version}"
-
+          previous_tag=$(git tag --sort=-creatordate | grep -A 1 ${{ github.event.inputs.release_tag }} | tail -n 1)
+          echo "::set-output name=previous_tag::${previous_tag}"
+          
       - name: Install python3
         uses: actions/setup-python@v2
         with:
@@ -67,7 +69,7 @@ jobs:
         run: |
           TAG_NAME=${{ github.event.inputs.release_tag }}
           git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME"
-          git push origin $TAG_NAME
+#          git push origin $TAG_NAME
 
       - name: Create csi-baremetal-operator asset
         id: asset_1
@@ -98,7 +100,7 @@ jobs:
         uses: mikepenz/release-changelog-builder-action@v1
         with:
           token: ${{ secrets.CSI_WF_TOKEN }}
-          fromTag: ${{ steps.previous_tag.outputs.tag }}
+          fromTag: ${{ steps.vars.outputs.previous_tag }}
           toTag: ${{ github.event.inputs.release_tag }}
           configuration: "./.github/workflows/changelog_config.json"
 
@@ -138,14 +140,14 @@ jobs:
           helm repo index . --url ${assets_url} --merge docs/index.yaml
           mv ./index.yaml -f ./docs
 
-      - name: Commit and push changes
-        id: commit_docs
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "Update Helm repo index"
-          commit_options: --signoff
-          file_pattern: ./docs/index.yaml
-          branch: gh-pages
+      # - name: Commit and push changes
+      #   id: commit_docs
+      #   uses: stefanzweifel/git-auto-commit-action@v4
+      #   with:
+      #     commit_message: "Update Helm repo index"
+      #     commit_options: --signoff
+      #     file_pattern: ./docs/index.yaml
+      #     branch: gh-pages
 
       # - name: Send slack notification
       #   uses: rtCamp/action-slack-notify@v2
