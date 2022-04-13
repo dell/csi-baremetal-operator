@@ -16,7 +16,7 @@ on:
         description: 'Release branch name'
         required: true
       prerelease:
-        description: 'Is it minor or GA version'
+        description: 'Is it a prerelease'
         required: true
 
 jobs:
