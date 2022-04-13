@@ -128,17 +128,17 @@ Installation process
       --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
       ```
 * Note about Upgrade
-  The code below describe upgrade from 1.0.x to 1.1.x
-  * About CRD
-    > There is no support at this time for upgrading or deleting CRDs using [Helm](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/).
 
-    In order to upgrade CRD use `kubectl apply -f ...` command.
-    ```bash
-    export CSI_OPERATOR_VERSION=VERSION WITH PATH
-    wget http://artifactory/csi-operator/$CSI_OPERATOR_VERSION/csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz
-    tar -xzvf csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz
-    kubectl apply -f csi-baremetal-operator/crds/
-    ```
+  The code below describe upgrade from 1.0.x to 1.1.x
+  > There is no support at this time for upgrading or deleting CRDs using [Helm](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/).
+
+  In order to upgrade CRD use `kubectl apply -f ...` command.
+  ```bash
+  export CSI_OPERATOR_VERSION=VERSION WITH PATH
+  wget http://artifactory/csi-operator/$CSI_OPERATOR_VERSION/csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz
+  tar -xzvf csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz
+  kubectl apply -f csi-baremetal-operator/crds/
+  ```
 Feature Supporting
 ------
 ### CIS hardening
