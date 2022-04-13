@@ -127,27 +127,8 @@ Installation process
       helm install csi-baremetal csi/csi-baremetal-deployment --set driver.drivemgr.type=halmgr \
       --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
       ```
-* Upgrade process
+* Note about Upgrade
   The code below describe upgrade from 1.0.x to 1.1.x
-  * Prerequisites
-      * *helm v3.7.1*
-      * *kubectl v1.22.3*
-  * Add helm repository
-      ```shell script
-      helm repo add csi https://dell.github.io/csi-baremetal-operator
-      helm repo update
-      helm search repo csi -l
-      ```
-  * Setup environment variables
-      ```shell script
-      export REGISTRY=docker.io/objectscale
-      export DOCKER_REGISTRY_SECRET=dockerhub-pull-secret
-      ```
-  * Create docker registry secret
-      ```shell script
-      kubectl create secret docker-registry $DOCKER_REGISTRY_SECRET --docker-username=<USER NAME> \
-    --docker-password=<PASSWORD> --docker-email=<EMAIL>
-      ```
   * About CRD
     > There is no support at this time for upgrading or deleting CRDs using [Helm](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/).
 
@@ -158,11 +139,6 @@ Installation process
     tar -xzvf csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz
     kubectl apply -f csi-baremetal-operator/crds/
     ```
-  * Upgrade CSI Operator
-      ```shell script
-      helm upgrade csi-baremetal-operator csi/csi-baremetal-operator --set global.registry=$REGISTRY \
-    --set global.registrySecret=$DOCKER_REGISTRY_SECRET
-      ```
 Feature Supporting
 ------
 ### CIS hardening
