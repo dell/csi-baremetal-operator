@@ -15,10 +15,13 @@ on:
       branch:
         description: 'Release branch name'
         required: true
+      prerelease:
+        description: 'Is it minor or GA version'
+        required: true
 
 jobs:
-  create_release:
-    name: Create pre-release
+  release:
+    name: Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -45,9 +48,18 @@ jobs:
           echo "::set-output name=sha::${{ steps.target.outputs._3 }}"
           app_version=$(awk '{ sub(/.*v/, ""); sub(/-.*/, ""); print }' <<< ${{ github.event.inputs.release_tag }})
           echo "::set-output name=app_version::${app_version}"
-          previous_tag=$(git tag --sort=-creatordate | grep -A 1 ${{ github.event.inputs.release_tag }} | tail -n 1)
+          previous_tag=$(git tag --sort=-creatordate | cut --delimiter " " --fields 1)
           echo "::set-output name=previous_tag::${previous_tag}"
-          
+
+      - name: Install helm
+        run: |
+          if ! command -v helm &> /dev/null
+          then
+            curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+            chmod 700 get_helm.sh
+            ./get_helm.sh
+          fi
+
       - name: Install python3
         uses: actions/setup-python@v2
         with:
@@ -66,10 +78,11 @@ jobs:
         run: echo $(yq -i -y '.image.tag="${{ github.event.inputs.csi_version }}"' ./charts/csi-baremetal-deployment/values.yaml)
 
       - name: Tag release with annotation
+        if: ${{ !env.ACT }}
         run: |
           TAG_NAME=${{ github.event.inputs.release_tag }}
           git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME"
-#          git push origin $TAG_NAME
+          git push origin $TAG_NAME
 
       - name: Create csi-baremetal-operator asset
         id: asset_1
@@ -78,10 +91,11 @@ jobs:
           echo "::set-output name=archive_name::csi-baremetal-operator-${{ github.event.inputs.csi_operator_version }}.tgz"
 
       - name: Upload csi-baremetal-operator asset
+        if: ${{ !env.ACT }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.asset_1.outputs.archive_name }}
-          path: ./${{ steps.asset_1.outputs.archive_name }}
+          path: ${{ steps.asset_1.outputs.archive_name }}
 
       - name: Create csi-baremetal-deployment asset
         id: asset_2
@@ -90,10 +104,11 @@ jobs:
           echo "::set-output name=archive_name::csi-baremetal-deployment-${{ github.event.inputs.csi_operator_version }}.tgz"
 
       - name: Upload csi-baremetal-deployment asset
+        if: ${{ !env.ACT }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.asset_2.outputs.archive_name }}
-          path: ./${{ steps.asset_2.outputs.archive_name }}
+          path: ${{ steps.asset_2.outputs.archive_name }}
 
       - name: Generate changelog
         id: changelog
@@ -113,7 +128,7 @@ jobs:
           name: Release ${{ github.event.inputs.release_tag }}
           body: ${{ steps.changelog.outputs.changelog }}
           draft: false
-          prerelease: true
+          prerelease: ${{ github.event.inputs.prerelease }}
           files: |
             ./${{ steps.asset_1.outputs.archive_name }}
             ./${{ steps.asset_2.outputs.archive_name }}
@@ -124,11 +139,13 @@ jobs:
           ref: gh-pages
 
       - name: Download csi-baremetal-operator package
+        if: ${{ !env.ACT }}
         uses: actions/download-artifact@v2
         with:
           name: ${{ steps.asset_1.outputs.archive_name }}
 
       - name: Download csi-baremetal-deployment package
+        if: ${{ !env.ACT }}
         uses: actions/download-artifact@v2
         with:
           name: ${{ steps.asset_2.outputs.archive_name }}
@@ -140,14 +157,15 @@ jobs:
           helm repo index . --url ${assets_url} --merge docs/index.yaml
           mv ./index.yaml -f ./docs
 
-      # - name: Commit and push changes
-      #   id: commit_docs
-      #   uses: stefanzweifel/git-auto-commit-action@v4
-      #   with:
-      #     commit_message: "Update Helm repo index"
-      #     commit_options: --signoff
-      #     file_pattern: ./docs/index.yaml
-      #     branch: gh-pages
+      - name: Commit and push changes
+        if: ${{ !env.ACT }}
+        id: commit_docs
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Update Helm repo index"
+          commit_options: --signoff
+          file_pattern: ./docs/index.yaml
+          branch: gh-pages
 
       # - name: Send slack notification
       #   uses: rtCamp/action-slack-notify@v2
