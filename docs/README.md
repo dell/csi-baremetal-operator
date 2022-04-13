@@ -245,8 +245,6 @@ Upgrade process
 To upgrade please reference _Installation process_ section but replace `helm install` by `helm upgrade` command
 
 * Note about Upgrade
-
-  The code below describe upgrade from 1.0.x to 1.1.x
   > There is no support at this time for upgrading or deleting CRDs using [Helm](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/).
 
   In order to upgrade CRD use `kubectl apply -f ...` command.
