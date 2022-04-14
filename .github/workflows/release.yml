@@ -18,6 +18,7 @@ on:
       prerelease:
         description: 'Is it a prerelease'
         required: true
+        type: boolean
 
 jobs:
   release:
