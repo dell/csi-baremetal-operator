@@ -1,6 +1,6 @@
 Manual CSI migration into another namespace
 ---------------------
-It may happen that CSI charts should be moved into another default or non-default namespace. 
+It may happen that CSI charts (including pods and configmaps) should be moved into another default or non-default namespace. 
 `helm upgrade` is not suitable in this case due to kubernetes objects fields restrictions.
 So we need to delete and install CSI charts, which is described in the steps below.
 
@@ -16,7 +16,7 @@ helm install csi-baremetal <chart_path> -n $NAMESPACE <other_args>
 ```
 3. Wait for all pods to be ready
 ```yaml
-watch kubectl get po -n $NAMESPACE
+watch kubectl get po -n $NAMESPACE -l app=csi-baremetal
 ```
 4. Remove unrelated resources
 ```yaml
