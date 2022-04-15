@@ -26,9 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
+          token: ${{ secrets.CSI_WF_TOKEN }}
 
       - name: Configure Git
         run: |
@@ -79,7 +81,6 @@ jobs:
         run: echo $(yq -i -y '.image.tag="${{ github.event.inputs.csi_version }}"' ./charts/csi-baremetal-deployment/values.yaml)
 
       - name: Tag release with annotation
-        if: ${{ !env.ACT }}
         run: |
           TAG_NAME=${{ github.event.inputs.release_tag }}
           git tag -a -f $TAG_NAME ${{ steps.vars.outputs.sha }} -m "release $TAG_NAME"
