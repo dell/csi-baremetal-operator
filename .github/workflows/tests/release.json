@@ -1,0 +1,10 @@
+{
+  "inputs": {
+    "csi_version": "1.1.0-569.d875c82",
+    "csi_operator_version": "1.1.0-99.36a85e3",
+    "release_tag": "v1.1.0-test",
+    "branch": "master",
+    "prerelease": false
+  },
+  "workflow": ".github/workflows/release.yml"
+}
