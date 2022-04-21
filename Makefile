@@ -90,3 +90,20 @@ lint-operator-chart:
 
 lint-code:
 	${GO_ENV_VARS} golangci-lint -v run --timeout 3m ./...
+
+### Workflows
+workflows-lint:
+	actionlint
+
+test-release:
+	act workflow_dispatch -e .github/workflows/tests/release.json --secret-file .github/workflows/tests/wf.secrets
+	$(MAKE) cleanup
+
+test-pre-release:
+	act workflow_dispatch -e .github/workflows/tests/pre-release.json --secret-file .github/workflows/tests/wf.secrets
+	$(MAKE) cleanup
+
+test-release-workflow: test-pre-release test-release
+
+cleanup:
+	bash .github/workflows/tests/cleanup.sh
