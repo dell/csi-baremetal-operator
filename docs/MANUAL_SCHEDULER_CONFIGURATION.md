@@ -128,10 +128,10 @@ following manual steps are required. Note that user must wait for all scheduler 
     `/var/lib/rancher/rke2/agent/pod-manifests/`
 
 * K3S
-    * For manual patching folow next instructions  
+    * For manual patching follow the instructions below on all master nodes
       * Create next configuration file in directory `/var/lib/rancher/k3s/agent/pod-manifests/scheduler`:
         
-        ```
+        ```yaml
         apiVersion: kubescheduler.config.k8s.io/v1beta1
         kind: KubeSchedulerConfiguration
         extenders:
@@ -162,6 +162,8 @@ following manual steps are required. Note that user must wait for all scheduler 
           ```
 
       * Manually restart k3s service with new parameter `systemctl daemon-reload && systemctl restart k3s` .
+
+    * To manually patch version 1.23 and above use `kubescheduler.config.k8s.io/v1beta3` in the configuration manifest
 
     * For uninstall need to return service file to it's previous state. Delete `--kube-scheduler-arg` and restart service to apply changes.      
 
