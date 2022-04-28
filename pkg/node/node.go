@@ -17,10 +17,6 @@ import (
 	verifierModels "github.com/dell/csi-baremetal-operator/pkg/feature/security_verifier/models"
 )
 
-const (
-	platformLabel = "nodes.csi-baremetal.dell.com/platform"
-)
-
 // Node controls csi-baremetal-node
 type Node struct {
 	clientset                          kubernetes.Interface
