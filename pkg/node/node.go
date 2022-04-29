@@ -5,9 +5,12 @@ import (
 	"errors"
 
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
@@ -74,6 +77,33 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 	if err := common.UpdateDaemonSet(ctx, n.clientset, expected, n.log); err != nil {
 		n.log.Error(err, "Failed to update daemonset "+expected.Name)
 		return err
+	}
+
+	return nil
+}
+
+// Uninstall deletes uuid-label on each node in cluster
+func (n *Node) Uninstall(ctx context.Context, _ *csibaremetalv1.Deployment) error {
+	return n.cleanNodeLabels(ctx)
+}
+
+func (n *Node) cleanNodeLabels(ctx context.Context) error {
+	nodes, err := n.clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, node := range nodes.Items {
+		nodeIns := node.DeepCopy()
+		// delete label with NodeID
+		// workaround to work with csi-node-driver-registrar sidecar internal logic
+		// implemented in this method to decrease Kubernetes API calls
+		if _, ok := nodeIns.Labels[nodeconst.NodeIDTopologyLabelKey]; ok {
+			delete(nodeIns.Labels, nodeconst.NodeIDTopologyLabelKey)
+			if _, err := n.clientset.CoreV1().Nodes().Update(ctx, nodeIns, metav1.UpdateOptions{}); err != nil {
+				n.log.Error(err, "Failed to delete label on "+nodeIns.Name)
+			}
+		}
 	}
 
 	return nil

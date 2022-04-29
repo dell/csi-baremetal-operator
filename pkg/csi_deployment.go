@@ -160,6 +160,11 @@ func (c *CSIDeployment) Uninstall(ctx context.Context, csi *csibaremetalv1.Deplo
 		errMsgs = append(errMsgs, err.Error())
 	}
 
+	err = c.node.Uninstall(ctx, csi)
+	if err != nil {
+		errMsgs = append(errMsgs, err.Error())
+	}
+
 	if len(errMsgs) != 0 {
 		return fmt.Errorf(strings.Join(errMsgs, "\n"))
 	}
