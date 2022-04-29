@@ -115,6 +115,13 @@ Installation process
       --set driver.drivemgr.type=loopbackmgr --set driver.drivemgr.deployConfig=true --set global.registry=$REGISTRY \
       --set global.registrySecret=$DOCKER_REGISTRY_SECRET
       ```
+    * [K3S](https://k3s.io/)
+      ```
+      helm install csi-baremetal csi/csi-baremetal-deployment --set driver.drivemgr.type=halmgr \
+      --set global.registry=$REGISTRY --set global.registrySecret=$DOCKER_REGISTRY_SECRET
+      ```
+      **Note:** Currently supports only manual patching -  refer [documentation](MANUAL_SCHEDULER_CONFIGURATION.md) 
+
     * Not supported platform or system with third party Kubernetes scheduler extender - refer [documentation](MANUAL_SCHEDULER_CONFIGURATION.md) for manual patching of Kubernetes scheduler configuration
       ```
       helm install csi-baremetal csi/csi-baremetal-deployment --set driver.drivemgr.type=halmgr \
