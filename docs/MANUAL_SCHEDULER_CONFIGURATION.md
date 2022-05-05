@@ -127,6 +127,46 @@ following manual steps are required. Note that user must wait for all scheduler 
     * Follow instructions for vanilla Kubernetes, but use the following path to the scheduler configuration file
     `/var/lib/rancher/rke2/agent/pod-manifests/`
 
+* K3S
+    * For manual patching follow the instructions below on all master nodes
+      * Create next configuration file in directory `/var/lib/rancher/k3s/agent/pod-manifests/scheduler`:
+        
+        ```yaml
+        apiVersion: kubescheduler.config.k8s.io/v1beta1
+        kind: KubeSchedulerConfiguration
+        extenders:
+          - urlPrefix: "http://127.0.0.1:8889"
+            filterVerb: filter
+            prioritizeVerb: prioritize
+            weight: 1
+            enableHTTPS: false
+            nodeCacheCapable: false
+            ignorable: true
+            httpTimeout: 15s
+        leaderElection:
+          leaderElect: true
+        clientConnection:
+          kubeconfig: /var/lib/rancher/k3s/server/cred/scheduler.kubeconfig
+        ```
+
+      *  Modify  `/etc/systemd/system/k3s.service`: add at the end of the option `ExecStart` next string `--kube-scheduler-arg=config=/var/lib/rancher/k3s/agent/pod-manifests/scheduler/config.yaml`. Service unit will look the same way:
+          ```
+            [Service]
+            . . .
+            ExecStartPre=/bin/sh -xc '! /usr/bin/systemctl is-enabled --quiet nm-cloud-setup.service'
+            ExecStartPre=-/sbin/modprobe br_netfilter
+            ExecStartPre=-/sbin/modprobe overlay
+            ExecStart=/usr/local/k3s \
+                service \  
+                --kube-scheduler-arg=config=/var/lib/rancher/k3s/agent/pod-manifests/scheduler/config.yaml 
+          ```
+
+      * Manually restart k3s service with new parameter `systemctl daemon-reload && systemctl restart k3s` .
+
+    * To manually patch version 1.23 and above use `kubescheduler.config.k8s.io/v1beta3` in the configuration manifest
+
+    * For uninstall need to return service file to it's previous state. Delete `--kube-scheduler-arg` and restart service to apply changes.      
+
 * OpenShift
     * If you have third party scheduler extender deployed add the following section to the config map specified in the
     cluster custom resource of scheduler CRD `oc describe scheduler cluster`
