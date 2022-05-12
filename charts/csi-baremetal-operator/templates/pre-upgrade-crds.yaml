@@ -1,0 +1,131 @@
+#
+# Copyright © 2022 Dell Inc. or its subsidiaries.
+# All Rights Reserved.
+#
+# This software contains the intellectual property of Dell Inc.
+# or is licensed to Dell Inc. from third parties. Use of this
+# software and the intellectual property contained therein is expressly
+# limited to the terms and conditions of the License Agreement under which
+# it is provided by or on behalf of Dell Inc. or its subsidiaries.
+#
+#
+
+#
+# Create the service account for replacing CRDs during upgrade.
+#
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-sa"
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{.Release.Name}}
+    app.kubernetes.io/managed-by: csi-baremetal-operator
+    release: {{.Release.Name}}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+{{- if .Values.global.registrySecret }}
+imagePullSecrets:
+  - name: {{ .Values.global.registrySecret }}
+{{- end }}
+
+#
+# Create the cluster role for replacing CRDs during upgrade.
+#
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-cr"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{.Release.Name}}
+    app.kubernetes.io/managed-by: csi-baremetal-operator
+    release: {{.Release.Name}}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-4"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+rules:
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    verbs:
+      - get
+      - list
+      - replace
+
+#
+# Create the cluster role binding for replacing CRDs during upgrade.
+#
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-crb"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{.Release.Name}}
+    app.kubernetes.io/managed-by: csi-baremetal-operator
+    release: {{.Release.Name}}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+subjects:
+  - kind: ServiceAccount
+    name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-sa"
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-cr"
+  apiGroup: rbac.authorization.k8s.io
+
+#
+# Create the job for replacing CRDs during upgrade.
+#
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job"
+  namespace: {{.Release.Namespace}}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{.Release.Name}}
+    app.kubernetes.io/managed-by: csi-baremetal-operator
+    release: {{.Release.Name}}
+spec:
+  backoffLimit: 4
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job"
+    spec:
+      serviceAccountName: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-sa"
+      restartPolicy: Never
+      {{- if .Values.global.registrySecret }}
+      imagePullSecrets:
+        - name: {{ .Values.global.registrySecret }}
+      {{- end }}
+      containers:
+        - name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job"
+          image: {{ default .Values.global.registry .Values.preUpgradeCRDsHooks.registry}}/{{ .Values.preUpgradeCRDsHooks.repository }}:{{ .Values.preUpgradeCRDsHooks.version }}
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+          - kubectl -n {{ .Release.Namespace }} replace crd -f ./crds/{{ .Chart.Name }}/*;

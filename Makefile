@@ -107,3 +107,12 @@ test-release-workflow: test-pre-release test-release
 
 cleanup:
 	bash .github/workflows/tests/cleanup.sh
+
+build-pre-upgrade-crds-image:
+	echo "Building container image pre-upgrade-crds"
+	docker build -t ${CRD_BUILD_IMAGE} -f ./build/CRD.Dockerfile .
+	docker push ${CRD_BUILD_IMAGE}
+
+tag-push-pre-upgrade-crds-image:
+	docker tag ${CRD_BUILD_IMAGE} ${CRD_BUILD_IMAGE}:${FULL_PACKAGE_VERSION}
+	docker push ${CRD_BUILD_IMAGE}
