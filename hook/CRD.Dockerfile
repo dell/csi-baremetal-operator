@@ -8,7 +8,10 @@
 # on behalf of Dell Inc. or its subsidiaries.
 
 # Dockerfile for csi-baremetal-pre-upgrade-crds
-ARG CRD_BUILD_IMAGE
-FROM $CRD_BUILD_IMAGE
+ARG KUBECTL_IMAGE
+FROM $KUBECTL_IMAGE
+USER root
 RUN mkdir ./crds
 COPY charts/csi-baremetal-operator/  ./crds/csi-baremetal-operator/
+RUN ls ./crds/csi-baremetal-operator
+USER 1001

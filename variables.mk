@@ -9,6 +9,7 @@ CONTROLLER_GEN_BIN=./bin/controller-gen
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 BASE_IMAGE ?= golang:1.16
 CRD_BUILD_IMAGE ?= ${REGISTRY}/atlantic/csi-baremetal-pre-upgrade-crds:${TAG}
+KUBECTL_IMAGE ?=  bitnami/kubectl:1.23.6 # https://hub.docker.com/r/bitnami/kubectl
 
 ### version
 MAJOR            := 1

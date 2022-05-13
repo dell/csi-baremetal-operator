@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "csi-baremetal-{{.Values.product}}-post-delete"
+  annotations:
+    "helm.sh/hook": post-delete-hook
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": hook-succeeded, before-hook-creation, hook-failed
+spec:
+  backoffLimit: 4
+  activeDeadlineSeconds: 60 
+  template:
+    metadata:
+      name: "csi-baremetal-{{.Values.product}}-post-delete"
+    spec:
+      serviceAccountName: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-sa"
+      restartPolicy: Never
+      containers:
+      - name: post-delete-job
+        image: "{{ .Values.global.registry }}/{{.Values.hooks.repository }}:{{ .Values.hooks.tag }}"
+        # command: ["kubectl", "delete", "secrets", ""]
