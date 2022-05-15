@@ -6,6 +6,7 @@ metadata:
   labels:
     app: csi-baremetal
     app.kubernetes.io/name: csi-baremetal
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   selector:
     matchLabels:
@@ -19,8 +20,7 @@ spec:
         app.kubernetes.io/name: csi-baremetal
         component: operator
         app.kubernetes.io/component: operator
-        # release label used by fluentbit to make "release" folder
-        release: {{ .Release.Name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       serviceAccount: csi-baremetal-operator-sa
       {{- if .Values.global.registrySecret }}
