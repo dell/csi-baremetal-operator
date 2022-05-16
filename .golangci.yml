@@ -57,9 +57,9 @@ linters:
     - prealloc
     - dupl
     - gosec
+    - gochecknoglobals
 
   # don't enable:
-  # - gochecknoglobals Because of setupMgr and CrushVolumes // TODO - https://github.com/dell/csi-baremetal/issues/474
   # - godox CSI now has a lot TODOs in source code
   # - wsl
   # - stylecheck because it is similar to golint and there is conflict between them

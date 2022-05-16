@@ -101,7 +101,7 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 						{Name: constant.CSISocketDirVolume, VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						}},
-						constant.CrashVolume,
+						constant.GetCrashVolume(),
 					},
 					Containers:                    createControllerContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
@@ -163,7 +163,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.LogsVolume, MountPath: "/var/log"},
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				constant.CrashMountVolume,
+				constant.GetCrashMountVolume(),
 			},
 			Ports: []corev1.ContainerPort{
 				{Name: constant.LivenessPort, ContainerPort: 9808, Protocol: corev1.ProtocolTCP},
@@ -218,7 +218,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			Resources: common.ConstructResourceRequirements(provisioner.Resources),
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				constant.CrashMountVolume,
+				constant.GetCrashMountVolume(),
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -239,7 +239,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				constant.CrashMountVolume,
+				constant.GetCrashMountVolume(),
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -255,7 +255,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				constant.CrashMountVolume,
+				constant.GetCrashMountVolume(),
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,

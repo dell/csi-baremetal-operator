@@ -85,7 +85,7 @@ func (n *Node) Update(ctx context.Context, csi *csibaremetalv1.Deployment, schem
 
 	for platformName, isDeploying := range needToDeploy {
 		if isDeploying {
-			expected := createNodeDaemonSet(csi, platforms[platformName])
+			expected := createNodeDaemonSet(csi, getPlatforms()[platformName])
 			if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 				n.log.Error(err, "Failed to set controller reference "+expected.Name)
 				continue
@@ -135,11 +135,11 @@ func (n *Node) updateNodeLabels(ctx context.Context, selector *components.NodeSe
 		needToDeploy[platformName] = true
 
 		// skip updating label if exists
-		if value, ok := node.Labels[platformLabel]; ok && (value == platforms[platformName].labeltag) {
+		if value, ok := node.Labels[platformLabel]; ok && (value == getPlatforms()[platformName].labeltag) {
 			continue
 		}
 
-		node.Labels[platformLabel] = platforms[platformName].labeltag
+		node.Labels[platformLabel] = getPlatforms()[platformName].labeltag
 		if _, err := n.clientset.CoreV1().Nodes().Update(ctx, &nodes.Items[i], metav1.UpdateOptions{}); err != nil {
 			n.log.Error(err, "Failed to update label on "+node.Name)
 			resultErr = err
@@ -190,7 +190,7 @@ type Set map[string]bool
 func createPlatformsSet() Set {
 	var result = Set{}
 
-	for key := range platforms {
+	for key := range getPlatforms() {
 		result[key] = false
 	}
 	return result

@@ -12,6 +12,10 @@ const (
 
 var supportedKernelVersion = semver.MustParse(supportedKernel)
 
+func getSupportedKernelVersion() *semver.Version {
+	return supportedKernelVersion
+}
+
 // PlatformDescription contains info to deploy specific node daemonsets
 // tag - the prefix for daemonset and image: csi-baremetal-node-<tag>
 // labeltag - label for node selctor
@@ -35,10 +39,14 @@ var (
 		"kernel-5.4": {
 			tag:          "kernel-5.4",
 			labeltag:     "kernel-5.4",
-			checkVersion: func(version *semver.Version) bool { return greaterOrEqual(version, supportedKernelVersion) },
+			checkVersion: func(version *semver.Version) bool { return greaterOrEqual(version, getSupportedKernelVersion()) },
 		},
 	}
 )
+
+func getPlatforms() map[string]*PlatformDescription {
+	return platforms
+}
 
 // DaemonsetName constructs name of daemonset based on tag
 func (pd *PlatformDescription) DaemonsetName(baseName string) string {
@@ -58,7 +66,7 @@ func (pd *PlatformDescription) NodeImage(baseImage *components.Image) *component
 // findPlatform calls checkVersion for all platforms in list,
 // returns first found platform-name or "default" if no one passed
 func findPlatform(kernelVersion *semver.Version) string {
-	for key, value := range platforms {
+	for key, value := range getPlatforms() {
 		if value.checkVersion(kernelVersion) {
 			return key
 		}

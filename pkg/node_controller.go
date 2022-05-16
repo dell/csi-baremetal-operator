@@ -74,7 +74,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 					DeprecatedServiceAccount:      nodeControllerServiceAccountName,
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
 					SchedulerName:                 corev1.DefaultSchedulerName,
-					Volumes:                       []corev1.Volume{constant.CrashVolume},
+					Volumes:                       []corev1.Volume{constant.GetCrashVolume()},
 				},
 			},
 		},
@@ -110,7 +110,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
-			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
+			VolumeMounts:             []corev1.VolumeMount{constant.GetCrashMountVolume()},
 			Resources:                common.ConstructResourceRequirements(resources),
 		},
 	}

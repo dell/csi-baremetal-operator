@@ -271,11 +271,11 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[platformLabel])
+		assert.Equal(t, getPlatforms()["default"].labeltag, updatedNode.Labels[platformLabel])
 
 		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[platformLabel])
+		assert.Equal(t, getPlatforms()["default"].labeltag, updatedNode.Labels[platformLabel])
 
 	})
 
@@ -301,11 +301,11 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
+		assert.Equal(t, getPlatforms()["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
 
 		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
+		assert.Equal(t, getPlatforms()["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
 	})
 
 	t.Run("Should deploy multi platform and label nodes", func(t *testing.T) {
@@ -329,11 +329,11 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
+		assert.Equal(t, getPlatforms()["kernel-5.4"].labeltag, updatedNode.Labels[platformLabel])
 
 		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[platformLabel])
+		assert.Equal(t, getPlatforms()["default"].labeltag, updatedNode.Labels[platformLabel])
 	})
 
 	t.Run("Error when node kernel version not readable", func(t *testing.T) {
@@ -382,7 +382,7 @@ func Test_updateNodeLabels(t *testing.T) {
 
 		updatedNode, err := node.clientset.CoreV1().Nodes().Get(ctx, node1.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
-		assert.Equal(t, platforms["default"].labeltag, updatedNode.Labels[platformLabel])
+		assert.Equal(t, getPlatforms()["default"].labeltag, updatedNode.Labels[platformLabel])
 
 		updatedNode, err = node.clientset.CoreV1().Nodes().Get(ctx, node2.Name, metav1.GetOptions{})
 		assert.Nil(t, err)

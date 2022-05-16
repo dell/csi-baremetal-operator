@@ -85,3 +85,13 @@ var (
 		Name: "crash-dump", MountPath: "/crash-dump",
 	}
 )
+
+// GetCrashVolume returns CrashVolume
+func GetCrashVolume() corev1.Volume {
+	return CrashVolume
+}
+
+// GetCrashMountVolume returns CrashMountVolume
+func GetCrashMountVolume() corev1.VolumeMount {
+	return CrashMountVolume
+}

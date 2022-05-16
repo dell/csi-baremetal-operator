@@ -143,7 +143,7 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 					Optional:             pointer.BoolPtr(true),
 				},
 			}},
-		constant.CrashVolume,
+		constant.GetCrashVolume(),
 	)
 
 	if isLoopbackMgr(csi.Spec.Driver.Node.DriveMgr.Image.Name) {
@@ -182,7 +182,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 	driveMgrMounts := []corev1.VolumeMount{
 		{Name: hostDevVolume, MountPath: "/dev"},
 		{Name: hostHomeVolume, MountPath: "/host/home"},
-		constant.CrashMountVolume,
+		constant.GetCrashMountVolume(),
 	}
 	if isLoopbackMgr(driveMgr.Image.Name) {
 		driveMgrMounts = append(driveMgrMounts, corev1.VolumeMount{Name: driveConfigVolume, MountPath: "/etc/config"})
@@ -200,7 +200,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		{Name: csiPathVolume, MountPath: "/var/lib/kubelet/plugins/kubernetes.io/csi", MountPropagation: &bidirectional},
 		{Name: hostRootVolume, MountPath: "/hostroot", MountPropagation: &bidirectional},
 		{Name: nodeConfigMapName, MountPath: nodeConfigPath},
-		constant.CrashMountVolume,
+		constant.GetCrashMountVolume(),
 	}
 	return []corev1.Container{
 		{
@@ -213,7 +213,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 			},
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
-				constant.CrashMountVolume,
+				constant.GetCrashMountVolume(),
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -237,7 +237,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: constant.CSISocketDirVolume, MountPath: "/csi"},
 				{Name: registrationDirVolume, MountPath: "/registration"},
-				constant.CrashMountVolume,
+				constant.GetCrashMountVolume(),
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,

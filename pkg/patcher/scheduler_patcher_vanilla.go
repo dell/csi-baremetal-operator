@@ -262,7 +262,7 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				{Name: p.configMapName, MountPath: configurationPath, ReadOnly: true},
 				{Name: kubernetesSchedulerVolume, MountPath: p.schedulerFolder},
 				{Name: kubernetesManifestsVolume, MountPath: p.manifestsFolder},
-				constant.CrashMountVolume,
+				constant.GetCrashMountVolume(),
 			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -291,7 +291,7 @@ func (p patcherConfiguration) createPatcherVolumes() []corev1.Volume {
 		{Name: kubernetesManifestsVolume, VolumeSource: corev1.VolumeSource{
 			HostPath: &corev1.HostPathVolumeSource{Path: p.manifestsFolder, Type: &unset},
 		}},
-		constant.CrashVolume,
+		constant.GetCrashVolume(),
 	}
 }
 

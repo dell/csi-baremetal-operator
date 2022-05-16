@@ -82,7 +82,7 @@ func (n *SchedulerExtender) Update(ctx context.Context, csi *csibaremetalv1.Depl
 func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	var (
 		extenderConfigMapMode = corev1.ConfigMapVolumeSourceDefaultMode
-		volumes               = []corev1.Volume{constant.CrashVolume}
+		volumes               = []corev1.Volume{constant.GetCrashVolume()}
 		isPatchingEnabled     = patcher.IsPatchingEnabled(csi)
 	)
 
@@ -153,7 +153,7 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 }
 
 func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled bool) []corev1.Container {
-	volumeMounts := []corev1.VolumeMount{constant.CrashMountVolume}
+	volumeMounts := []corev1.VolumeMount{constant.GetCrashMountVolume()}
 
 	if isPatchingEnabled {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
