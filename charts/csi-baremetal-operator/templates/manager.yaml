@@ -6,7 +6,6 @@ metadata:
   labels:
     app: csi-baremetal
     app.kubernetes.io/name: csi-baremetal
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   selector:
     matchLabels:
