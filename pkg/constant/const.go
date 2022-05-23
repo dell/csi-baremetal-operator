@@ -66,8 +66,8 @@ const (
 
 	// SelectorKey is a key for Deployments/Daemonsets selector
 	SelectorKey = "name"
-	// FluentbitLabelKey is key for label used by fluentbit to make "release" folder
-	FluentbitLabelKey = "release"
+	// RsysLabelKey are used for directory layout in rsyslog
+	RsysLabelKey = "app.kubernetes.io/instance"
 	// DefaultNamespace is the default namespace
 	DefaultNamespace = "default"
 )
