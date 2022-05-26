@@ -25,12 +25,8 @@ metadata:
     release: {{.Release.Name}}
   annotations:
     "helm.sh/hook": pre-upgrade
-    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-weight": "-4"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
-{{- if .Values.global.registrySecret }}
-imagePullSecrets:
-  - name: {{ .Values.global.registrySecret }}
-{{- end }}
 
 #
 # Create the cluster role for replacing CRDs during upgrade.
@@ -47,7 +43,7 @@ metadata:
     release: {{.Release.Name}}
   annotations:
     "helm.sh/hook": pre-upgrade
-    "helm.sh/hook-weight": "-4"
+    "helm.sh/hook-weight": "-3"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
 rules:
   - apiGroups:
@@ -55,14 +51,6 @@ rules:
     resources:
       - customresourcedefinitions
     verbs:
-      - '*'
-  - apiGroups:
-      - ""
-    resources:
-      - serviceaccounts
-    verbs:
-      - get
-      - list
       - replace
 
 #
@@ -80,8 +68,8 @@ metadata:
     release: {{.Release.Name}}
   annotations:
     "helm.sh/hook": pre-upgrade
-    "helm.sh/hook-weight": "-3"
-    "helm.sh/hook-delete-policy": post-delete-hook
+    "helm.sh/hook-weight": "-2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
 subjects:
   - kind: ServiceAccount
     name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-sa"
@@ -103,7 +91,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-upgrade
     "helm.sh/hook-weight": "-1"
-    "helm.sh/hook-delete-policy": post-delete-hook
+    #"helm.sh/hook-delete-policy": hook-succeeded
   labels:
     app.kubernetes.io/name: {{ .Chart.Name }}
     app.kubernetes.io/instance: {{.Release.Name}}
@@ -122,10 +110,15 @@ spec:
       imagePullSecrets:
         - name: {{ .Values.global.registrySecret }}
       {{- end }}
+      {{ - if .Values.securityContext.enable }}
+      securityContext:
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+      {{- end }}
       containers:
         - name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job"
-          image: {{ default .Values.global.registry .Values.preUpgradeCRDsHooks.registry}}/{{ .Values.preUpgradeCRDsHooks.repository }}:{{ .Values.preUpgradeCRDsHooks.version }}
-          imagePullPolicy: Always
+          image: {{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.preUpgradeCRDsHooks.image.name }}:{{ default .Values.image.tag .Values.preUpgradeCRDsHooks.image.tag }}
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.preUpgradeCRDsHooks.image.pullPolicy }}
           command: ["/bin/sh", "-c"]
           args:
-          - kubectl replace crd -f ./crds/{{ .Chart.Name }}/*;
+          - kubectl replace crd -f ./crds;
