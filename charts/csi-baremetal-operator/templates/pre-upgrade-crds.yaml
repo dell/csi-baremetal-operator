@@ -91,6 +91,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-upgrade
     "helm.sh/hook-weight": "-1"
+    # It's common practice staying Job in cluster to have an opportunity to check logs
     #"helm.sh/hook-delete-policy": hook-succeeded
   labels:
     app.kubernetes.io/name: {{ .Chart.Name }}

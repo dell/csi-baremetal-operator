@@ -243,21 +243,30 @@ Usage
 Upgrade process
 ---------------------
 
+###  Automated
+
+To upgrade please reference Installation process section but replace `helm install` by `helm upgrade` command
+
 See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation.
 
-Upgrading an existing Release to a new minor version (like from v1.0.x to v1.1.x):
+### Manual
+
+If CSI kube-job `{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job` failed, user can update CRDs manually.
 
 * Note about Upgrade of Custom Resource Definitions (CRDs)
   > There is no support at this time for upgrading or deleting CRDs using [Helm](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/).
 
-  1. CRD YAML files should be placed in the `crds/` directory. Multiple CRDs (separated by YAML start and end markers) may be placed in the same file. Helm will attempt to load all of the files in the CRD directory into Kubernetes.
-  2. There is a file [`pre-upgrade-crds.yaml`](https://github.com/dell/csi-baremetal-operator/blob/master/charts/csi-baremetal-operator/templates/pre-upgrade-crds.yaml) inside the `templates` folder with actuall upgrade hook.
-  3. Add the pre-upgrade hooks configuration into the `value.yaml`. You could get a new version by running `REGISTRY=docker.io TAG=XXX make build-pre-upgrade-crds-image`.
-  ```yaml
-  preUpgradeCRDsHooks:
-    repository: csi-baremetal-pre-upgrade-crds
-    version: 1.1.x
-  ```
+In order to upgrade CRDs use kubectl replace crd -f <crd resource> command. 
+CRD's must be downloaded from the actual source.
+
+```bash
+export CSI_OPERATOR_VERSION=...
+# this is an example how to download charts from remote registry
+export ARTIFACTORY_SOURCE_PATH="http://artifactory/" 
+wget "$ARTIRACTRY_SOURCE_PATH/$CSI_OPERATOR_VERSION/csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz"
+tar -xzvf csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz
+kubectl replace crd -f csi-baremetal-operator/crds/
+```
  
 Uninstallation process
 ---------------------
