@@ -248,25 +248,6 @@ Upgrade process
 To upgrade please reference Installation process section but replace `helm install` by `helm upgrade` command
 
 See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation.
-
-### Manual
-
-If CSI kube-job `{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job` failed, user can update CRDs manually.
-
-* Note about Upgrade of Custom Resource Definitions (CRDs)
-  > There is no support at this time for upgrading or deleting CRDs using [Helm](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/).
-
-In order to upgrade CRDs use kubectl replace crd -f <crd resource> command. 
-CRD's must be downloaded from the actual source.
-
-```bash
-export CSI_OPERATOR_VERSION=...
-# this is an example how to download charts from remote registry
-export ARTIFACTORY_SOURCE_PATH="http://artifactory/" 
-wget "$ARTIRACTRY_SOURCE_PATH/$CSI_OPERATOR_VERSION/csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz"
-tar -xzvf csi-baremetal-operator-$CSI_OPERATOR_VERSION.tgz
-kubectl replace crd -f csi-baremetal-operator/crds/
-```
  
 Uninstallation process
 ---------------------

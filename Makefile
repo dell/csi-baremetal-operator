@@ -110,7 +110,7 @@ cleanup:
 
 build-pre-upgrade-crds-image:
 	echo "Building container image pre-upgrade-crds"
-	docker build -t ${CRD_BUILD_IMAGE} --build-arg KUBECTL_IMAGE=${KUBECTL_IMAGE} -f ./hook/CRD.Dockerfile .
+	docker build -t ${CRD_BUILD_IMAGE} --build-arg KUBECTL_IMAGE=${KUBECTL_IMAGE} -f ./hook/Dockerfile .
 
 push-pre-upgrade-crds-image:
 	docker push ${CRD_BUILD_IMAGE}
