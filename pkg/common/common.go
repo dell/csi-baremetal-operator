@@ -142,7 +142,7 @@ func ConstructLabelMap(appName, componentName string) map[string]string {
 	labels[constant.ComponentLabelKey] = componentName
 	labels[constant.ComponentLabelShortKey] = componentName
 	labels[constant.SelectorKey] = appName
-	labels[constant.FluentbitLabelKey] = appName
+	labels[constant.RsysLabelKey] = constant.CSIName
 	return labels
 }
 
