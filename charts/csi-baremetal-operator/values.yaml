@@ -29,7 +29,7 @@ operator:
 
 preUpgradeCRDsHooks:
   image:
-    name: csi-baremetal-pre-upgrade
+    name: csi-baremetal-pre-upgrade-crds
     tag:
     pullPolicy:
 

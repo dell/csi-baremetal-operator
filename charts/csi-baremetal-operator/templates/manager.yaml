@@ -42,11 +42,11 @@ spec:
         imagePullPolicy: {{ default .Values.image.pullPolicy .Values.operator.image.pullPolicy }}
         resources:
           limits:
-            cpu: {{ .Values.resources.limits.cpu }}
-            memory: {{ .Values.resources.limits.memory }}
+            cpu: {{ .Values.operator.resources.limits.cpu }}
+            memory: {{ .Values.operator.resources.limits.memory }}
           requests:
-            cpu: {{ .Values.resources.requests.cpu }}
-            memory: {{ .Values.resources.requests.memory }}
+            cpu: {{ .Values.operator.resources.requests.cpu }}
+            memory: {{ .Values.operator.resources.requests.memory }}
         volumeMounts:
         - mountPath: /crash-dump
           name: crash-dump 

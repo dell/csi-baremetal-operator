@@ -51,7 +51,7 @@ rules:
     resources:
       - customresourcedefinitions
     verbs:
-      - replace
+      - "*"
 
 #
 # Create the cluster role binding for replacing CRDs during upgrade.
@@ -106,11 +106,7 @@ spec:
     spec:
       serviceAccountName: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-sa"
       restartPolicy: Never
-      {{- if .Values.global.registrySecret }}
-      imagePullSecrets:
-        - name: {{ .Values.global.registrySecret }}
-      {{- end }}
-      {{ - if .Values.securityContext.enable }}
+      {{- if .Values.securityContext.enable }}
       securityContext:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
@@ -119,6 +115,17 @@ spec:
         - name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job"
           image: {{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.preUpgradeCRDsHooks.image.name }}:{{ default .Values.image.tag .Values.preUpgradeCRDsHooks.image.tag }}
           imagePullPolicy: {{ default .Values.image.pullPolicy .Values.preUpgradeCRDsHooks.image.pullPolicy }}
+          {{- if .Values.global.registrySecret }}
+          imagePullSecrets:
+            - name: {{ .Values.global.registrySecret }}
+          {{- end }}
+          resources:
+            limits:
+              cpu: {{ .Values.operator.resources.limits.cpu }}
+              memory: {{ .Values.operator.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.operator.resources.requests.cpu }}
+              memory: {{ .Values.operator.resources.requests.memory }}
           command: ["/bin/sh", "-c"]
           args:
-          - kubectl replace crd -f ./crds;
+          - kubectl replace crd -f /crds;

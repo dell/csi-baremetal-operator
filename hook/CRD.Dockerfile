@@ -10,8 +10,9 @@
 # Dockerfile for csi-baremetal-pre-upgrade-crds
 ARG KUBECTL_IMAGE
 FROM $KUBECTL_IMAGE
-USER root
-RUN mkdir ./crds
-COPY charts/csi-baremetal-operator/  ./crds/csi-baremetal-operator/
-RUN ls ./crds/csi-baremetal-operator
-USER 1001
+
+COPY charts/csi-baremetal-operator/crds  /crds
+
+USER 1000
+
+ENTRYPOINT ["/bin/sh", "-c"]
