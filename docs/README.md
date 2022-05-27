@@ -242,7 +242,10 @@ Usage
 
 Upgrade process
 ---------------------
-To upgrade please reference _Installation process_ section but replace `helm install` by `helm upgrade` command
+
+To upgrade please reference _Installation process_ section but replace `helm install` by `helm upgrade` command.
+
+See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation.
  
 Uninstallation process
 ---------------------

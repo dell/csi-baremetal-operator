@@ -42,6 +42,7 @@ spec:
                     description: Controller encapsulates logic for CSI controller component
                     properties:
                       fastDelay:
+                        default: 1500ms
                         description: FastDelay is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
                         type: string
                       image:
@@ -69,6 +70,7 @@ spec:
                         - level
                         type: object
                       maxFastAttempts:
+                        default: 30
                         description: MaxFastAttempts is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
                         type: integer
                       resources:
@@ -168,6 +170,7 @@ spec:
                           type: object
                         type: object
                       slowDelay:
+                        default: 12s
                         description: SlowDelay is the parameter for NewItemFastSlowRateLimiter in Reservation Controller
                         type: string
                     type: object
@@ -277,8 +280,7 @@ spec:
                         - level
                         type: object
                       podSecurityPolicy:
-                        description: PodSecurityPolicy encapsulates information about
-                          pod security policy
+                        description: PodSecurityPolicy encapsulates information about pod security policy
                         properties:
                           enable:
                             type: boolean
@@ -556,8 +558,7 @@ spec:
                     - enable
                     type: object
                   podSecurityPolicy:
-                    description: PodSecurityPolicy encapsulates information about
-                      pod security policy
+                    description: PodSecurityPolicy encapsulates information about pod security policy
                     properties:
                       enable:
                         type: boolean

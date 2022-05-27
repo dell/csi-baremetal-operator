@@ -3,21 +3,40 @@ global:
   registry:
   registrySecret:
 
-# Image pull settings
 image:
-  name: csi-baremetal-operator
   tag: green
   pullPolicy: Always
-
-resources:
-  limits:
-    cpu: 100m
-    memory: 200Mi
-  requests:
-    cpu: 100m
-    memory: 20Mi
 
 securityContext:
   enable:
   runAsNonRoot:
   runAsUser:
+
+# Image pull settings
+operator:
+  image:
+    name: csi-baremetal-operator
+    tag:
+    pullPolicy:
+
+  resources:
+    limits:
+      cpu: 100m
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 20Mi
+
+preUpgradeCRDsHooks:
+  image:
+    name: csi-baremetal-pre-upgrade-crds
+    tag:
+    pullPolicy:
+
+  resources:
+    limits:
+      cpu: 100m
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 20Mi

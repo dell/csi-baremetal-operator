@@ -36,16 +36,16 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: {{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.image.name }}:{{ .Values.image.tag }}
+        image: {{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.operator.image.name }}:{{ default .Values.image.tag .Values.operator.image.tag }}
         name: manager
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        imagePullPolicy: {{ default .Values.image.pullPolicy .Values.operator.image.pullPolicy }}
         resources:
           limits:
-            cpu: {{ .Values.resources.limits.cpu }}
-            memory: {{ .Values.resources.limits.memory }}
+            cpu: {{ .Values.operator.resources.limits.cpu }}
+            memory: {{ .Values.operator.resources.limits.memory }}
           requests:
-            cpu: {{ .Values.resources.requests.cpu }}
-            memory: {{ .Values.resources.requests.memory }}
+            cpu: {{ .Values.operator.resources.requests.cpu }}
+            memory: {{ .Values.operator.resources.requests.memory }}
         volumeMounts:
         - mountPath: /crash-dump
           name: crash-dump 

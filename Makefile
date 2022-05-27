@@ -66,15 +66,15 @@ vet:
 	go vet ./...
 
 # Build the docker image
-docker-build:
+docker-build: build-pre-upgrade-crds-image
 	docker build --build-arg BASE_IMAGE=${BASE_IMAGE} . -t ${IMG}
 
 # Build the docker image
-kind-load:
+kind-load: kind-load-pre-upgrade-crds-image
 	kind load docker-image ${IMG}
 
 # Push the docker image
-docker-push:
+docker-push: push-pre-upgrade-crds-image
 	docker push ${IMG}
 
 # build controller-gen executable
@@ -107,3 +107,13 @@ test-release-workflow: test-pre-release test-release
 
 cleanup:
 	bash .github/workflows/tests/cleanup.sh
+
+build-pre-upgrade-crds-image:
+	echo "Building container image pre-upgrade-crds"
+	docker build -t ${CRD_BUILD_IMAGE} --build-arg KUBECTL_IMAGE=${KUBECTL_IMAGE} -f ./hook/Dockerfile .
+
+push-pre-upgrade-crds-image:
+	docker push ${CRD_BUILD_IMAGE}
+
+kind-load-pre-upgrade-crds-image:
+	kind load docker-image ${CRD_BUILD_IMAGE}
