@@ -44,13 +44,12 @@ func GetNodeDaemonsetPodsSelector() labels.Selector {
 	return labels.SelectorFromSet(common.ConstructSelectorMap(nodeName))
 }
 
-func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescription) *v1.DaemonSet {
+func createNodeDaemonSet(csi *csibaremetalv1.Deployment) *v1.DaemonSet {
 	var nodeSelectors = common.MakeNodeSelectorMap(csi.Spec.NodeSelector)
-	nodeSelectors[platformLabel] = platform.labeltag
 
 	return &v1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      platform.DaemonsetName(nodeName),
+			Name:      nodeName,
 			Namespace: csi.GetNamespace(),
 			Labels:    common.ConstructLabelAppMap(),
 		},
@@ -74,7 +73,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 				},
 				Spec: corev1.PodSpec{
 					Volumes:                       createNodeVolumes(csi),
-					Containers:                    createNodeContainers(csi, platform),
+					Containers:                    createNodeContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
@@ -166,14 +165,14 @@ func isLoopbackMgr(imageName string) bool {
 }
 
 // todo split long methods - https://github.com/dell/csi-baremetal/issues/329
-func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDescription) []corev1.Container {
+func createNodeContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
 		bidirectional = corev1.MountPropagationBidirectional
 		driveMgr      = csi.Spec.Driver.Node.DriveMgr
 		node          = csi.Spec.Driver.Node
 		lp            = node.Sidecars[constant.LivenessProbeName]
 		dr            = node.Sidecars[constant.DriverRegistrarName]
-		nodeImage     = platform.NodeImage(node.Image)
+		nodeImage     = node.Image
 	)
 	args := []string{
 		"--loglevel=" + common.MatchLogLevel(node.Log.Level),
