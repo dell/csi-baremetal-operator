@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 
-	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/operator/common"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	nodeconst "github.com/dell/csi-baremetal/pkg/crcontrollers/node/common"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
