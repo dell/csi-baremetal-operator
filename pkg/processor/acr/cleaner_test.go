@@ -1,10 +1,12 @@
-package acrvalidator
+package acr
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"testing"
 
+	api "github.com/dell/csi-baremetal/api/generated/v1"
+	acrcrd "github.com/dell/csi-baremetal/api/v1/acreservationcrd"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -13,9 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/dell/csi-baremetal-operator/pkg/common"
-
-	api "github.com/dell/csi-baremetal/api/generated/v1"
-	acrcrd "github.com/dell/csi-baremetal/api/v1/acreservationcrd"
 )
 
 const (
@@ -50,14 +49,14 @@ func Test_validateACRs(t *testing.T) {
 			updatedACR = acrcrd.AvailableCapacityReservation{}
 		)
 
-		cv := setupACRValidator(&pod, &acr)
-		cv.validateACRs()
+		cl := setupClient(&pod, &acr)
+		NewACRCleaner(cl, logrus.New().WithField("component", "ACRValidatorTest")).Handle(ctx)
 
-		err := cv.Client.Get(ctx, client.ObjectKey{Name: pod.Name, Namespace: pod.Namespace}, &updatedPod)
+		err := cl.Get(ctx, client.ObjectKey{Name: pod.Name, Namespace: pod.Namespace}, &updatedPod)
 		assert.Nil(t, err)
 		assert.NotNil(t, updatedPod)
 
-		err = cv.Client.Get(ctx, client.ObjectKey{Name: acr.Name}, &updatedACR)
+		err = cl.Get(ctx, client.ObjectKey{Name: acr.Name}, &updatedACR)
 		assert.Nil(t, err)
 		assert.NotNil(t, updatedACR)
 	})
@@ -85,14 +84,14 @@ func Test_validateACRs(t *testing.T) {
 			updatedACR = acrcrd.AvailableCapacityReservation{}
 		)
 
-		cv := setupACRValidator(&pod, &acr)
-		cv.validateACRs()
+		cl := setupClient(&pod, &acr)
+		NewACRCleaner(cl, logrus.New().WithField("component", "ACRValidatorTest")).Handle(ctx)
 
-		err := cv.Client.Get(ctx, client.ObjectKey{Name: pod.Name, Namespace: pod.Namespace}, &updatedPod)
+		err := cl.Get(ctx, client.ObjectKey{Name: pod.Name, Namespace: pod.Namespace}, &updatedPod)
 		assert.Nil(t, err)
 		assert.NotNil(t, updatedPod)
 
-		err = cv.Client.Get(ctx, client.ObjectKey{Name: acr.Name, Namespace: ""}, &updatedACR)
+		err = cl.Get(ctx, client.ObjectKey{Name: acr.Name, Namespace: ""}, &updatedACR)
 		assert.NotNil(t, err)
 		assert.True(t, k8serrors.IsNotFound(err))
 	})
@@ -116,25 +115,20 @@ func Test_validateACRs(t *testing.T) {
 			updatedACR = acrcrd.AvailableCapacityReservation{}
 		)
 
-		cv := setupACRValidator(&acr)
-		cv.validateACRs()
+		cl := setupClient(&acr)
+		NewACRCleaner(cl, logrus.New().WithField("component", "ACRValidatorTest")).Handle(ctx)
 
-		err := cv.Client.Get(ctx, client.ObjectKey{Name: acr.Name, Namespace: ""}, &updatedACR)
+		err := cl.Get(ctx, client.ObjectKey{Name: acr.Name, Namespace: ""}, &updatedACR)
 		assert.NotNil(t, err)
 		assert.True(t, k8serrors.IsNotFound(err))
 	})
 }
 
-func setupACRValidator(objects ...client.Object) *ACRValidator {
+func setupClient(objects ...client.Object) client.Client {
 	scheme, _ := common.PrepareScheme()
 	builder := fake.ClientBuilder{}
 	builderWithScheme := builder.WithScheme(scheme)
-	client := builderWithScheme.WithObjects(objects...).Build()
-
-	return &ACRValidator{
-		Client: client,
-		Log:    logrus.New().WithField("component", "ACRValidatorTest"),
-	}
+	return builderWithScheme.WithObjects(objects...).Build()
 }
 
 func getReservationName(pod *corev1.Pod) string {

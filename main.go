@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 	"os"
+	"time"
 
 	"github.com/dell/csi-baremetal/pkg/events/recorder"
 	"github.com/sirupsen/logrus"
@@ -33,9 +34,10 @@ import (
 
 	"github.com/dell/csi-baremetal-operator/controllers"
 	"github.com/dell/csi-baremetal-operator/pkg"
-	"github.com/dell/csi-baremetal-operator/pkg/acrvalidator"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
+	"github.com/dell/csi-baremetal-operator/pkg/processor/acr"
+	"github.com/dell/csi-baremetal-operator/pkg/processor/volume"
 	"github.com/dell/csi-baremetal-operator/pkg/validator/rbac"
 	// +kubebuilder:scaffold:imports
 )
@@ -80,10 +82,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	acrvalidator.LauncACRValidation(mgr.GetClient(), logrus.WithField("component", "acr_validator"))
-
 	ctx := context.Background()
 	logger := logrus.New()
+
+	go common.NewTimer(60*time.Second).Start(ctx,
+		acr.NewACRCleaner(mgr.GetClient(),
+			logger.WithField("component", "acr_cleaner"),
+		).Handle,
+	)
+	go common.NewTimer(60*time.Second).Start(ctx,
+		volume.NewVolumeActualizer(mgr.GetClient(),
+			logger.WithField("component", "volume_actualizer"),
+		).Handle,
+	)
 
 	eventRecorder := recorder.New(&v1core.EventSinkImpl{Interface: clientSet.CoreV1().Events("")},
 		scheme, corev1.EventSource{Component: constant.ComponentName},
