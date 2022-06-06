@@ -108,16 +108,6 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.namespace"},
 				}},
 			},
-			ReadinessProbe: &corev1.Probe{
-				Handler: corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
-					"/health_probe",
-					"-addr=:9999"}}},
-				InitialDelaySeconds: 3,
-				TimeoutSeconds:      1,
-				PeriodSeconds:       10,
-				SuccessThreshold:    1,
-				FailureThreshold:    15,
-			},
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
 			VolumeMounts:             []corev1.VolumeMount{constant.CrashMountVolume},
