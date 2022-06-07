@@ -27,10 +27,8 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
 
-    - name: Prepare Golang 
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{env.go_version}}
+    - name: Set go_version variable
+      run: echo "go_version=`echo "$(go version)" | grep -oE '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,}'`" >> $GITHUB_ENV
 
     - name: Load dep cache
       uses: actions/cache@v2
@@ -52,11 +50,6 @@ jobs:
         
     - name: Get dependencies
       run:  go mod download
-      
-    - name: Install golangci-lint
-      run: |
-        wget -q -O golangci-lint.deb https://github.com/golangci/golangci-lint/releases/download/v${{ env.golangci_version }}/golangci-lint-${{ env.golangci_version }}-linux-amd64.deb
-        sudo dpkg -i golangci-lint.deb
         
     - name: Lint code
       run: GOGC=300 make lint-code
