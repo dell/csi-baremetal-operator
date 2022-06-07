@@ -5,8 +5,9 @@ PROJECT          := csi-baremetal-operator
 CSI_OPERATOR_CHART_PATH=charts/csi-baremetal-operator
 CSI_DEPLOYMENT_CHART_PATH=charts/csi-baremetal-deployment
 CSI_CHART_CRDS_PATH=charts/csi-baremetal-operator/crds
-CONTROLLER_GEN_BIN=./bin/controller-gen
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+
+# image vars
 BASE_IMAGE ?= golang:1.17
 CRD_BUILD_IMAGE ?= ${REGISTRY}/csi-baremetal-pre-upgrade-crds:${TAG}
 KUBECTL_IMAGE ?=  bitnami/kubectl:1.23 # https://hub.docker.com/r/bitnami/kubectl
@@ -31,6 +32,9 @@ GO_ENV_VARS     := GO111MODULE=on ${GOPRIVATE_PART} ${GOPROXY_PART}
 ### custom variables that could be ommited
 GOPRIVATE_PART  :=
 GOPROXY_PART    := GOPROXY=https://proxy.golang.org,direct
+
+### go dependencies
+CONTROLLER_GEN_VER := v0.5.0
 
 # override some of variables, optional file
 -include variables.override.mk
