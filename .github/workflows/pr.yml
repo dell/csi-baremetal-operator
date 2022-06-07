@@ -80,3 +80,14 @@ jobs:
         file: ./coverage.out
         flags: unittests
         verbose: true
+
+    - name: Generate CRD
+      run: |
+        make generate-operator-crds
+
+    - name: Verify CRD changes
+      uses: tj-actions/verify-changed-files@v5.5
+      id: changed_files
+      with:
+        files: |
+          charts/csi-baremetal-operator/crds/*.yaml
