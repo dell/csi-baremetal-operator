@@ -79,12 +79,11 @@ docker-push: push-pre-upgrade-crds-image
 
 # build controller-gen executable
 install-controller-gen:
-	${GO_ENV_VARS} go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VER}
-	${GO_ENV_VARS} go mod download go.uber.org/goleak
+	${GO_ENV_VARS} go build -mod='' -o ./bin/ sigs.k8s.io/controller-tools/cmd/controller-gen
 
 # generate crds with controller-gen
 generate-operator-crds: install-controller-gen 
-	controller-gen $(CRD_OPTIONS) paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
+	$(CONTROLLER_GEN_BIN) $(CRD_OPTIONS) paths=api/v1/deployment_types.go paths=api/v1/groupversion_info.go output:crd:dir=$(CSI_CHART_CRDS_PATH)
 
 lint-operator-chart:
 	helm lint ./${CSI_OPERATOR_CHART_PATH}
