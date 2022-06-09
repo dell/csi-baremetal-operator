@@ -34,8 +34,5 @@ GO_ENV_VARS     := GO111MODULE=on ${GOPRIVATE_PART} ${GOPROXY_PART}
 GOPRIVATE_PART  :=
 GOPROXY_PART    := GOPROXY=https://proxy.golang.org,direct
 
-### go dependencies
-CONTROLLER_GEN_VER := v0.5.0
-
 # override some of variables, optional file
 -include variables.override.mk
