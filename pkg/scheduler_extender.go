@@ -201,7 +201,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled 
 				{Name: "extender", HostPort: extenderPort, ContainerPort: extenderPort, Protocol: corev1.ProtocolTCP},
 			},
 			ReadinessProbe: &corev1.Probe{
-				Handler: corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
+				ProbeHandler: corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: []string{
 					"/health_probe",
 					"-addr=:9999"}}},
 				InitialDelaySeconds: 3,

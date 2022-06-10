@@ -170,7 +170,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				{Name: "metrics", ContainerPort: constant.PrometheusPort, Protocol: corev1.ProtocolTCP},
 			},
 			LivenessProbe: &corev1.Probe{
-				Handler: corev1.Handler{HTTPGet: &corev1.HTTPGetAction{
+				ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{
 					Path:   "/healthz",
 					Port:   intstr.FromString(constant.LivenessPort),
 					Scheme: corev1.URISchemeHTTP}},
@@ -181,7 +181,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				FailureThreshold:    5,
 			},
 			ReadinessProbe: &corev1.Probe{
-				Handler: corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
+				ProbeHandler: corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: []string{
 					"/health_probe",
 					"-addr=:9999"}}},
 				InitialDelaySeconds: 3,
