@@ -28,3 +28,4 @@ data:
     node_kernel_versions:
       # RHEL 8
       - 4.18.0-193.65.2.el8_2.x86_64
+      - 4.18.0-305.45.1.el8_4.x86_64
