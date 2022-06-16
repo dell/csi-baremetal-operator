@@ -83,7 +83,15 @@ func (c *Controller) Reconcile(ctx context.Context, csi *csibaremetalv1.Deployme
 		nodeSelector = csi.Spec.NodeSelector
 	}
 
-	nodes, err := common.GetSelectedNodes(ctx, c.clientset, nodeSelector)
+	var nodes corev1.NodeList
+	listOpts := &client.ListOptions{}
+
+	if nodeSelector != nil {
+		o := &client.ListOptions{LabelSelector: labels.SelectorFromSet(common.MakeNodeSelectorMap(nodeSelector))}
+		o.ApplyToList(listOpts)
+	}
+
+	err := c.client.List(ctx, &nodes, listOpts)
 	if err != nil {
 		return nil
 	}
