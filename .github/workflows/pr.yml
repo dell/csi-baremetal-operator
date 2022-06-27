@@ -11,15 +11,27 @@ env:
 jobs:
   lint-test:
     name: Validate code and build it
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/dell/csi-baremetal/csi-baremetal-devkit:latest
+      env:
+        EUID: 0
+        EGID: 0
+        USER_NAME: root
+        STDOUT: true
+      volumes:
+        - /root:/root
+        - /tmp:/tmp
+        - /var/run/docker.sock:/var/run/docker.sock
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+    - name: Trust My Directory # workaround for https://github.com/actions/checkout/issues/760
+      run: git config --global --add safe.directory /__w/csi-baremetal-operator/csi-baremetal-operator
 
-    - name: Prepare Golang 
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{env.go_version}}
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set go_version variable
+      run: echo "go_version=`echo "$(go version)" | grep -oE '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,}'`" >> $GITHUB_ENV
 
     - name: Load dep cache
       uses: actions/cache@v2
@@ -41,11 +53,6 @@ jobs:
         
     - name: Get dependencies
       run:  go mod download
-      
-    - name: Install golangci-lint
-      run: |
-        wget -q -O golangci-lint.deb https://github.com/golangci/golangci-lint/releases/download/v${{ env.golangci_version }}/golangci-lint-${{ env.golangci_version }}-linux-amd64.deb
-        sudo dpkg -i golangci-lint.deb
         
     - name: Lint code
       run: GOGC=300 make lint-code
@@ -76,3 +83,24 @@ jobs:
         file: ./coverage.out
         flags: unittests
         verbose: true
+
+    - name: Generate CRD
+      run: |
+        make generate-operator-crds
+
+    - name: Verify CRD changes
+      uses: tj-actions/verify-changed-files@v9.1
+      id: changed_files
+      with:
+        files: |
+          charts/csi-baremetal-operator/crds/*.yaml
+
+    - name: Display changed files
+      if: steps.changed_files.outputs.files_changed == 'true'
+      run: |
+        echo "Changed files: ${{ steps.changed_files.outputs.changed_files }}"
+
+    - name: Fail action when files change
+      if: steps.changed_files.outputs.files_changed == 'true'
+      run: |
+        exit 1

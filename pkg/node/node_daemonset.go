@@ -225,7 +225,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 			ImagePullPolicy: corev1.PullPolicy(csi.Spec.PullPolicy),
 			Args: []string{"--v=5", "--csi-address=$(ADDRESS)",
 				"--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"},
-			Lifecycle: &corev1.Lifecycle{PreStop: &corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
+			Lifecycle: &corev1.Lifecycle{PreStop: &corev1.LifecycleHandler{Exec: &corev1.ExecAction{Command: []string{
 				"/bin/sh", "-c", "rm -rf /registration/csi-baremetal /registration/csi-baremetal-reg.sock"}}}},
 			Env: []corev1.EnvVar{
 				{Name: "ADDRESS", Value: "/csi/csi.sock"},
@@ -263,7 +263,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 				{Name: "metrics", ContainerPort: constant.PrometheusPort, Protocol: corev1.ProtocolTCP},
 			},
 			LivenessProbe: &corev1.Probe{
-				Handler: corev1.Handler{HTTPGet: &corev1.HTTPGetAction{
+				ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{
 					Path:   "/healthz",
 					Port:   intstr.FromString(constant.LivenessPort),
 					Scheme: corev1.URISchemeHTTP}},
@@ -274,7 +274,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 				FailureThreshold:    5,
 			},
 			ReadinessProbe: &corev1.Probe{
-				Handler: corev1.Handler{Exec: &corev1.ExecAction{Command: []string{
+				ProbeHandler: corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: []string{
 					"/health_probe",
 					"-addr=:9999"}}},
 				InitialDelaySeconds: 3,
