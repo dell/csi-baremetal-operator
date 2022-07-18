@@ -114,7 +114,7 @@ func (c *Controller) handleNodeRemoval(ctx context.Context, csibmnodes []nodecrd
 		errors        []string
 		removingNodes []nodecrd.Node
 	)
-	c.log.Info("Starting Node Removal")
+	c.log.Debug("Starting Node Removal")
 
 	isNodesTainted := getMapIsNodesTainted(nodes, rTaint)
 
@@ -256,7 +256,7 @@ func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.N
 		errors []string
 	)
 
-	c.log.Info("Starting Node Maintenance")
+	c.log.Debug("Starting Node Maintenance")
 
 	for i, node := range nodes {
 		if hasTaint(&nodes[i], mTaint) {
