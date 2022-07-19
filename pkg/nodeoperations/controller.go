@@ -114,7 +114,6 @@ func (c *Controller) handleNodeRemoval(ctx context.Context, csibmnodes []nodecrd
 		errors        []string
 		removingNodes []nodecrd.Node
 	)
-	c.log.Debug("Starting Node Removal")
 
 	isNodesTainted := getMapIsNodesTainted(nodes, rTaint)
 
@@ -167,6 +166,8 @@ func (c *Controller) removeNodes(ctx context.Context, csibmnodes []nodecrd.Node)
 	var (
 		errors []string
 	)
+
+	c.log.Debug("Starting Node Removal")
 
 	for i := range csibmnodes {
 		isRunning, err := c.checkDaemonsetPodRunning(ctx, getNodeName(&csibmnodes[i]))
