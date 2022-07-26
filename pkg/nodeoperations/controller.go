@@ -114,7 +114,6 @@ func (c *Controller) handleNodeRemoval(ctx context.Context, csibmnodes []nodecrd
 		errors        []string
 		removingNodes []nodecrd.Node
 	)
-	c.log.Info("Starting Node Removal")
 
 	isNodesTainted := getMapIsNodesTainted(nodes, rTaint)
 
@@ -167,6 +166,10 @@ func (c *Controller) removeNodes(ctx context.Context, csibmnodes []nodecrd.Node)
 	var (
 		errors []string
 	)
+
+	if len(csibmnodes) > 0 {
+		c.log.Debugf("Starting Node Removal, node count: %d", len(csibmnodes))
+	}
 
 	for i := range csibmnodes {
 		isRunning, err := c.checkDaemonsetPodRunning(ctx, getNodeName(&csibmnodes[i]))
@@ -256,10 +259,14 @@ func (c *Controller) handleNodeMaintenance(ctx context.Context, nodes []corev1.N
 		errors []string
 	)
 
-	c.log.Info("Starting Node Maintenance")
+	logStart := true
 
 	for i, node := range nodes {
 		if hasTaint(&nodes[i], mTaint) {
+			if logStart {
+				c.log.Debug("Starting Node Maintenance")
+				logStart = false
+			}
 			if err := c.deleteCSIPods(ctx, node.Name); err != nil {
 				errors = append(errors, err.Error())
 			}
