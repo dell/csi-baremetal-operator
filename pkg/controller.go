@@ -121,11 +121,21 @@ func createControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployment {
 
 func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Container {
 	var (
-		provisioner = csi.Spec.Driver.Controller.Sidecars[constant.ProvisionerName]
-		resizer     = csi.Spec.Driver.Controller.Sidecars[constant.ResizerName]
-		liveness    = csi.Spec.Driver.Controller.Sidecars[constant.LivenessProbeName]
-		c           = csi.Spec.Driver.Controller
+		provisioner            = csi.Spec.Driver.Controller.Sidecars[constant.ProvisionerName]
+		resizer                = csi.Spec.Driver.Controller.Sidecars[constant.ResizerName]
+		liveness               = csi.Spec.Driver.Controller.Sidecars[constant.LivenessProbeName]
+		c                      = csi.Spec.Driver.Controller
+		argsTimeout            = "0"
+		argsRetryIntervalStart = "5000"
+		argsRetryIntervalMax   = "10000"
+		argsWorkerThreads      = 2
 	)
+	if provisioner.Args != nil {
+		argsTimeout = provisioner.Args.Timeout
+		argsRetryIntervalStart = provisioner.Args.RetryIntervalStart
+		argsRetryIntervalMax = provisioner.Args.RetryIntervalMax
+		argsWorkerThreads = provisioner.Args.WorkerThreads
+	}
 	return []corev1.Container{
 		{
 			Name:            controller,
@@ -206,10 +216,10 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				},
 				[]string{
 					// map helm params to csi-provisioner args
-					fmt.Sprintf("--timeout=%v", provisioner.Args.Timeout),
-					fmt.Sprintf("--retry-interval-start=%v", provisioner.Args.RetryIntervalStart),
-					fmt.Sprintf("--retry-interval-max=%v", provisioner.Args.RetryIntervalMax),
-					fmt.Sprintf("--worker-threads=%v", provisioner.Args.WorkerThreads),
+					fmt.Sprintf("--timeout=%v", argsTimeout),
+					fmt.Sprintf("--retry-interval-start=%v", argsRetryIntervalStart),
+					fmt.Sprintf("--retry-interval-max=%v", argsRetryIntervalMax),
+					fmt.Sprintf("--worker-threads=%v", argsWorkerThreads),
 				}...,
 			),
 			Env: []corev1.EnvVar{
