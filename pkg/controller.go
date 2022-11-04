@@ -125,9 +125,9 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 		resizer                = csi.Spec.Driver.Controller.Sidecars[constant.ResizerName]
 		liveness               = csi.Spec.Driver.Controller.Sidecars[constant.LivenessProbeName]
 		c                      = csi.Spec.Driver.Controller
-		argsTimeout            = "0"
-		argsRetryIntervalStart = "5000"
-		argsRetryIntervalMax   = "10000"
+		argsTimeout            = "10s"
+		argsRetryIntervalStart = "1s"
+		argsRetryIntervalMax   = "5m"
 		argsWorkerThreads      = 2
 	)
 	if provisioner.Args != nil {
