@@ -19,6 +19,8 @@ type SchedulerPatcher struct {
 	Log                       *logrus.Entry
 	Client                    client.Client
 	PodSecurityPolicyVerifier securityverifier.SecurityVerifier
+	// OpenshiftMasterNodeIP used for openshift secondary scheduler extender config if applicable
+	OpenshiftMasterNodeIP string
 }
 
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla
@@ -33,6 +35,9 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
 		err = p.patchOpenShift(ctx, csi)
+		if err == nil && csi.Spec.SecondaryScheduler {
+			err = p.patchOpenShiftSecondaryScheduler(ctx, csi)
+		}
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		err = p.updateVanilla(ctx, csi, scheme)
 	}
@@ -46,7 +51,11 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 // Uninstall unpatch Openshift Scheduler
 func (p *SchedulerPatcher) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	if IsPatchingEnabled(csi) && csi.Spec.Platform == constant.PlatformOpenShift {
-		return p.unPatchOpenShift(ctx)
+		err := p.unPatchOpenShift(ctx)
+		if err == nil && csi.Spec.SecondaryScheduler {
+			err = p.unPatchOpenShiftSecondaryScheduler(ctx)
+		}
+		return err
 	}
 	return nil
 }
