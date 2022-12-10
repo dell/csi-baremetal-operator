@@ -8,6 +8,7 @@ require (
 	github.com/go-logr/logr v1.2.0 // indirect
 	github.com/masterminds/semver v1.5.0
 	github.com/openshift/api v0.0.0-20211214190212-1a67f3bd14ec
+	github.com/openshift/secondary-scheduler-operator v0.0.0-20220920094845-c6fe67f922d6
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b

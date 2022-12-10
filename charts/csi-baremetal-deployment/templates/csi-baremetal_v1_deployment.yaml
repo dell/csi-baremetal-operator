@@ -19,6 +19,7 @@ spec:
     value: {{.Values.nodeSelector.value}}
   {{- end }}
   sequentialLVGReservation: {{ .Values.feature.sequentialLVGReservation }}
+  secondaryScheduler: {{ .Values.feature.secondaryScheduler }}
   driver:
     controller:
       image:
