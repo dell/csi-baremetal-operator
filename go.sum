@@ -425,6 +425,8 @@ github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/openshift/api v0.0.0-20211214190212-1a67f3bd14ec h1:pO+vNYtnJjsu36dqIUiNpDXPlfeP0eCyoqSBwOOb8FA=
 github.com/openshift/api v0.0.0-20211214190212-1a67f3bd14ec/go.mod h1:F/eU6jgr6Q2VhMu1mSpMmygxAELd7+BUxs3NHZ25jV4=
 github.com/openshift/build-machinery-go v0.0.0-20211213093930-7e33a7eb4ce3/go.mod h1:b1BuldmJlbA/xYtdZvKi+7j5YGB44qJUJDZ9zwiNCfE=
+github.com/openshift/secondary-scheduler-operator v0.0.0-20220920094845-c6fe67f922d6 h1:WpAV+FCD8yaUtgvJ4duvyqpgdPPpFrb1qGTrFc3m5RU=
+github.com/openshift/secondary-scheduler-operator v0.0.0-20220920094845-c6fe67f922d6/go.mod h1:RDd3e8fEbfUx/dFgCGIMc8ehHdRuX33OB64MOaWcYq0=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
 	"strings"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
+	oov1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,6 +23,44 @@ const (
 
 	openshiftPolicyFile = "policy.cfg"
 )
+
+func (p *SchedulerPatcher) patchOpenShiftSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	secondarySchedulerExtenderConfig := fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
+kind: KubeSchedulerConfiguration
+leaderElection:
+  leaderElect: false
+profiles:
+  - schedulerName: csi-baremetal-scheduler
+extenders:
+  - urlPrefix: "http://10.249.232.226:%s"
+    filterVerb: filter
+    prioritizeVerb: prioritize
+    weight: 1
+    enableHTTPS: false
+    nodeCacheCapable: false
+    ignorable: true`, csi.Spec.Scheduler.ExtenderPort)
+
+	expected := createSecondarySchedulerConfig(secondarySchedulerExtenderConfig)
+
+	// TODO csi can't control cm in another namespace https://github.com/dell/csi-baremetal/issues/470
+	// if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
+	// 	return err
+	// }
+
+	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Log)
+	if err != nil {
+		return err
+	}
+
+	// try to patch
+	err = p.updateSecondaryScheduler(ctx, openshiftConfig)
+	if err != nil {
+		p.Log.Error(err, "Failed to patch Scheduler")
+		return err
+	}
+
+	return nil
+}
 
 func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	openshiftPolicy := fmt.Sprintf(`{
@@ -100,6 +140,17 @@ func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibare
 	return nil
 }
 
+func createSecondarySchedulerConfig(config string) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "csi-baremetal-scheduler-config",
+			Namespace: "openshift-secondary-scheduler-operator",
+		},
+		Data: map[string]string{"config.yaml": config},
+	}
+}
+
 func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{},
@@ -109,6 +160,48 @@ func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 		},
 		Data: map[string]string{openshiftPolicyFile: policy},
 	}
+}
+
+func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context, config string) error {
+	secondaryScheduler := &ssv1.SecondaryScheduler{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cluster",
+			Namespace: "openshift-secondary-scheduler-operator",
+		},
+		Spec: ssv1.SecondarySchedulerSpec{
+			OperatorSpec: oov1.OperatorSpec{
+				ManagementState:  "Managed",
+				OperatorLogLevel: "Normal",
+				LogLevel:         "Normal",
+			},
+			SchedulerConfig: "csi-baremetal-scheduler-config",
+			SchedulerImage:  "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10",
+		},
+	}
+
+	//err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster"}, ss)
+	//if err != nil {
+	//	return err
+	//}
+
+	//name := sc.Spec.Policy.Name
+	//// patch when name is not set
+	//if name == "" {
+	//	sc.Spec.Policy.Name = config
+	//	// update scheduler cluster
+	err := p.Client.Create(ctx, secondaryScheduler)
+	if err != nil {
+		return err
+	}
+	//	return nil
+	//}
+	//// if name is set but not to CSI config name return error
+	//if name != config {
+	//	return errors.New("scheduler is already patched with the config name: " + name)
+	//}
+
+	return nil
 }
 
 func (p *SchedulerPatcher) patchScheduler(ctx context.Context, config string) error {
