@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	oov1 "github.com/openshift/api/operator/v1"
 	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
 	"strings"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
-	oov1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -163,37 +164,43 @@ func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 }
 
 func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context, config string) error {
-	secondaryScheduler := &ssv1.SecondaryScheduler{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cluster",
-			Namespace: "openshift-secondary-scheduler-operator",
-		},
-		Spec: ssv1.SecondarySchedulerSpec{
-			OperatorSpec: oov1.OperatorSpec{
-				ManagementState:  "Managed",
-				OperatorLogLevel: "Normal",
-				LogLevel:         "Normal",
-			},
-			SchedulerConfig: "csi-baremetal-scheduler-config",
-			SchedulerImage:  "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10",
-		},
-	}
+	secondaryScheduler := &ssv1.SecondaryScheduler{}
 
-	//err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster"}, ss)
-	//if err != nil {
-	//	return err
-	//}
+	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster"}, secondaryScheduler)
+	if err != nil {
+		if k8sError.IsNotFound(err) {
+			secondaryScheduler = &ssv1.SecondaryScheduler{
+				TypeMeta: metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster",
+					Namespace: "openshift-secondary-scheduler-operator",
+				},
+				Spec: ssv1.SecondarySchedulerSpec{
+					OperatorSpec: oov1.OperatorSpec{
+						ManagementState:  "Managed",
+						OperatorLogLevel: "Normal",
+						LogLevel:         "Normal",
+					},
+					SchedulerConfig: "csi-baremetal-scheduler-config",
+					SchedulerImage:  "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10",
+				},
+			}
+
+			err = p.Client.Create(ctx, secondaryScheduler)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
 
 	//name := sc.Spec.Policy.Name
 	//// patch when name is not set
 	//if name == "" {
 	//	sc.Spec.Policy.Name = config
 	//	// update scheduler cluster
-	err := p.Client.Create(ctx, secondaryScheduler)
-	if err != nil {
-		return err
-	}
+
 	//	return nil
 	//}
 	//// if name is set but not to CSI config name return error
