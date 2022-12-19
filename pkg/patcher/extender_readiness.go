@@ -59,13 +59,8 @@ func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadi
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
 		{
-			if csi.Spec.SecondaryScheduler {
-				options.watchedConfigMapName = "csi-baremetal-scheduler-config"
-				options.watchedConfigMapNamespace = "openshift-secondary-scheduler-operator"
-			} else {
-				options.watchedConfigMapName = openshiftConfig
-				options.watchedConfigMapNamespace = openshiftNS
-			}
+			options.watchedConfigMapName = openshiftConfig
+			options.watchedConfigMapNamespace = openshiftNS
 		}
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		{
