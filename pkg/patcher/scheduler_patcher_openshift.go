@@ -166,7 +166,7 @@ func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context, config string) error {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
 
-	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster"}, secondaryScheduler)
+	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster", Namespace: "openshift-secondary-scheduler-operator"}, secondaryScheduler)
 	if err != nil {
 		if k8sError.IsNotFound(err) {
 			secondaryScheduler = &ssv1.SecondaryScheduler{
