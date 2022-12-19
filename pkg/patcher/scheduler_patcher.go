@@ -32,10 +32,9 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 	var err error
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
+		err = p.patchOpenShift(ctx, csi)
 		if csi.Spec.SecondaryScheduler {
 			err = p.patchOpenShiftSecondaryScheduler(ctx, csi)
-		} else {
-			err = p.patchOpenShift(ctx, csi)
 		}
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		err = p.updateVanilla(ctx, csi, scheme)
