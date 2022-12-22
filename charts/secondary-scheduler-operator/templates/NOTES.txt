@@ -1,0 +1,2 @@
+1. Check the secondary scheduler operator running status by running these commands:
+  kubectl get pod -n {{ .Release.Namespace }} 
