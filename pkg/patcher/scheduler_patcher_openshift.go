@@ -6,6 +6,7 @@ import (
 	"fmt"
 	oov1 "github.com/openshift/api/operator/v1"
 	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"strings"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
@@ -22,10 +23,42 @@ const (
 	openshiftNS     = "openshift-config"
 	openshiftConfig = "scheduler-policy"
 
-	openshiftPolicyFile = "policy.cfg"
+	openshiftPolicyFile   = "policy.cfg"
+	k8sMasterNodeLabelKey = "node-role.kubernetes.io/master"
 )
 
+func (p *SchedulerPatcher) getMasterNodeIP(ctx context.Context) (string, error) {
+	labelSelector := labels.SelectorFromSet(map[string]string{k8sMasterNodeLabelKey: ""})
+
+	var nodes corev1.NodeList
+	err := p.Client.List(ctx, &nodes, &client.ListOptions{LabelSelector: labelSelector})
+	if err != nil {
+		return "", err
+	}
+	if len(nodes.Items) > 0 {
+		for _, node := range nodes.Items {
+			nodeIP := ""
+			for _, addr := range node.Status.Addresses {
+				if addr.Type == corev1.NodeInternalIP {
+					nodeIP = addr.Address
+					break
+				}
+			}
+			if nodeIP != "" {
+				return nodeIP, nil
+			}
+		}
+		return "", fmt.Errorf("no k8s master node ip found")
+	}
+	return "", fmt.Errorf("no k8s master node found")
+}
+
 func (p *SchedulerPatcher) patchOpenShiftSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	masterNodeIP, err := p.getMasterNodeIP(ctx)
+	if err != nil {
+		return err
+	}
+
 	secondarySchedulerExtenderConfig := fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
 kind: KubeSchedulerConfiguration
 leaderElection:
@@ -33,13 +66,13 @@ leaderElection:
 profiles:
   - schedulerName: csi-baremetal-scheduler
 extenders:
-  - urlPrefix: "http://10.249.232.226:%s"
+  - urlPrefix: "http://%s:%s"
     filterVerb: filter
     prioritizeVerb: prioritize
     weight: 1
     enableHTTPS: false
     nodeCacheCapable: false
-    ignorable: true`, csi.Spec.Scheduler.ExtenderPort)
+    ignorable: true`, masterNodeIP, csi.Spec.Scheduler.ExtenderPort)
 
 	expected := createSecondarySchedulerConfig(secondarySchedulerExtenderConfig)
 
@@ -48,7 +81,7 @@ extenders:
 	// 	return err
 	// }
 
-	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Log)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Log)
 	if err != nil {
 		return err
 	}
