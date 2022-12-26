@@ -58,6 +58,7 @@ func (p *SchedulerPatcher) patchOpenShiftSecondaryScheduler(ctx context.Context,
 	if err != nil {
 		return err
 	}
+	p.Log.Infof("Master Node IP Used: %s", masterNodeIP)
 
 	secondarySchedulerExtenderConfig := fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
 kind: KubeSchedulerConfiguration
