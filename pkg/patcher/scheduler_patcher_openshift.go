@@ -35,6 +35,7 @@ func (p *SchedulerPatcher) getMasterNodeIP(ctx context.Context) (string, error) 
 	if err != nil {
 		return "", err
 	}
+	var potentialMasterNodeIP string
 	if len(nodes.Items) > 0 {
 		for _, node := range nodes.Items {
 			nodeIP := ""
@@ -45,8 +46,19 @@ func (p *SchedulerPatcher) getMasterNodeIP(ctx context.Context) (string, error) 
 				}
 			}
 			if nodeIP != "" {
-				return nodeIP, nil
+				if p.OpenshiftMasterNodeIP == "" {
+					p.OpenshiftMasterNodeIP = nodeIP
+				}
+				if nodeIP == p.OpenshiftMasterNodeIP {
+					return p.OpenshiftMasterNodeIP, nil
+				}
+				if potentialMasterNodeIP == "" {
+					potentialMasterNodeIP = nodeIP
+				}
 			}
+		}
+		if potentialMasterNodeIP != "" {
+			return potentialMasterNodeIP, nil
 		}
 		return "", fmt.Errorf("no k8s master node ip found")
 	}
