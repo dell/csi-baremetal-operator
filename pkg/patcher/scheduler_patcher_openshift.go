@@ -148,6 +148,30 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 	return nil
 }
 
+func (p *SchedulerPatcher) unPatchOpenShiftSecondaryScheduler(ctx context.Context) error {
+	var errMsgs []string
+
+	// TODO Remove after https://github.com/dell/csi-baremetal/issues/470
+	cfClient := p.Clientset.CoreV1().ConfigMaps("openshift-secondary-scheduler-operator")
+	err := cfClient.Delete(ctx, "csi-baremetal-scheduler-config", metav1.DeleteOptions{})
+	if err != nil {
+		p.Log.Error(err, "Failed to delete Openshift Secondary Scheduler ConfigMap")
+		errMsgs = append(errMsgs, err.Error())
+	}
+
+	err = p.uninstallSecondaryScheduler(ctx)
+	if err != nil {
+		p.Log.Error(err, "Failed to unpatch Scheduler")
+		errMsgs = append(errMsgs, err.Error())
+	}
+
+	if len(errMsgs) != 0 {
+		return fmt.Errorf(strings.Join(errMsgs, "\n"))
+	}
+
+	return nil
+}
+
 func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 	var errMsgs []string
 
@@ -281,6 +305,21 @@ func (p *SchedulerPatcher) patchScheduler(ctx context.Context, config string) er
 		return errors.New("scheduler is already patched with the config name: " + name)
 	}
 
+	return nil
+}
+
+func (p *SchedulerPatcher) uninstallSecondaryScheduler(ctx context.Context) error {
+	secondaryScheduler := &ssv1.SecondaryScheduler{}
+
+	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster", Namespace: "openshift-secondary-scheduler-operator"}, secondaryScheduler)
+	if err != nil {
+		return err
+	}
+
+	p.Client.Delete(ctx, secondaryScheduler)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -35,7 +35,7 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
 		err = p.patchOpenShift(ctx, csi)
-		if csi.Spec.SecondaryScheduler {
+		if err == nil && csi.Spec.SecondaryScheduler {
 			err = p.patchOpenShiftSecondaryScheduler(ctx, csi)
 		}
 	case constant.PlatformVanilla, constant.PlatformRKE:
@@ -51,7 +51,11 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 // Uninstall unpatch Openshift Scheduler
 func (p *SchedulerPatcher) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	if IsPatchingEnabled(csi) && csi.Spec.Platform == constant.PlatformOpenShift {
-		return p.unPatchOpenShift(ctx)
+		err := p.unPatchOpenShift(ctx)
+		if err == nil && csi.Spec.SecondaryScheduler {
+			err = p.unPatchOpenShiftSecondaryScheduler(ctx)
+		}
+		return err
 	}
 	return nil
 }
