@@ -19,6 +19,8 @@ type SchedulerPatcher struct {
 	Log                       *logrus.Entry
 	Client                    client.Client
 	PodSecurityPolicyVerifier securityverifier.SecurityVerifier
+	// OpenshiftMasterNodeIP used for openshift secondary scheduler extender config if applicable
+	OpenshiftMasterNodeIP string
 }
 
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla
