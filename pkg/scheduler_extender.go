@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/labels"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -226,4 +227,9 @@ func createExtenderSecurityContext(ctx *components.SecurityContext) *corev1.Secu
 	return &corev1.SecurityContext{
 		Privileged: ctx.Privileged,
 	}
+}
+
+// GetSchedulerExtenderDaemonsetPodsSelector returns a label-selector to use in the List method
+func GetSchedulerExtenderDaemonsetPodsSelector() labels.Selector {
+	return labels.SelectorFromSet(common.ConstructSelectorMap(extenderName))
 }

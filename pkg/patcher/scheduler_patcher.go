@@ -2,6 +2,7 @@ package patcher
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,8 +20,10 @@ type SchedulerPatcher struct {
 	Log                       *logrus.Entry
 	Client                    client.Client
 	PodSecurityPolicyVerifier securityverifier.SecurityVerifier
-	// OpenshiftMasterNodeIP used for openshift secondary scheduler extender config if applicable
-	OpenshiftMasterNodeIP string
+	// SelectedSchedulerExtenderIP used for openshift secondary scheduler extender config if applicable
+	SelectedSchedulerExtenderIP string
+	// httpClient used for openshift secondary scheduler extender config if applicable
+	httpClient *http.Client
 }
 
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla

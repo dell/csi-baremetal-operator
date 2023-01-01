@@ -6,8 +6,9 @@ import (
 	"fmt"
 	oov1 "github.com/openshift/api/operator/v1"
 	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	"net/http"
 	"strings"
+	"time"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	csioppkg "github.com/dell/csi-baremetal-operator/pkg"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
@@ -23,54 +25,75 @@ const (
 	openshiftNS     = "openshift-config"
 	openshiftConfig = "scheduler-policy"
 
-	openshiftPolicyFile   = "policy.cfg"
-	k8sMasterNodeLabelKey = "node-role.kubernetes.io/master"
+	openshiftPolicyFile = "policy.cfg"
 )
 
-func (p *SchedulerPatcher) getMasterNodeIP(ctx context.Context) (string, error) {
-	labelSelector := labels.SelectorFromSet(map[string]string{k8sMasterNodeLabelKey: ""})
+func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) (bool, error) {
+	if p.httpClient == nil {
+		p.httpClient = &http.Client{Timeout: 5 * time.Second}
+	}
+	extenderFilterUrl := fmt.Sprintf("http://%s:%s/filter", ip, port)
+	request, err := http.NewRequest(http.MethodGet, extenderFilterUrl, nil)
+	if err != nil {
+		return false, err
+	}
+	request.Header.Add("Accept", "application/json")
+	response, err := p.httpClient.Do(request)
+	if err != nil {
+		return false, err
+	}
+	if response.StatusCode == http.StatusOK {
+		return true, nil
+	}
+	return false, fmt.Errorf("scheduler extender %s not accessible", ip)
+}
 
-	var nodes corev1.NodeList
-	err := p.Client.List(ctx, &nodes, &client.ListOptions{LabelSelector: labelSelector})
+func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
+	if p.SelectedSchedulerExtenderIP != "" {
+		workable, err := p.schedulerExtenderWorkable(p.SelectedSchedulerExtenderIP, extenderPort)
+		if workable {
+			return p.SelectedSchedulerExtenderIP, nil
+		}
+		p.Log.Errorf("Check Selected Scheduler Extender Failed: %s", err.Error())
+	}
+
+	labelSelector := csioppkg.GetSchedulerExtenderDaemonsetPodsSelector()
+
+	var schedulerExtenderPods corev1.PodList
+	err := p.Client.List(ctx, &schedulerExtenderPods, &client.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return "", err
 	}
-	var potentialMasterNodeIP string
-	if len(nodes.Items) > 0 {
-		for _, node := range nodes.Items {
-			nodeIP := ""
-			for _, addr := range node.Status.Addresses {
-				if addr.Type == corev1.NodeInternalIP {
-					nodeIP = addr.Address
-					break
+	var potentialSchedulerExtenderIP string
+	if len(schedulerExtenderPods.Items) > 0 {
+		for _, pod := range schedulerExtenderPods.Items {
+			podIP := pod.Status.PodIP
+			if podIP != "" {
+				if p.SelectedSchedulerExtenderIP == "" {
+					p.SelectedSchedulerExtenderIP = podIP
 				}
-			}
-			if nodeIP != "" {
-				if p.OpenshiftMasterNodeIP == "" {
-					p.OpenshiftMasterNodeIP = nodeIP
+				if podIP == p.SelectedSchedulerExtenderIP {
+					return p.SelectedSchedulerExtenderIP, nil
 				}
-				if nodeIP == p.OpenshiftMasterNodeIP {
-					return p.OpenshiftMasterNodeIP, nil
-				}
-				if potentialMasterNodeIP == "" {
-					potentialMasterNodeIP = nodeIP
+				if potentialSchedulerExtenderIP == "" {
+					potentialSchedulerExtenderIP = podIP
 				}
 			}
 		}
-		if potentialMasterNodeIP != "" {
-			return potentialMasterNodeIP, nil
+		if potentialSchedulerExtenderIP != "" {
+			return potentialSchedulerExtenderIP, nil
 		}
-		return "", fmt.Errorf("no k8s master node ip found")
+		return "", fmt.Errorf("no scheduler extender pod ip found")
 	}
-	return "", fmt.Errorf("no k8s master node found")
+	return "", fmt.Errorf("no scheduler extender pod found")
 }
 
 func (p *SchedulerPatcher) patchOpenShiftSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	masterNodeIP, err := p.getMasterNodeIP(ctx)
+	schedulerExtenderIP, err := p.getSchedulerExtenderIP(ctx, csi.Spec.Scheduler.ExtenderPort)
 	if err != nil {
 		return err
 	}
-	p.Log.Infof("Master Node IP Used: %s", masterNodeIP)
+	p.Log.Infof("Scheduler Extender IP Used: %s", schedulerExtenderIP)
 
 	secondarySchedulerExtenderConfig := fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
 kind: KubeSchedulerConfiguration
@@ -85,7 +108,7 @@ extenders:
     weight: 1
     enableHTTPS: false
     nodeCacheCapable: false
-    ignorable: true`, masterNodeIP, csi.Spec.Scheduler.ExtenderPort)
+    ignorable: true`, schedulerExtenderIP, csi.Spec.Scheduler.ExtenderPort)
 
 	expected := createSecondarySchedulerConfig(secondarySchedulerExtenderConfig)
 
