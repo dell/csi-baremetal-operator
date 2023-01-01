@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 	oov1 "github.com/openshift/api/operator/v1"
 	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"strings"
 	"time"
@@ -17,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
-	csioppkg "github.com/dell/csi-baremetal-operator/pkg"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 )
 
@@ -26,6 +27,8 @@ const (
 	openshiftConfig = "scheduler-policy"
 
 	openshiftPolicyFile = "policy.cfg"
+
+	csiExtenderName = constant.CSIName + "-se"
 )
 
 func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) (bool, error) {
@@ -54,10 +57,10 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 		if workable {
 			return p.SelectedSchedulerExtenderIP, nil
 		}
-		p.Log.Errorf("Check Selected Scheduler Extender Failed: %s", err.Error())
+		p.Log.Errorf("Check Selected Scheduler Extender %s Failed: %s", p.SelectedSchedulerExtenderIP, err.Error())
 	}
 
-	labelSelector := csioppkg.GetSchedulerExtenderDaemonsetPodsSelector()
+	labelSelector := labels.SelectorFromSet(common.ConstructSelectorMap(csiExtenderName))
 
 	var schedulerExtenderPods corev1.PodList
 	err := p.Client.List(ctx, &schedulerExtenderPods, &client.ListOptions{LabelSelector: labelSelector})
