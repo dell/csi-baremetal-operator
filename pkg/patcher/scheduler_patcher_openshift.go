@@ -53,42 +53,35 @@ func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) (bo
 
 func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
 	if p.SelectedSchedulerExtenderIP != "" {
-		workable, err := p.schedulerExtenderWorkable(p.SelectedSchedulerExtenderIP, extenderPort)
-		if workable {
+		if workable, err := p.schedulerExtenderWorkable(p.SelectedSchedulerExtenderIP, extenderPort); workable {
 			return p.SelectedSchedulerExtenderIP, nil
+		} else if err != nil {
+			p.Log.Warnf("Current Selected Scheduler Extender %s Unworkable: %s",
+				p.SelectedSchedulerExtenderIP, err.Error())
 		}
-		p.Log.Errorf("Check Selected Scheduler Extender %s Failed: %s", p.SelectedSchedulerExtenderIP, err.Error())
 	}
 
 	labelSelector := labels.SelectorFromSet(common.ConstructSelectorMap(csiExtenderName))
 
 	var schedulerExtenderPods corev1.PodList
-	err := p.Client.List(ctx, &schedulerExtenderPods, &client.ListOptions{LabelSelector: labelSelector})
-	if err != nil {
+	if err := p.Client.List(ctx, &schedulerExtenderPods, &client.ListOptions{LabelSelector: labelSelector}); err != nil {
 		return "", err
 	}
-	var potentialSchedulerExtenderIP string
 	if len(schedulerExtenderPods.Items) > 0 {
 		for _, pod := range schedulerExtenderPods.Items {
 			podIP := pod.Status.PodIP
 			if podIP != "" {
-				if p.SelectedSchedulerExtenderIP == "" {
+				if workable, err := p.schedulerExtenderWorkable(podIP, extenderPort); workable {
 					p.SelectedSchedulerExtenderIP = podIP
-				}
-				if podIP == p.SelectedSchedulerExtenderIP {
-					return p.SelectedSchedulerExtenderIP, nil
-				}
-				if potentialSchedulerExtenderIP == "" {
-					potentialSchedulerExtenderIP = podIP
+					return podIP, nil
+				} else if err != nil {
+					p.Log.Warnf("Scheduler Extender %s Unworkable: %s", podIP, err.Error())
 				}
 			}
 		}
-		if potentialSchedulerExtenderIP != "" {
-			return potentialSchedulerExtenderIP, nil
-		}
-		return "", fmt.Errorf("no scheduler extender pod ip found")
+		return "", fmt.Errorf("no workable scheduler extender found")
 	}
-	return "", fmt.Errorf("no scheduler extender pod found")
+	return "", fmt.Errorf("no scheduler extender found")
 }
 
 func (p *SchedulerPatcher) patchOpenShiftSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) error {
@@ -96,7 +89,7 @@ func (p *SchedulerPatcher) patchOpenShiftSecondaryScheduler(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	p.Log.Infof("Scheduler Extender IP Used: %s", schedulerExtenderIP)
+	p.Log.Infof("Selected Scheduler Extender's IP: %s", schedulerExtenderIP)
 
 	secondarySchedulerExtenderConfig := fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
 kind: KubeSchedulerConfiguration
