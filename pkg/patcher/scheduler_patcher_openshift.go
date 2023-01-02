@@ -339,7 +339,7 @@ func (p *SchedulerPatcher) uninstallSecondaryScheduler(ctx context.Context) erro
 		return err
 	}
 
-	p.Client.Delete(ctx, secondaryScheduler)
+	err = p.Client.Delete(ctx, secondaryScheduler)
 	if err != nil {
 		return err
 	}
