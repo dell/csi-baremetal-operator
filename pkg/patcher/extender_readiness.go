@@ -24,6 +24,8 @@ const (
 	ExtenderConfigMapPath = "/status"
 	// ExtenderConfigMapFile - ExtenderConfigMap data key
 	ExtenderConfigMapFile = "nodes.yaml"
+
+	K8sMasterNodeLabelKey = "node-role.kubernetes.io/master"
 )
 
 // ExtenderReadinessOptions contains options to deploy ExtenderConfigMap
@@ -130,16 +132,17 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	if err != nil {
 		return err
 	}
-	if csi.Spec.Platform == constant.PlatformOpenShift {
-		useSecondaryScheduler, err := p.useSecondaryScheduler()
-		if err != nil {
-			return err
-		} else if useSecondaryScheduler {
-			options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfig
-			options.watchedConfigMapNamespace = openshiftSecondarySchedulerNamespace
-			options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", openshiftSecondarySchedulerLabelKey,
-				openshiftSecondarySchedulerLabelValue)
-		}
+
+	useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(csi.Spec.Platform)
+	if err != nil {
+		return err
+	}
+
+	if useOpenshiftSecondaryScheduler {
+		options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfig
+		options.watchedConfigMapNamespace = openshiftSecondarySchedulerNamespace
+		options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", openshiftSecondarySchedulerLabelKey,
+			openshiftSecondarySchedulerLabelValue)
 	}
 
 	cmCreationTime, err := p.getConfigMapCreationTime(ctx, options)
@@ -150,6 +153,21 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	readinessStatuses, err := p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime)
 	if err != nil {
 		return err
+	}
+	if useOpenshiftSecondaryScheduler && len(readinessStatuses.Items) == 1 && readinessStatuses.Items[0].Restarted {
+		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
+		if err != nil {
+			return err
+		}
+		for _, node := range masterNodes.Items {
+			if readinessStatuses.Items[0].NodeName != node.Name {
+				readinessStatus := ReadinessStatus{}
+				readinessStatus.KubeScheduler = readinessStatuses.Items[0].KubeScheduler
+				readinessStatus.NodeName = node.Name
+				readinessStatus.Restarted = true
+				readinessStatuses.Items = append(readinessStatuses.Items, readinessStatus)
+			}
+		}
 	}
 
 	expected, err := createReadinessConfigMap(options, readinessStatuses)
