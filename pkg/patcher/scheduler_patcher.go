@@ -47,6 +47,7 @@ func (p *SchedulerPatcher) useSecondaryScheduler() (bool, error) {
 				return false, err
 			}
 			p.KubernetesVersion = fmt.Sprintf("%d.%d", k8sMajorVersion, k8sMinorVersion)
+			p.Log.Infof("Kubernetes version: %s", p.KubernetesVersion)
 			p.UseSecondaryScheduler = k8sMajorVersion == 1 && k8sMinorVersion > 22
 		} else {
 			return false, err

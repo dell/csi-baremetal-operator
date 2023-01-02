@@ -31,32 +31,32 @@ const (
 	csiExtenderName = constant.CSIName + "-se"
 )
 
-func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) (bool, error) {
+func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) error {
 	if p.HttpClient == nil {
 		p.HttpClient = &http.Client{Timeout: 5 * time.Second}
 	}
 	extenderFilterUrl := fmt.Sprintf("http://%s:%s/filter", ip, port)
 	request, err := http.NewRequest(http.MethodGet, extenderFilterUrl, nil)
 	if err != nil {
-		return false, err
+		return err
 	}
 	request.Header.Add("Accept", "application/json")
 	response, err := p.HttpClient.Do(request)
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusOK {
-		return true, nil
+		return nil
 	}
-	return false, fmt.Errorf("scheduler extender %s not accessible", ip)
+	return fmt.Errorf("scheduler extender %s doesn't work", ip)
 }
 
 func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
 	if p.SelectedSchedulerExtenderIP != "" {
-		if workable, err := p.schedulerExtenderWorkable(p.SelectedSchedulerExtenderIP, extenderPort); workable {
+		if err := p.schedulerExtenderWorkable(p.SelectedSchedulerExtenderIP, extenderPort); err == nil {
 			return p.SelectedSchedulerExtenderIP, nil
-		} else if err != nil {
+		} else {
 			p.Log.Warnf("Current Selected Scheduler Extender %s Unworkable: %s",
 				p.SelectedSchedulerExtenderIP, err.Error())
 		}
@@ -72,10 +72,10 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 		for _, pod := range schedulerExtenderPods.Items {
 			podIP := pod.Status.PodIP
 			if podIP != "" {
-				if workable, err := p.schedulerExtenderWorkable(podIP, extenderPort); workable {
+				if err := p.schedulerExtenderWorkable(podIP, extenderPort); err == nil {
 					p.SelectedSchedulerExtenderIP = podIP
 					return podIP, nil
-				} else if err != nil {
+				} else {
 					p.Log.Warnf("Scheduler Extender %s Unworkable: %s", podIP, err.Error())
 				}
 			}
