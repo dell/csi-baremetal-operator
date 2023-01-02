@@ -2,6 +2,9 @@ package patcher
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,8 +22,39 @@ type SchedulerPatcher struct {
 	Log                       *logrus.Entry
 	Client                    client.Client
 	PodSecurityPolicyVerifier securityverifier.SecurityVerifier
-	// OpenshiftMasterNodeIP used for openshift secondary scheduler extender config if applicable
-	OpenshiftMasterNodeIP string
+	// will only set on Openshift
+	KubernetesVersion string
+	// whether use secondary scheduler on Openshift
+	UseOpenshiftSecondaryScheduler bool
+	// SelectedSchedulerExtenderIP used for openshift secondary scheduler extender config if applicable
+	SelectedSchedulerExtenderIP string
+	// HttpClient used for openshift secondary scheduler extender config if applicable
+	HttpClient *http.Client
+}
+
+func (p *SchedulerPatcher) useOpenshiftSecondaryScheduler(platform string) (bool, error) {
+	if platform == constant.PlatformOpenShift && p.KubernetesVersion == "" {
+		if k8sVersionInfo, err := p.Clientset.Discovery().ServerVersion(); err == nil {
+			var (
+				k8sMajorVersion int
+				k8sMinorVersion int
+			)
+			k8sMajorVersion, err = strconv.Atoi(k8sVersionInfo.Major)
+			if err != nil {
+				return false, err
+			}
+			k8sMinorVersion, err = strconv.Atoi(k8sVersionInfo.Minor)
+			if err != nil {
+				return false, err
+			}
+			p.KubernetesVersion = fmt.Sprintf("%d.%d", k8sMajorVersion, k8sMinorVersion)
+			p.Log.Infof("Kubernetes version: %s", p.KubernetesVersion)
+			p.UseOpenshiftSecondaryScheduler = k8sMajorVersion == 1 && k8sMinorVersion > 22
+		} else {
+			return false, err
+		}
+	}
+	return p.UseOpenshiftSecondaryScheduler, nil
 }
 
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla
@@ -34,9 +68,14 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 	var err error
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
-		err = p.patchOpenShift(ctx, csi)
-		if err == nil && csi.Spec.SecondaryScheduler {
-			err = p.patchOpenShiftSecondaryScheduler(ctx, csi)
+		var useOpenshiftSecondaryScheduler bool
+		useOpenshiftSecondaryScheduler, err = p.useOpenshiftSecondaryScheduler(csi.Spec.Platform)
+		if err == nil {
+			if useOpenshiftSecondaryScheduler {
+				err = p.patchOpenShiftSecondaryScheduler(ctx, csi)
+			} else {
+				err = p.patchOpenShift(ctx, csi)
+			}
 		}
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		err = p.updateVanilla(ctx, csi, scheme)
@@ -51,11 +90,15 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 // Uninstall unpatch Openshift Scheduler
 func (p *SchedulerPatcher) Uninstall(ctx context.Context, csi *csibaremetalv1.Deployment) error {
 	if IsPatchingEnabled(csi) && csi.Spec.Platform == constant.PlatformOpenShift {
-		err := p.unPatchOpenShift(ctx)
-		if err == nil && csi.Spec.SecondaryScheduler {
-			err = p.unPatchOpenShiftSecondaryScheduler(ctx)
+		if useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(csi.Spec.Platform); err == nil {
+			if useOpenshiftSecondaryScheduler {
+				return p.unPatchOpenShiftSecondaryScheduler(ctx)
+			} else {
+				return p.unPatchOpenShift(ctx)
+			}
+		} else {
+			return err
 		}
-		return err
 	}
 	return nil
 }

@@ -673,8 +673,6 @@ spec:
                 type: object
               sequentialLVGReservation:
                 type: boolean
-              secondaryScheduler:
-                type: boolean
             required:
             - platform
             - pullPolicy
