@@ -130,7 +130,7 @@ extenders:
 	}
 
 	// try to patch
-	err = p.updateSecondaryScheduler(ctx, openshiftConfig)
+	err = p.updateSecondaryScheduler(ctx)
 	if err != nil {
 		p.Log.Error(err, "Failed to patch Scheduler")
 		return err
@@ -262,7 +262,7 @@ func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 	}
 }
 
-func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context, config string) error {
+func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context) error {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
 
 	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster",
