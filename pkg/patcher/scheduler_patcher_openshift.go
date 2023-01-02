@@ -31,7 +31,7 @@ const (
 	csiExtenderName = constant.CSIName + "-se"
 )
 
-func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) error {
+func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error {
 	if p.HttpClient == nil {
 		p.HttpClient = &http.Client{Timeout: 5 * time.Second}
 	}
@@ -54,7 +54,7 @@ func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) err
 
 func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
 	if p.SelectedSchedulerExtenderIP != "" {
-		if err := p.schedulerExtenderWorkable(p.SelectedSchedulerExtenderIP, extenderPort); err == nil {
+		if err := p.checkSchedulerExtender(p.SelectedSchedulerExtenderIP, extenderPort); err == nil {
 			return p.SelectedSchedulerExtenderIP, nil
 		} else {
 			p.Log.Warnf("Current Selected Scheduler Extender %s Unworkable: %s",
@@ -70,9 +70,12 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 	}
 	if len(schedulerExtenderPods.Items) > 0 {
 		for _, pod := range schedulerExtenderPods.Items {
+			if pod.Status.Phase != corev1.PodRunning {
+				continue
+			}
 			podIP := pod.Status.PodIP
 			if podIP != "" {
-				if err := p.schedulerExtenderWorkable(podIP, extenderPort); err == nil {
+				if err := p.checkSchedulerExtender(podIP, extenderPort); err == nil {
 					p.SelectedSchedulerExtenderIP = podIP
 					return podIP, nil
 				} else {
