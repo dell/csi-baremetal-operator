@@ -27,7 +27,7 @@ const (
 
 	openshiftPolicyFile = "policy.cfg"
 
-	openshiftSchedulerResourceName        = "cluster"
+	// openshiftSchedulerResourceName        = "cluster"
 	openshiftSecondarySchedulerLabelKey   = "app"
 	openshiftSecondarySchedulerLabelValue = "secondary-scheduler"
 	openshiftSecondarySchedulerNamespace  = "openshift-secondary-scheduler-operator"
@@ -265,14 +265,14 @@ func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context, config string) error {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
 
-	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
+	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster",
 		Namespace: openshiftSecondarySchedulerNamespace}, secondaryScheduler)
 	if err != nil {
 		if k8sError.IsNotFound(err) {
 			secondaryScheduler = &ssv1.SecondaryScheduler{
 				TypeMeta: metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      openshiftSchedulerResourceName,
+					Name:      "cluster",
 					Namespace: openshiftSecondarySchedulerNamespace,
 				},
 				Spec: ssv1.SecondarySchedulerSpec{
@@ -342,7 +342,7 @@ func (p *SchedulerPatcher) patchScheduler(ctx context.Context, config string) er
 func (p *SchedulerPatcher) uninstallSecondaryScheduler(ctx context.Context) error {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
 
-	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
+	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster",
 		Namespace: openshiftSecondarySchedulerNamespace}, secondaryScheduler)
 	if err != nil {
 		return err
