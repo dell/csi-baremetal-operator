@@ -241,6 +241,21 @@ func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibare
 	return nil
 }
 
+func (p *SchedulerPatcher) retryPatchOpenshiftSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	err := p.unPatchOpenShiftSecondaryScheduler(ctx)
+	if err != nil {
+		p.Log.Error(err, "Failed to unpatch Openshift Secondary Scheduler")
+		return err
+	}
+
+	err = p.patchOpenShiftSecondaryScheduler(ctx, csi)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func createSecondarySchedulerConfig(config string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{},
