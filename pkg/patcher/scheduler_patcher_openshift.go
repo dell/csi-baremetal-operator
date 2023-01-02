@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	oov1 "github.com/openshift/api/operator/v1"
 	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
@@ -27,6 +26,14 @@ const (
 	openshiftConfig = "scheduler-policy"
 
 	openshiftPolicyFile = "policy.cfg"
+
+	openshiftSchedulerResourceName        = "cluster"
+	openshiftSecondarySchedulerLabelKey   = "app"
+	openshiftSecondarySchedulerLabelValue = "secondary-scheduler"
+	openshiftSecondarySchedulerNamespace  = "openshift-secondary-scheduler-operator"
+
+	csiOpenshiftSecondarySchedulerConfig = "csi-baremetal-scheduler-config"
+	csiOpenshiftSecondarySchedulerImage  = "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10"
 
 	csiExtenderName = constant.CSIName + "-se"
 )
@@ -174,9 +181,8 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 func (p *SchedulerPatcher) unPatchOpenShiftSecondaryScheduler(ctx context.Context) error {
 	var errMsgs []string
 
-	// TODO Remove after https://github.com/dell/csi-baremetal/issues/470
-	cfClient := p.Clientset.CoreV1().ConfigMaps("openshift-secondary-scheduler-operator")
-	err := cfClient.Delete(ctx, "csi-baremetal-scheduler-config", metav1.DeleteOptions{})
+	cfClient := p.Clientset.CoreV1().ConfigMaps(openshiftSecondarySchedulerNamespace)
+	err := cfClient.Delete(ctx, csiOpenshiftSecondarySchedulerConfig, metav1.DeleteOptions{})
 	if err != nil {
 		p.Log.Error(err, "Failed to delete Openshift Secondary Scheduler ConfigMap")
 		errMsgs = append(errMsgs, err.Error())
@@ -238,8 +244,8 @@ func createSecondarySchedulerConfig(config string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "csi-baremetal-scheduler-config",
-			Namespace: "openshift-secondary-scheduler-operator",
+			Name:      csiOpenshiftSecondarySchedulerConfig,
+			Namespace: openshiftSecondarySchedulerNamespace,
 		},
 		Data: map[string]string{"config.yaml": config},
 	}
@@ -259,23 +265,25 @@ func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context, config string) error {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
 
-	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster", Namespace: "openshift-secondary-scheduler-operator"}, secondaryScheduler)
+	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
+		Namespace: openshiftSecondarySchedulerNamespace}, secondaryScheduler)
 	if err != nil {
 		if k8sError.IsNotFound(err) {
 			secondaryScheduler = &ssv1.SecondaryScheduler{
 				TypeMeta: metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster",
-					Namespace: "openshift-secondary-scheduler-operator",
+					Name:      openshiftSchedulerResourceName,
+					Namespace: openshiftSecondarySchedulerNamespace,
 				},
 				Spec: ssv1.SecondarySchedulerSpec{
-					OperatorSpec: oov1.OperatorSpec{
-						ManagementState:  "Managed",
-						OperatorLogLevel: "Normal",
-						LogLevel:         "Normal",
-					},
-					SchedulerConfig: "csi-baremetal-scheduler-config",
-					SchedulerImage:  "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10",
+					//OperatorSpec: oov1.OperatorSpec{
+					//	ManagementState:  "Managed",
+					//	OperatorLogLevel: "Normal",
+					//	LogLevel:         "Normal",
+					//},
+					SchedulerConfig: csiOpenshiftSecondarySchedulerConfig,
+					// TODO make scheduler image version dependent on platform's k8s version
+					SchedulerImage: csiOpenshiftSecondarySchedulerImage,
 				},
 			}
 
@@ -334,7 +342,8 @@ func (p *SchedulerPatcher) patchScheduler(ctx context.Context, config string) er
 func (p *SchedulerPatcher) uninstallSecondaryScheduler(ctx context.Context) error {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
 
-	err := p.Client.Get(ctx, client.ObjectKey{Name: "cluster", Namespace: "openshift-secondary-scheduler-operator"}, secondaryScheduler)
+	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
+		Namespace: openshiftSecondarySchedulerNamespace}, secondaryScheduler)
 	if err != nil {
 		return err
 	}

@@ -130,6 +130,17 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	if err != nil {
 		return err
 	}
+	if csi.Spec.Platform == constant.PlatformOpenShift {
+		useSecondaryScheduler, err := p.useSecondaryScheduler()
+		if err != nil {
+			return err
+		} else if useSecondaryScheduler {
+			options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfig
+			options.watchedConfigMapNamespace = openshiftSecondarySchedulerNamespace
+			options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", openshiftSecondarySchedulerLabelKey,
+				openshiftSecondarySchedulerLabelValue)
+		}
+	}
 
 	cmCreationTime, err := p.getConfigMapCreationTime(ctx, options)
 	if err != nil {
