@@ -45,6 +45,7 @@ func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) (bo
 	if err != nil {
 		return false, err
 	}
+	defer response.Body.Close()
 	if response.StatusCode == http.StatusOK {
 		return true, nil
 	}
