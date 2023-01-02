@@ -23,8 +23,6 @@ feature:
   # need for node replacement and node removal features
   usenodeannotation: true
   useexternalannotation: false
-  # use secondary scheduler on Openshift, only valid for Openshift
-  secondaryScheduler: true
   nodeIDAnnotation:
 
 # to deploy on specific nodes kubeclt get nodes -l <key>=<value>

@@ -35,7 +35,6 @@ type DeploymentSpec struct {
 	NodeSelector             *NodeSelector `json:"nodeSelector,omitempty"`
 	NodeIDAnnotation         bool          `json:"nodeIDAnnotation,omitempty"`
 	SequentialLVGReservation bool          `json:"sequentialLVGReservation,omitempty"`
-	SecondaryScheduler       bool          `json:"secondaryScheduler,omitempty"`
 
 	// +kubebuilder:validation:Enum=rke;openshift;vanilla
 	// +kubebuilder:default:=vanilla
