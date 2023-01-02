@@ -22,8 +22,8 @@ type SchedulerPatcher struct {
 	PodSecurityPolicyVerifier securityverifier.SecurityVerifier
 	// SelectedSchedulerExtenderIP used for openshift secondary scheduler extender config if applicable
 	SelectedSchedulerExtenderIP string
-	// httpClient used for openshift secondary scheduler extender config if applicable
-	httpClient *http.Client
+	// HttpClient used for openshift secondary scheduler extender config if applicable
+	HttpClient *http.Client
 }
 
 // Update updates or creates csi-baremetal-se-patcher on RKE and Vanilla

@@ -32,8 +32,8 @@ const (
 )
 
 func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) (bool, error) {
-	if p.httpClient == nil {
-		p.httpClient = &http.Client{Timeout: 5 * time.Second}
+	if p.HttpClient == nil {
+		p.HttpClient = &http.Client{Timeout: 5 * time.Second}
 	}
 	extenderFilterUrl := fmt.Sprintf("http://%s:%s/filter", ip, port)
 	request, err := http.NewRequest(http.MethodGet, extenderFilterUrl, nil)
@@ -41,7 +41,7 @@ func (p *SchedulerPatcher) schedulerExtenderWorkable(ip string, port string) (bo
 		return false, err
 	}
 	request.Header.Add("Accept", "application/json")
-	response, err := p.httpClient.Do(request)
+	response, err := p.HttpClient.Do(request)
 	if err != nil {
 		return false, err
 	}

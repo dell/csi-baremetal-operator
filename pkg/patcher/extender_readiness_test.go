@@ -348,10 +348,9 @@ func prepareValidatorClient(scheme *runtime.Scheme, objects ...client.Object) cl
 
 func prepareSchedulerPatcher(eventRecorder events.EventRecorder, clientSet kubernetes.Interface, client client.Client) *SchedulerPatcher {
 	sp := &SchedulerPatcher{
-		clientSet,
-		logEntry,
-		nil,
-		securityverifier.NewPodSecurityPolicyVerifier(
+		Clientset: clientSet,
+		Log:       logEntry,
+		PodSecurityPolicyVerifier: securityverifier.NewPodSecurityPolicyVerifier(
 			validator.NewValidator(rbac.NewValidator(
 				client,
 				logEntry,
