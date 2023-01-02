@@ -269,6 +269,7 @@ func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context, config 
 		Namespace: openshiftSecondarySchedulerNamespace}, secondaryScheduler)
 	if err != nil {
 		if k8sError.IsNotFound(err) {
+			// TODO make scheduler image version dependent on platform's k8s version
 			secondaryScheduler = &ssv1.SecondaryScheduler{
 				TypeMeta: metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{
@@ -276,16 +277,16 @@ func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context, config 
 					Namespace: openshiftSecondarySchedulerNamespace,
 				},
 				Spec: ssv1.SecondarySchedulerSpec{
-					//OperatorSpec: oov1.OperatorSpec{
-					//	ManagementState:  "Managed",
-					//	OperatorLogLevel: "Normal",
-					//	LogLevel:         "Normal",
-					//},
 					SchedulerConfig: csiOpenshiftSecondarySchedulerConfig,
-					// TODO make scheduler image version dependent on platform's k8s version
-					SchedulerImage: csiOpenshiftSecondarySchedulerImage,
+					SchedulerImage:  csiOpenshiftSecondarySchedulerImage,
 				},
 			}
+
+			//OperatorSpec: oov1.OperatorSpec{
+			//	ManagementState:  "Managed",
+			//	OperatorLogLevel: "Normal",
+			//	LogLevel:         "Normal",
+			//},
 
 			err = p.Client.Create(ctx, secondaryScheduler)
 			if err != nil {
