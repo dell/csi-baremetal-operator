@@ -279,38 +279,39 @@ func createOpenshiftConfig(policy string) *corev1.ConfigMap {
 }
 
 func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context) error {
-	// TODO make scheduler image version dependent on platform's k8s version
-	newSecondaryScheduler := &ssv1.SecondaryScheduler{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      openshiftSchedulerResourceName,
-			Namespace: openshiftSecondarySchedulerNamespace,
-		},
-		Spec: ssv1.SecondarySchedulerSpec{
-			OperatorSpec: oov1.OperatorSpec{
-				ManagementState:  "Managed",
-				OperatorLogLevel: "Normal",
-				LogLevel:         "Normal",
-			},
-			SchedulerConfig: csiOpenshiftSecondarySchedulerConfig,
-			SchedulerImage:  csiOpenshiftSecondarySchedulerImage,
-		},
-	}
-
-	existingSecondaryScheduler := &ssv1.SecondaryScheduler{}
+	secondaryScheduler := &ssv1.SecondaryScheduler{}
 	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
-		Namespace: openshiftSecondarySchedulerNamespace}, existingSecondaryScheduler)
+		Namespace: openshiftSecondarySchedulerNamespace}, secondaryScheduler)
 	if err != nil {
 		if k8sError.IsNotFound(err) {
-			err = p.Client.Create(ctx, newSecondaryScheduler)
+			// TODO make scheduler image version dependent on platform's k8s version
+			secondaryScheduler = &ssv1.SecondaryScheduler{
+				TypeMeta: metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      openshiftSchedulerResourceName,
+					Namespace: openshiftSecondarySchedulerNamespace,
+				},
+				Spec: ssv1.SecondarySchedulerSpec{
+					OperatorSpec: oov1.OperatorSpec{
+						ManagementState:  "Managed",
+						OperatorLogLevel: "Normal",
+						LogLevel:         "Normal",
+					},
+					SchedulerConfig: csiOpenshiftSecondarySchedulerConfig,
+					SchedulerImage:  csiOpenshiftSecondarySchedulerImage,
+				},
+			}
+			err = p.Client.Create(ctx, secondaryScheduler)
 			if err != nil {
 				return err
 			}
 		}
 		return err
-	} else if existingSecondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfig ||
-		existingSecondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage {
-		if err = p.Client.Update(ctx, newSecondaryScheduler); err != nil {
+	} else if secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfig ||
+		secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage {
+		secondaryScheduler.Spec.SchedulerConfig = csiOpenshiftSecondarySchedulerConfig
+		secondaryScheduler.Spec.SchedulerImage = csiOpenshiftSecondarySchedulerImage
+		if err = p.Client.Update(ctx, secondaryScheduler); err != nil {
 			return err
 		}
 	}
