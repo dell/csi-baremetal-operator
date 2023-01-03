@@ -32,6 +32,7 @@ const (
 	openshiftSecondarySchedulerLabelKey   = "app"
 	openshiftSecondarySchedulerLabelValue = "secondary-scheduler"
 	openshiftSecondarySchedulerNamespace  = "openshift-secondary-scheduler-operator"
+	openshiftSecondarySchedulerDataKey    = "config.yaml"
 
 	csiOpenshiftSecondarySchedulerConfig = "csi-baremetal-scheduler-config"
 	csiOpenshiftSecondarySchedulerImage  = "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10"
@@ -96,14 +97,21 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 	return "", fmt.Errorf("no scheduler extender found")
 }
 
-func (p *SchedulerPatcher) patchOpenShiftSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	schedulerExtenderIP, err := p.getSchedulerExtenderIP(ctx, csi.Spec.Scheduler.ExtenderPort)
+func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(csi.Spec.Platform)
 	if err != nil {
 		return err
 	}
-	p.Log.Infof("Selected Scheduler Extender's IP: %s", schedulerExtenderIP)
 
-	secondarySchedulerExtenderConfig := fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
+	var config string
+	if useOpenshiftSecondaryScheduler {
+		schedulerExtenderIP, err1 := p.getSchedulerExtenderIP(ctx, csi.Spec.Scheduler.ExtenderPort)
+		if err1 != nil {
+			return err1
+		}
+		p.Log.Infof("Selected Scheduler Extender's IP: %s", schedulerExtenderIP)
+
+		config = fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
 kind: KubeSchedulerConfiguration
 leaderElection:
   leaderElect: false
@@ -117,31 +125,8 @@ extenders:
     enableHTTPS: false
     nodeCacheCapable: false
     ignorable: true`, schedulerExtenderIP, csi.Spec.Scheduler.ExtenderPort)
-
-	expected := createSecondarySchedulerConfig(secondarySchedulerExtenderConfig)
-
-	// TODO csi can't control cm in another namespace https://github.com/dell/csi-baremetal/issues/470
-	// if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
-	// 	return err
-	// }
-
-	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Log)
-	if err != nil {
-		return err
-	}
-
-	// try to patch
-	err = p.updateSecondaryScheduler(ctx)
-	if err != nil {
-		p.Log.Error(err, "Failed to patch Scheduler")
-		return err
-	}
-
-	return nil
-}
-
-func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	openshiftPolicy := fmt.Sprintf(`{
+	} else {
+		config = fmt.Sprintf(`{
    "kind" : "Policy",
    "apiVersion" : "v1",
    "extenders": [
@@ -156,47 +141,29 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
         }
     ]
 }`, csi.Spec.Scheduler.ExtenderPort)
+	}
 
-	expected := createOpenshiftConfig(openshiftPolicy)
+	expected := createOpenshiftConfig(config, useOpenshiftSecondaryScheduler)
 
 	// TODO csi can't control cm in another namespace https://github.com/dell/csi-baremetal/issues/470
 	// if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
 	// 	return err
 	// }
 
-	err := common.UpdateConfigMap(ctx, p.Clientset, expected, p.Log)
+	err = common.UpdateConfigMap(ctx, p.Clientset, expected, p.Log)
 	if err != nil {
 		return err
 	}
 
 	// try to patch
-	err = p.patchScheduler(ctx, openshiftConfig)
+	if useOpenshiftSecondaryScheduler {
+		err = p.patchSecondaryScheduler(ctx)
+	} else {
+		err = p.patchScheduler(ctx, openshiftConfig)
+	}
 	if err != nil {
-		p.Log.Error(err, "Failed to patch Scheduler")
+		p.Log.Error(err, "Failed to patch Openshift Scheduler")
 		return err
-	}
-
-	return nil
-}
-
-func (p *SchedulerPatcher) unPatchOpenShiftSecondaryScheduler(ctx context.Context) error {
-	var errMsgs []string
-
-	cfClient := p.Clientset.CoreV1().ConfigMaps(openshiftSecondarySchedulerNamespace)
-	err := cfClient.Delete(ctx, csiOpenshiftSecondarySchedulerConfig, metav1.DeleteOptions{})
-	if err != nil {
-		p.Log.Error(err, "Failed to delete Openshift Secondary Scheduler ConfigMap")
-		errMsgs = append(errMsgs, err.Error())
-	}
-
-	err = p.uninstallSecondaryScheduler(ctx)
-	if err != nil {
-		p.Log.Error(err, "Failed to unpatch Scheduler")
-		errMsgs = append(errMsgs, err.Error())
-	}
-
-	if len(errMsgs) != 0 {
-		return fmt.Errorf(strings.Join(errMsgs, "\n"))
 	}
 
 	return nil
@@ -205,15 +172,34 @@ func (p *SchedulerPatcher) unPatchOpenShiftSecondaryScheduler(ctx context.Contex
 func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 	var errMsgs []string
 
+	useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(constant.PlatformOpenShift)
+	if err != nil {
+		return err
+	}
+	var (
+		cmName string
+		cmNS   string
+	)
+	if useOpenshiftSecondaryScheduler {
+		cmName = csiOpenshiftSecondarySchedulerConfig
+		cmNS = openshiftSecondarySchedulerNamespace
+	} else {
+		cmName = openshiftConfig
+		cmNS = openshiftNS
+	}
 	// TODO Remove after https://github.com/dell/csi-baremetal/issues/470
-	cfClient := p.Clientset.CoreV1().ConfigMaps(openshiftNS)
-	err := cfClient.Delete(ctx, openshiftConfig, metav1.DeleteOptions{})
+	cfClient := p.Clientset.CoreV1().ConfigMaps(cmNS)
+	err = cfClient.Delete(ctx, cmName, metav1.DeleteOptions{})
 	if err != nil {
 		p.Log.Error(err, "Failed to delete Openshift extender ConfigMap")
 		errMsgs = append(errMsgs, err.Error())
 	}
 
-	err = p.unpatchScheduler(ctx, openshiftConfig)
+	if useOpenshiftSecondaryScheduler {
+		err = p.uninstallSecondaryScheduler(ctx)
+	} else {
+		err = p.unpatchScheduler(ctx, openshiftConfig)
+	}
 	if err != nil {
 		p.Log.Error(err, "Failed to unpatch Scheduler")
 		errMsgs = append(errMsgs, err.Error())
@@ -241,44 +227,32 @@ func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibare
 	return nil
 }
 
-func (p *SchedulerPatcher) retryPatchOpenshiftSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	err := p.unPatchOpenShiftSecondaryScheduler(ctx)
-	if err != nil {
-		p.Log.Error(err, "Failed to unpatch Openshift Secondary Scheduler")
-		return err
+func createOpenshiftConfig(config string, useOpenshiftSecondaryScheduler bool) *corev1.ConfigMap {
+	var (
+		cmName    string
+		cmNS      string
+		cmDataKey string
+	)
+	if useOpenshiftSecondaryScheduler {
+		cmName = csiOpenshiftSecondarySchedulerConfig
+		cmNS = openshiftSecondarySchedulerNamespace
+		cmDataKey = openshiftSecondarySchedulerDataKey
+	} else {
+		cmName = openshiftConfig
+		cmNS = openshiftNS
+		cmDataKey = openshiftPolicyFile
 	}
-
-	err = p.patchOpenShiftSecondaryScheduler(ctx, csi)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createSecondarySchedulerConfig(config string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      csiOpenshiftSecondarySchedulerConfig,
-			Namespace: openshiftSecondarySchedulerNamespace,
+			Name:      cmName,
+			Namespace: cmNS,
 		},
-		Data: map[string]string{"config.yaml": config},
+		Data: map[string]string{cmDataKey: config},
 	}
 }
 
-func createOpenshiftConfig(policy string) *corev1.ConfigMap {
-	return &corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      openshiftConfig,
-			Namespace: openshiftNS,
-		},
-		Data: map[string]string{openshiftPolicyFile: policy},
-	}
-}
-
-func (p *SchedulerPatcher) updateSecondaryScheduler(ctx context.Context) error {
+func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context) error {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
 	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
 		Namespace: openshiftSecondarySchedulerNamespace}, secondaryScheduler)
