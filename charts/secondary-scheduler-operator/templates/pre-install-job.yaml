@@ -117,7 +117,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: "{{ .Chart.Name }}-puc"
-          image: "{{ .Values.global.registry }}/{{ .Values.helmHooks.repository }}:{{ .Values.helmHooks.version }}"
+          image: "{{ .Values.global.registry }}/{{ .Values.helmHooks.repository }}:{{ default .Values.image.tag .Values.helmHooks.version }}"
           imagePullPolicy: "IfNotPresent"
           command:
            - /scripts/pre-install.sh
