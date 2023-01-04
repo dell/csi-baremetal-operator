@@ -9,10 +9,12 @@ replicaCount: 1
 secondaryOperator:
   image:
     name: secondary-scheduler-operator
-    tag: "v20221207internalv4"
+    tag:
 
 image:
   pullPolicy: IfNotPresent
+  tag: 1.1.0-113.dda98ea
+
   # Overrides the image tag whose default is the chart appVersion.
 
 imagePullSecrets: []
@@ -62,7 +64,7 @@ affinity: {}
 # hook for the pre-delete/pre-install/post-install
 helmHooks:
   repository: csi-baremetal-pre-upgrade-crds
-  version: 1.1.0-117.d467933
+  version:
 
 
 csv:

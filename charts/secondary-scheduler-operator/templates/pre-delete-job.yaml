@@ -44,7 +44,7 @@ spec:
       serviceAccountName: {{ include "secondaryscheduleroperator.serviceAccountName" . }}
       containers:
         - name: pre-delete-job
-          image: "{{ .Values.global.registry }}/{{ .Values.helmHooks.repository }}:{{ .Values.helmHooks.version }}"
+          image: "{{ .Values.global.registry }}/{{ .Values.helmHooks.repository }}:{{ default .Values.image.tag .Values.helmHooks.version }}"
           command:
            - /scripts/pre-delete.sh
           volumeMounts:
