@@ -12,7 +12,7 @@ data:
   post-install.sh: |
     #!/bin/sh
     set -e
-    kubectl patch csv -n {{ .Release.Namespace }} {{ .Values.csv.version }} --type='json' -p '[{"op":"replace","path":"/spec/install/spec/deployments/0/spec/template/spec/containers/0/image", "value":"{{ .Values.global.registry }}/{{ .Values.secondaryOperator.image.name }}:{{ .Values.secondaryOperator.image.tag }}"}]'
+    kubectl patch csv -n {{ .Release.Namespace }} {{ .Values.csv.version }} --type='json' -p '[{"op":"replace","path":"/spec/install/spec/deployments/0/spec/template/spec/containers/0/image", "value":"{{ .Values.global.registry }}/{{ .Values.secondaryOperator.image.name }}:{{ default .Values.image.tag .Values.secondaryOperator.image.tag }}"}]'
 
 
 ---
@@ -44,7 +44,7 @@ spec:
       serviceAccountName: {{ include "secondaryscheduleroperator.serviceAccountName" . }}
       containers:
         - name: post-install-job
-          image: "{{ .Values.global.registry }}/{{ .Values.helmHooks.repository }}:{{ .Values.helmHooks.version }}"
+          image: "{{ .Values.global.registry }}/{{ .Values.helmHooks.repository }}:{{ default .Values.image.tag .Values.helmHooks.version }}"
           command:
            - /scripts/post-install.sh
           volumeMounts:
