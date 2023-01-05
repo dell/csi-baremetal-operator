@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -55,13 +54,11 @@ func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error 
 	if err != nil {
 		return err
 	}
-	defer func(Body io.ReadCloser) {
-		p.Log.Info("Will close response body")
-		err := Body.Close()
-		if err != nil {
+	defer func() {
+		if err := response.Body.Close(); err != nil {
 			p.Log.Error("Cannot close response body with error: ", err.Error())
 		}
-	}(response.Body)
+	}()
 	if response.StatusCode == http.StatusOK {
 		return nil
 	}
