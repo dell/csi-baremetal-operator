@@ -146,6 +146,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	}
 
 	cmCreationTime, err := p.getConfigMapCreationTime(ctx, options)
+	p.Log.Infof("configMap %s creation time: %s", options.watchedConfigMapName, cmCreationTime.Time.String())
 	if err != nil {
 		return err
 	}
@@ -154,6 +155,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	if err != nil {
 		return err
 	}
+	p.Log.Infof("length of readinessStatuses: %d", len(readinessStatuses.Items))
 	if useOpenshiftSecondaryScheduler && len(readinessStatuses.Items) == 1 && readinessStatuses.Items[0].Restarted {
 		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
 		if err != nil {
@@ -220,17 +222,23 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 		return nil, err
 	}
 
+	p.Log.Infof("Number of pods selected by %s: %d", kubeSchedulerLabel, len(pods.Items))
 	for _, pod := range pods.Items {
 		readinessStatus := ReadinessStatus{}
 		readinessStatus.KubeScheduler = pod.Name
 		readinessStatus.NodeName = pod.Spec.NodeName
 
+		p.Log.Infof("pod name: %s", pod.Name)
+
 		// nolint
 		if len(pod.Status.ContainerStatuses) == 0 {
+			p.Log.Info("pod has no container statuses")
 			readinessStatus.Restarted = false
 		} else if pod.Status.ContainerStatuses[0].State.Running == nil {
+			p.Log.Info("pod has no running container")
 			readinessStatus.Restarted = false
 		} else if pod.Status.ContainerStatuses[0].State.Running.StartedAt.Before(&cmCreationTime) {
+			p.Log.Info("pod's container started time: %s", pod.Status.ContainerStatuses[0].State.Running.StartedAt.String())
 			readinessStatus.Restarted = false
 		} else {
 			readinessStatus.Restarted = true
