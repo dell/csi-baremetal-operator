@@ -4,22 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dell/csi-baremetal-operator/pkg/constant"
-	oov1 "github.com/openshift/api/operator/v1"
-	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"strings"
 	"time"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
+	oov1 "github.com/openshift/api/operator/v1"
+	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
+	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
 
 const (
@@ -41,20 +41,24 @@ const (
 )
 
 func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error {
-	if p.HttpClient == nil {
-		p.HttpClient = &http.Client{Timeout: 5 * time.Second}
+	if p.HTTPClient == nil {
+		p.HTTPClient = &http.Client{Timeout: 5 * time.Second}
 	}
-	extenderFilterUrl := fmt.Sprintf("http://%s:%s/filter", ip, port)
-	request, err := http.NewRequest(http.MethodGet, extenderFilterUrl, nil)
+	extenderFilterURL := fmt.Sprintf("http://%s:%s/filter", ip, port)
+	request, err := http.NewRequest(http.MethodGet, extenderFilterURL, nil)
 	if err != nil {
 		return err
 	}
 	request.Header.Add("Accept", "application/json")
-	response, err := p.HttpClient.Do(request)
+	response, err := p.HTTPClient.Do(request)
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			p.Log.Error("Cannot close response body with error: ", err.Error())
+		}
+	}()
 	if response.StatusCode == http.StatusOK {
 		return nil
 	}
@@ -63,11 +67,11 @@ func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error 
 
 func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
 	if p.SelectedSchedulerExtenderIP != "" {
-		if err := p.checkSchedulerExtender(p.SelectedSchedulerExtenderIP, extenderPort); err == nil {
-			return p.SelectedSchedulerExtenderIP, nil
-		} else {
+		if err := p.checkSchedulerExtender(p.SelectedSchedulerExtenderIP, extenderPort); err != nil {
 			p.Log.Warnf("Current Selected Scheduler Extender %s Unworkable: %s",
 				p.SelectedSchedulerExtenderIP, err.Error())
+		} else {
+			return p.SelectedSchedulerExtenderIP, nil
 		}
 	}
 
@@ -84,11 +88,11 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 			}
 			podIP := pod.Status.PodIP
 			if podIP != "" {
-				if err := p.checkSchedulerExtender(podIP, extenderPort); err == nil {
+				if err := p.checkSchedulerExtender(podIP, extenderPort); err != nil {
+					p.Log.Warnf("Scheduler Extender %s Unworkable: %s", podIP, err.Error())
+				} else {
 					p.SelectedSchedulerExtenderIP = podIP
 					return podIP, nil
-				} else {
-					p.Log.Warnf("Scheduler Extender %s Unworkable: %s", podIP, err.Error())
 				}
 			}
 		}

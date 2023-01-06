@@ -28,8 +28,8 @@ type SchedulerPatcher struct {
 	UseOpenshiftSecondaryScheduler bool
 	// SelectedSchedulerExtenderIP used for openshift secondary scheduler extender config if applicable
 	SelectedSchedulerExtenderIP string
-	// HttpClient used for openshift secondary scheduler extender config if applicable
-	HttpClient *http.Client
+	// HTTPClient used for openshift secondary scheduler extender config if applicable
+	HTTPClient *http.Client
 }
 
 func (p *SchedulerPatcher) useOpenshiftSecondaryScheduler(platform string) (bool, error) {
