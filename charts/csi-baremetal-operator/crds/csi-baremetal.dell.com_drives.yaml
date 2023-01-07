@@ -61,20 +61,28 @@ spec:
       jsonPath: .spec.Slot
       name: SLOT
       type: string
+    - description: SED drive security status
+      jsonPath: .spec.SecurityStatus
+      name: Security Status
+      type: string
+    - description: SED drive or not
+      jsonPath: .spec.EncryptionCapable
+      name: Encryption Capable
+      type: string
+    - description: SED encryption protocol
+      jsonPath: .spec.EncryptionProtocol
+      name: Encryption Protocol
+      type: string
     name: v1
     schema:
       openAPIV3Schema:
         description: Drive is the Schema for the drives API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -83,6 +91,10 @@ spec:
               Bay:
                 type: string
               Enclosure:
+                type: string
+              EncryptionCapable:
+                type: string
+              EncryptionProtocol:
                 type: string
               Endurance:
                 format: int64
@@ -103,6 +115,8 @@ spec:
                 type: string
               Path:
                 description: path to the device. may not be set by drivemgr.
+                type: string
+              SecurityStatus:
                 type: string
               SerialNumber:
                 type: string
