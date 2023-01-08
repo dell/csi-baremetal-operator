@@ -139,6 +139,7 @@ func Test_PatchOpenshiftSecondaryScheduler(t *testing.T) {
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
+		csiDeploy.Spec.Scheduler.Patcher.Enable = false
 		assert.Nil(t, sp.Update(ctx, csiDeploy, scheme))
 	})
 }
