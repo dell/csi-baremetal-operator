@@ -38,13 +38,14 @@ const (
 	csiOpenshiftSecondarySchedulerImage  = "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10"
 
 	csiExtenderName = constant.CSIName + "-se"
+
+	extenderFilterURLPattern = "http://%s:%s/filter"
 )
 
-func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error {
+func (p *SchedulerPatcher) checkSchedulerExtender(extenderFilterURL string) error {
 	if p.HTTPClient == nil {
 		p.HTTPClient = &http.Client{Timeout: 5 * time.Second}
 	}
-	extenderFilterURL := fmt.Sprintf("http://%s:%s/filter", ip, port)
 	request, err := http.NewRequest(http.MethodGet, extenderFilterURL, nil)
 	if err != nil {
 		return err
@@ -62,12 +63,13 @@ func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error 
 	if response.StatusCode == http.StatusOK {
 		return nil
 	}
-	return fmt.Errorf("scheduler extender %s doesn't work", ip)
+	return fmt.Errorf("scheduler extender filter %s doesn't work", extenderFilterURL)
 }
 
 func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
 	if p.SelectedSchedulerExtenderIP != "" {
-		if err := p.checkSchedulerExtender(p.SelectedSchedulerExtenderIP, extenderPort); err != nil {
+		selectedExtenderFilterURL := fmt.Sprintf(extenderFilterURLPattern, p.SelectedSchedulerExtenderIP, extenderPort)
+		if err := p.checkSchedulerExtender(selectedExtenderFilterURL); err != nil {
 			p.Log.Warnf("Current Selected Scheduler Extender %s Unworkable: %s",
 				p.SelectedSchedulerExtenderIP, err.Error())
 		} else {
@@ -88,7 +90,8 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 			}
 			podIP := pod.Status.PodIP
 			if podIP != "" {
-				if err := p.checkSchedulerExtender(podIP, extenderPort); err != nil {
+				extenderFilterURL := fmt.Sprintf(extenderFilterURLPattern, podIP, extenderPort)
+				if err := p.checkSchedulerExtender(extenderFilterURL); err != nil {
 					p.Log.Warnf("Scheduler Extender %s Unworkable: %s", podIP, err.Error())
 				} else {
 					p.SelectedSchedulerExtenderIP = podIP
