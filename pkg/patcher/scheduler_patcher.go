@@ -28,6 +28,8 @@ type SchedulerPatcher struct {
 	UseOpenshiftSecondaryScheduler bool
 	// SelectedSchedulerExtenderIP used for openshift secondary scheduler extender config if applicable
 	SelectedSchedulerExtenderIP string
+	// The suffix pattern used to check whether the scheduler extender workable on Openshift with 2nd scheduler
+	ExtenderPatternChecked string
 	// HTTPClient used for openshift secondary scheduler extender config if applicable
 	HTTPClient *http.Client
 }

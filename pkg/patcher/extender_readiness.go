@@ -61,8 +61,8 @@ func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadi
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
 		{
-			options.watchedConfigMapName = openshiftConfig
-			options.watchedConfigMapNamespace = openshiftNS
+			options.watchedConfigMapName = openshiftSchedulerPolicyConfigMapName
+			options.watchedConfigMapNamespace = openshiftConfigNamespace
 		}
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		{
@@ -139,7 +139,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	}
 
 	if useOpenshiftSecondaryScheduler {
-		options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfig
+		options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfigMapName
 		options.watchedConfigMapNamespace = openshiftSecondarySchedulerNamespace
 		options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", openshiftSecondarySchedulerLabelKey,
 			openshiftSecondarySchedulerLabelValue)

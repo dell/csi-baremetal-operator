@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	openshiftNS     = "openshift-config"
-	openshiftConfig = "scheduler-policy"
+	openshiftConfigNamespace              = "openshift-config"
+	openshiftSchedulerPolicyConfigMapName = "scheduler-policy"
 
 	openshiftPolicyFile = "policy.cfg"
 
@@ -34,18 +34,20 @@ const (
 	openshiftSecondarySchedulerNamespace  = "openshift-secondary-scheduler-operator"
 	openshiftSecondarySchedulerDataKey    = "config.yaml"
 
-	csiOpenshiftSecondarySchedulerConfig = "csi-baremetal-scheduler-config"
-	csiOpenshiftSecondarySchedulerImage  = "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10"
+	csiOpenshiftSecondarySchedulerConfigMapName = "csi-baremetal-scheduler-config"
+	csiOpenshiftSecondarySchedulerImage         = "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10"
 
 	csiExtenderName = constant.CSIName + "-se"
 
-	extenderFilterURLPattern = "http://%s:%s/filter"
+	extenderFilterURLFormat = "http://%s:%s%s"
+	extenderFilterPattern   = "/filter"
 )
 
-func (p *SchedulerPatcher) checkSchedulerExtender(extenderFilterURL string) error {
+func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error {
 	if p.HTTPClient == nil {
 		p.HTTPClient = &http.Client{Timeout: 5 * time.Second}
 	}
+	extenderFilterURL := fmt.Sprintf(extenderFilterURLFormat, ip, port, p.ExtenderPatternChecked)
 	request, err := http.NewRequest(http.MethodGet, extenderFilterURL, nil)
 	if err != nil {
 		return err
@@ -68,8 +70,7 @@ func (p *SchedulerPatcher) checkSchedulerExtender(extenderFilterURL string) erro
 
 func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
 	if p.SelectedSchedulerExtenderIP != "" {
-		selectedExtenderFilterURL := fmt.Sprintf(extenderFilterURLPattern, p.SelectedSchedulerExtenderIP, extenderPort)
-		if err := p.checkSchedulerExtender(selectedExtenderFilterURL); err != nil {
+		if err := p.checkSchedulerExtender(p.SelectedSchedulerExtenderIP, extenderPort); err != nil {
 			p.Log.Warnf("Current Selected Scheduler Extender %s Unworkable: %s",
 				p.SelectedSchedulerExtenderIP, err.Error())
 		} else {
@@ -90,8 +91,7 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 			}
 			podIP := pod.Status.PodIP
 			if podIP != "" {
-				extenderFilterURL := fmt.Sprintf(extenderFilterURLPattern, podIP, extenderPort)
-				if err := p.checkSchedulerExtender(extenderFilterURL); err != nil {
+				if err := p.checkSchedulerExtender(podIP, extenderPort); err != nil {
 					p.Log.Warnf("Scheduler Extender %s Unworkable: %s", podIP, err.Error())
 				} else {
 					p.SelectedSchedulerExtenderIP = podIP
@@ -104,21 +104,16 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 	return "", fmt.Errorf("no scheduler extender found")
 }
 
-func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(csi.Spec.Platform)
-	if err != nil {
-		return err
-	}
-
-	var config string
+func (p *SchedulerPatcher) createOpenshiftConfig(ctx context.Context, csi *csibaremetalv1.Deployment,
+	useOpenshiftSecondaryScheduler bool) (string, error) {
 	if useOpenshiftSecondaryScheduler {
-		schedulerExtenderIP, err1 := p.getSchedulerExtenderIP(ctx, csi.Spec.Scheduler.ExtenderPort)
-		if err1 != nil {
-			return err1
+		schedulerExtenderIP, err := p.getSchedulerExtenderIP(ctx, csi.Spec.Scheduler.ExtenderPort)
+		if err != nil {
+			return "", err
 		}
 		p.Log.Infof("Selected Scheduler Extender's IP: %s", schedulerExtenderIP)
 
-		config = fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
+		return fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
 kind: KubeSchedulerConfiguration
 leaderElection:
   leaderElect: false
@@ -131,9 +126,9 @@ extenders:
     weight: 1
     enableHTTPS: false
     nodeCacheCapable: false
-    ignorable: true`, schedulerExtenderIP, csi.Spec.Scheduler.ExtenderPort)
-	} else {
-		config = fmt.Sprintf(`{
+    ignorable: true`, schedulerExtenderIP, csi.Spec.Scheduler.ExtenderPort), nil
+	}
+	return fmt.Sprintf(`{
    "kind" : "Policy",
    "apiVersion" : "v1",
    "extenders": [
@@ -147,10 +142,24 @@ extenders:
             "ignorable": true
         }
     ]
-}`, csi.Spec.Scheduler.ExtenderPort)
+}`, csi.Spec.Scheduler.ExtenderPort), nil
+}
+
+func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+	useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(csi.Spec.Platform)
+	if err != nil {
+		return err
+	}
+	if useOpenshiftSecondaryScheduler {
+		p.ExtenderPatternChecked = extenderFilterPattern
 	}
 
-	expected := createOpenshiftConfig(config, useOpenshiftSecondaryScheduler)
+	config, err := p.createOpenshiftConfig(ctx, csi, useOpenshiftSecondaryScheduler)
+	if err != nil {
+		return err
+	}
+
+	expected := createOpenshiftConfigMapObject(config, useOpenshiftSecondaryScheduler)
 
 	// TODO csi can't control cm in another namespace https://github.com/dell/csi-baremetal/issues/470
 	// if err := controllerutil.SetControllerReference(csi, expected, scheme); err != nil {
@@ -166,7 +175,7 @@ extenders:
 	if useOpenshiftSecondaryScheduler {
 		err = p.patchSecondaryScheduler(ctx)
 	} else {
-		err = p.patchScheduler(ctx, openshiftConfig)
+		err = p.patchScheduler(ctx, openshiftSchedulerPolicyConfigMapName)
 	}
 	if err != nil {
 		p.Log.Error(err, "Failed to patch Openshift Scheduler")
@@ -188,11 +197,11 @@ func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 		cmNS   string
 	)
 	if useOpenshiftSecondaryScheduler {
-		cmName = csiOpenshiftSecondarySchedulerConfig
+		cmName = csiOpenshiftSecondarySchedulerConfigMapName
 		cmNS = openshiftSecondarySchedulerNamespace
 	} else {
-		cmName = openshiftConfig
-		cmNS = openshiftNS
+		cmName = openshiftSchedulerPolicyConfigMapName
+		cmNS = openshiftConfigNamespace
 	}
 	// TODO Remove after https://github.com/dell/csi-baremetal/issues/470
 	cfClient := p.Clientset.CoreV1().ConfigMaps(cmNS)
@@ -205,7 +214,7 @@ func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 	if useOpenshiftSecondaryScheduler {
 		err = p.uninstallSecondaryScheduler(ctx)
 	} else {
-		err = p.unpatchScheduler(ctx, openshiftConfig)
+		err = p.unpatchScheduler(ctx, openshiftSchedulerPolicyConfigMapName)
 	}
 	if err != nil {
 		p.Log.Error(err, "Failed to unpatch Scheduler")
@@ -234,19 +243,19 @@ func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibare
 	return nil
 }
 
-func createOpenshiftConfig(config string, useOpenshiftSecondaryScheduler bool) *corev1.ConfigMap {
+func createOpenshiftConfigMapObject(config string, useOpenshiftSecondaryScheduler bool) *corev1.ConfigMap {
 	var (
 		cmName    string
 		cmNS      string
 		cmDataKey string
 	)
 	if useOpenshiftSecondaryScheduler {
-		cmName = csiOpenshiftSecondarySchedulerConfig
+		cmName = csiOpenshiftSecondarySchedulerConfigMapName
 		cmNS = openshiftSecondarySchedulerNamespace
 		cmDataKey = openshiftSecondarySchedulerDataKey
 	} else {
-		cmName = openshiftConfig
-		cmNS = openshiftNS
+		cmName = openshiftSchedulerPolicyConfigMapName
+		cmNS = openshiftConfigNamespace
 		cmDataKey = openshiftPolicyFile
 	}
 	return &corev1.ConfigMap{
@@ -278,7 +287,7 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context) error {
 						OperatorLogLevel: "Normal",
 						LogLevel:         "Normal",
 					},
-					SchedulerConfig: csiOpenshiftSecondarySchedulerConfig,
+					SchedulerConfig: csiOpenshiftSecondarySchedulerConfigMapName,
 					SchedulerImage:  csiOpenshiftSecondarySchedulerImage,
 				},
 			}
@@ -288,9 +297,9 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context) error {
 			}
 		}
 		return err
-	} else if secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfig ||
+	} else if secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfigMapName ||
 		secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage {
-		secondaryScheduler.Spec.SchedulerConfig = csiOpenshiftSecondarySchedulerConfig
+		secondaryScheduler.Spec.SchedulerConfig = csiOpenshiftSecondarySchedulerConfigMapName
 		secondaryScheduler.Spec.SchedulerImage = csiOpenshiftSecondarySchedulerImage
 		if err = p.Client.Update(ctx, secondaryScheduler); err != nil {
 			return err

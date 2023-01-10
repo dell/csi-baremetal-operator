@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -74,7 +75,6 @@ func Test_useOpenshitSecondaryScheduler(t *testing.T) {
 
 func Test_checkSchedulerExtender(t *testing.T) {
 	t.Run("Test checkSchedulerExtender", func(t *testing.T) {
-		localExtenderURL := "http://127.0.0.1:8889"
 
 		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
@@ -86,12 +86,16 @@ func Test_checkSchedulerExtender(t *testing.T) {
 			rw.Write([]byte(`OK`))
 		}))
 		defer server.Close()
-		assert.NotNil(t, sp.checkSchedulerExtender(localExtenderURL))
+		assert.NotNil(t, sp.checkSchedulerExtender("big horse", "-2"))
 
 		sp.HTTPClient = server.Client()
-		assert.Nil(t, sp.checkSchedulerExtender(server.URL))
-		assert.NotNil(t, sp.checkSchedulerExtender("server.URL"))
-		assert.NotNil(t, sp.checkSchedulerExtender(localExtenderURL))
+
+		u, err := url.Parse(server.URL)
+		if err != nil {
+			t.Fatalf("Error in parsing server.URL %s", err.Error())
+		}
+		assert.Nil(t, sp.checkSchedulerExtender(u.Hostname(), u.Port()))
+		assert.NotNil(t, sp.checkSchedulerExtender("big", "31"))
 
 		server1 := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(http.StatusNotFound)
@@ -99,7 +103,11 @@ func Test_checkSchedulerExtender(t *testing.T) {
 		}))
 		defer server1.Close()
 		sp.HTTPClient = server1.Client()
-		assert.NotNil(t, sp.checkSchedulerExtender(server1.URL))
+		u, err = url.Parse(server1.URL)
+		if err != nil {
+			t.Fatalf("Error in parsing server1.URL %s", err.Error())
+		}
+		assert.NotNil(t, sp.checkSchedulerExtender(u.Hostname(), u.Port()))
 	})
 }
 
