@@ -228,6 +228,16 @@ func Test_createOpenshiftConfig(t *testing.T) {
 	})
 }
 
+func Test_createOpenshiftConfigMapObject(t *testing.T) {
+	t.Run("Test createOpenshiftConfigMapObject", func(t *testing.T) {
+		expected := createOpenshiftConfigMapObject("data", true)
+		assert.Equal(t, expected.Name, csiOpenshiftSecondarySchedulerConfigMapName)
+
+		expected = createOpenshiftConfigMapObject("data", false)
+		assert.Equal(t, expected.Name, openshiftSchedulerPolicyConfigMapName)
+	})
+}
+
 func Test_PatchOpenshiftSecondaryScheduler(t *testing.T) {
 	var (
 		ctx         = context.Background()
