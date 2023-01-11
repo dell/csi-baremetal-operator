@@ -350,6 +350,7 @@ func prepareSchedulerPatcher(eventRecorder events.EventRecorder, clientSet kuber
 	sp := &SchedulerPatcher{
 		Clientset: clientSet,
 		Log:       logEntry,
+		Client:    client,
 		PodSecurityPolicyVerifier: securityverifier.NewPodSecurityPolicyVerifier(
 			validator.NewValidator(rbac.NewValidator(
 				client,

@@ -75,7 +75,6 @@ func Test_useOpenshitSecondaryScheduler(t *testing.T) {
 
 func Test_checkSchedulerExtender(t *testing.T) {
 	t.Run("Test checkSchedulerExtender", func(t *testing.T) {
-
 		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
@@ -108,6 +107,84 @@ func Test_checkSchedulerExtender(t *testing.T) {
 			t.Fatalf("Error in parsing server1.URL %s", err.Error())
 		}
 		assert.NotNil(t, sp.checkSchedulerExtender(u.Hostname(), u.Port()))
+	})
+}
+
+func Test_getSchedulerExtenderIP(t *testing.T) {
+	t.Run("Test getSchedulerExtenderIP", func(t *testing.T) {
+		eventRecorder := new(mocks.EventRecorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(`OK`))
+		}))
+		defer server.Close()
+		u, err := url.Parse(server.URL)
+		if err != nil {
+			t.Fatalf("Error in parsing server.URL %s", err.Error())
+		}
+		csiDeploy.Spec.Scheduler.ExtenderPort = u.Port()
+		ctx := context.Background()
+
+		podTemplate := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "csi-baremetal-se-",
+				Namespace: ns,
+				Labels:    map[string]string{"name": "csi-baremetal-se"},
+			},
+			Status: corev1.PodStatus{},
+			Spec:   corev1.PodSpec{},
+		}
+		var (
+			pendingPod    = podTemplate.DeepCopy()
+			workablePod   = podTemplate.DeepCopy()
+			unworkablePod = podTemplate.DeepCopy()
+		)
+		podTemplate.Name = podTemplate.Name + "blank"
+
+		pendingPod.Name = pendingPod.Name + "pending"
+		pendingPod.Status.Phase = corev1.PodPending
+
+		workablePod.Name = pendingPod.Name + "workable"
+		workablePod.Status.Phase = corev1.PodRunning
+		workablePod.Status.PodIP = u.Hostname()
+
+		unworkablePod.Name = unworkablePod.Name + "unworkable"
+		unworkablePod.Status.Phase = corev1.PodRunning
+		unworkablePod.Status.PodIP = "192.168.1.1"
+
+		// case of no scheduler extender found
+		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
+		sp.HTTPClient = server.Client()
+		extenderIP, err := sp.getSchedulerExtenderIP(ctx, u.Port())
+		assert.NotNil(t, err)
+		assert.Empty(t, extenderIP)
+
+		// case of no workable scheduler extender found
+		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(podTemplate, pendingPod, unworkablePod),
+			prepareValidatorClient(scheme, podTemplate, pendingPod, unworkablePod))
+		sp.HTTPClient = server.Client()
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		assert.NotNil(t, err)
+		assert.Empty(t, extenderIP)
+
+		// case that new workable scheduler extender found
+		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(workablePod),
+			prepareValidatorClient(scheme, pendingPod, workablePod))
+		sp.SelectedSchedulerExtenderIP = "192.168.1.2"
+		sp.HTTPClient = server.Client()
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		assert.Nil(t, err)
+		assert.Equal(t, extenderIP, u.Hostname())
+
+		// workable selected scheduler extender case
+		sp.SelectedSchedulerExtenderIP = u.Hostname()
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		assert.Nil(t, err)
+		assert.Equal(t, extenderIP, u.Hostname())
+
 	})
 }
 
