@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -185,6 +186,45 @@ func Test_getSchedulerExtenderIP(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, extenderIP, u.Hostname())
 
+	})
+}
+
+func Test_createOpenshiftConfig(t *testing.T) {
+	t.Run("Test createOpenshiftConfig", func(t *testing.T) {
+		eventRecorder := new(mocks.EventRecorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(`OK`))
+		}))
+		defer server.Close()
+		u, err := url.Parse(server.URL)
+		if err != nil {
+			t.Fatalf("Error in parsing server.URL %s", err.Error())
+		}
+		csiDeploy.Spec.Scheduler.ExtenderPort = u.Port()
+		ctx := context.Background()
+
+		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
+		sp.HTTPClient = server.Client()
+
+		// error case
+		config, err := sp.createOpenshiftConfig(ctx, csiDeploy, true)
+		assert.NotNil(t, err)
+		assert.Empty(t, config)
+
+		// secondary scheduler config case
+		sp.SelectedSchedulerExtenderIP = u.Hostname()
+		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, true)
+		assert.Nil(t, err)
+		assert.True(t, strings.HasPrefix(config, "apiVersion: kubescheduler.config.k8s.io/v1beta3"))
+
+		// config case for secondary scheduler not used
+		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, false)
+		assert.Nil(t, err)
+		assert.False(t, strings.HasPrefix(config, "apiVersion: kubescheduler.config.k8s.io/v1beta3"))
 	})
 }
 
