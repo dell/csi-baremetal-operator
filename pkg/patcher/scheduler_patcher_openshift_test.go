@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/dell/csi-baremetal/pkg/events/mocks"
 	"github.com/stretchr/testify/assert"
@@ -238,43 +237,14 @@ func Test_createOpenshiftConfigMapObject(t *testing.T) {
 	})
 }
 
-func Test_PatchOpenshiftSecondaryScheduler(t *testing.T) {
-	var (
-		ctx         = context.Background()
-		curTime     = time.Now()
-		podTemplate = &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kube-scheduler",
-				Namespace: ns,
-				Labels:    map[string]string{"component": "kube-scheduler"},
-			},
-			Status: corev1.PodStatus{
-				ContainerStatuses: []corev1.ContainerStatus{{
-					State: corev1.ContainerState{
-						Running: &corev1.ContainerStateRunning{
-							StartedAt: metav1.Time{
-								Time: curTime,
-							},
-						},
-					}},
-				},
-			},
-			Spec: corev1.PodSpec{
-				NodeName: "node",
-			},
-		}
-	)
-	t.Run("Test Patch Openshift Secondary Scheduler with Existing SE IP", func(t *testing.T) {
-		pod1 := podTemplate.DeepCopy()
-		pod1.Name = pod1.Name + "1"
-		pod1.Spec.NodeName = pod1.Spec.NodeName + "1"
-		pod1.Status.ContainerStatuses[0].State.Running.StartedAt.Time = curTime.Add(time.Minute)
+func Test_PatchDisabled(t *testing.T) {
+	t.Run("Test Kubernetes scheduler configuration patching not enabled", func(t *testing.T) {
 
 		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
 		csiDeploy.Spec.Scheduler.Patcher.Enable = false
-		assert.Nil(t, sp.Update(ctx, csiDeploy, scheme))
+		assert.Nil(t, sp.Update(context.Background(), csiDeploy, scheme))
 	})
 }

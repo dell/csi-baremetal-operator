@@ -295,6 +295,8 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			p.Log.Infof("SecondaryScheduler CR cluster has been successfully created")
+			return nil
 		}
 		return err
 	} else if secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfigMapName ||
