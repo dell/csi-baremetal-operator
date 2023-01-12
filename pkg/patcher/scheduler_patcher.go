@@ -51,6 +51,7 @@ func (p *SchedulerPatcher) useOpenshiftSecondaryScheduler(platform string) (bool
 			}
 			p.KubernetesVersion = fmt.Sprintf("%d.%d", k8sMajorVersion, k8sMinorVersion)
 			p.Log.Infof("Kubernetes version: %s", p.KubernetesVersion)
+			// Will use Openshift Secondary Scheduler on k8s version >= 1.23, i.e. Openshift 4.10
 			p.UseOpenshiftSecondaryScheduler = k8sMajorVersion == 1 && k8sMinorVersion > 22
 		} else {
 			return false, err

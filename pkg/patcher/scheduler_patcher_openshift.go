@@ -150,7 +150,6 @@ extenders:
 
 func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment,
 	useOpenshiftSecondaryScheduler bool) error {
-
 	config, err := p.createOpenshiftConfig(ctx, csi, useOpenshiftSecondaryScheduler)
 	if err != nil {
 		return err
