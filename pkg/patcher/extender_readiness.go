@@ -55,12 +55,16 @@ type ReadinessStatusList struct {
 }
 
 // NewExtenderReadinessOptions creates ExtenderReadinessOptions
-func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadinessOptions, error) {
+func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment,
+	useOpenshiftSecondaryScheduler bool) (*ExtenderReadinessOptions, error) {
 	options := &ExtenderReadinessOptions{}
 
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
-		{
+		if useOpenshiftSecondaryScheduler {
+			options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfigMapName
+			options.watchedConfigMapNamespace = OpenshiftSecondarySchedulerNamespace
+		} else {
 			options.watchedConfigMapName = openshiftSchedulerPolicyConfigMapName
 			options.watchedConfigMapNamespace = openshiftConfigNamespace
 		}
@@ -82,6 +86,9 @@ func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadi
 	labelKey, labelValue, err := ChooseKubeSchedulerLabel(csi)
 	if err != nil {
 		return nil, err
+	}
+	if useOpenshiftSecondaryScheduler {
+		labelValue = OpenshiftSecondarySchedulerLabelValue
 	}
 
 	options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", labelKey, labelValue)
@@ -129,16 +136,9 @@ func isPlatformSupported(platform string) bool {
 // UpdateReadinessConfigMap collects info about ExtenderReadiness statuses and updates configmap
 func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *csibaremetalv1.Deployment,
 	scheme *runtime.Scheme, useOpenshiftSecondaryScheduler bool) error {
-	options, err := NewExtenderReadinessOptions(csi)
+	options, err := NewExtenderReadinessOptions(csi, useOpenshiftSecondaryScheduler)
 	if err != nil {
 		return err
-	}
-
-	if useOpenshiftSecondaryScheduler {
-		options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfigMapName
-		options.watchedConfigMapNamespace = OpenshiftSecondarySchedulerNamespace
-		options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", OpenshiftSecondarySchedulerLabelKey,
-			OpenshiftSecondarySchedulerLabelValue)
 	}
 
 	cmCreationTime, err := p.getConfigMapCreationTime(ctx, options)
