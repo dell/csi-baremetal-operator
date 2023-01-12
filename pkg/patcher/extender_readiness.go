@@ -140,9 +140,9 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 
 	if useOpenshiftSecondaryScheduler {
 		options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfigMapName
-		options.watchedConfigMapNamespace = openshiftSecondarySchedulerNamespace
-		options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", openshiftSecondarySchedulerLabelKey,
-			openshiftSecondarySchedulerLabelValue)
+		options.watchedConfigMapNamespace = OpenshiftSecondarySchedulerNamespace
+		options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", OpenshiftSecondarySchedulerLabelKey,
+			OpenshiftSecondarySchedulerLabelValue)
 	}
 
 	cmCreationTime, err := p.getConfigMapCreationTime(ctx, options)
