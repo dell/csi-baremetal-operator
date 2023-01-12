@@ -28,11 +28,14 @@ const (
 
 	openshiftPolicyFile = "policy.cfg"
 
-	openshiftSchedulerResourceName        = "cluster"
-	OpenshiftSecondarySchedulerLabelKey   = "app"
+	openshiftSchedulerResourceName = "cluster"
+	// Openshift Secondary Scheduler Pod Label Key
+	OpenshiftSecondarySchedulerLabelKey = "app"
+	// Openshift Secondary Scheduler Pod Label Value
 	OpenshiftSecondarySchedulerLabelValue = "secondary-scheduler"
-	OpenshiftSecondarySchedulerNamespace  = "openshift-secondary-scheduler-operator"
-	openshiftSecondarySchedulerDataKey    = "config.yaml"
+	// Namespace for Openshift Secondary Scheduler Resources
+	OpenshiftSecondarySchedulerNamespace = "openshift-secondary-scheduler-operator"
+	openshiftSecondarySchedulerDataKey   = "config.yaml"
 
 	csiOpenshiftSecondarySchedulerConfigMapName = "csi-baremetal-scheduler-config"
 	csiOpenshiftSecondarySchedulerImage         = "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10"
@@ -173,7 +176,7 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 
 	// try to patch
 	if useOpenshiftSecondaryScheduler {
-		err = p.patchSecondaryScheduler(ctx)
+		_, err = p.patchSecondaryScheduler(ctx)
 	} else {
 		err = p.patchScheduler(ctx, openshiftSchedulerPolicyConfigMapName)
 	}
@@ -268,7 +271,7 @@ func createOpenshiftConfigMapObject(config string, useOpenshiftSecondarySchedule
 	}
 }
 
-func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context) error {
+func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context) (*ssv1.SecondaryScheduler, error) {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
 	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
 		Namespace: OpenshiftSecondarySchedulerNamespace}, secondaryScheduler)
@@ -293,21 +296,24 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context) error {
 			}
 			err = p.Client.Create(ctx, secondaryScheduler)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			p.Log.Info("SecondaryScheduler CR cluster has been successfully created")
+			return secondaryScheduler, nil
 		}
-		return err
+		return nil, err
 	} else if secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfigMapName ||
 		secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage {
 		secondaryScheduler.Spec.SchedulerConfig = csiOpenshiftSecondarySchedulerConfigMapName
 		secondaryScheduler.Spec.SchedulerImage = csiOpenshiftSecondarySchedulerImage
 		if err = p.Client.Update(ctx, secondaryScheduler); err != nil {
-			return err
+			return nil, err
 		}
+		p.Log.Info("SecondaryScheduler CR cluster has been successfully updated")
+		return secondaryScheduler, nil
 	}
 
-	return nil
+	return secondaryScheduler, nil
 }
 
 func (p *SchedulerPatcher) patchScheduler(ctx context.Context, config string) error {

@@ -237,6 +237,43 @@ func Test_createOpenshiftConfigMapObject(t *testing.T) {
 	})
 }
 
+func Test_patchSecondaryScheduler(t *testing.T) {
+	t.Run("Test patchSecondaryScheduler", func(t *testing.T) {
+		eventRecorder := new(mocks.EventRecorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+		ctx := context.Background()
+
+		// case that creates new SecondaryScheduler CR cluster
+		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
+		secondarySchduler, err := sp.patchSecondaryScheduler(ctx)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
+		assert.Nil(t, err)
+
+		// case of no update on existing SecondaryScheduler CR cluster
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
+		assert.Nil(t, err)
+
+		// cases that try to update existing SecondaryScheduler CR cluster
+		secondarySchduler.Spec.SchedulerConfig = "config"
+		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, secondarySchduler))
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
+		assert.Nil(t, err)
+
+		secondarySchduler.Spec.SchedulerImage = "image"
+		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, secondarySchduler))
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
+		assert.Nil(t, err)
+	})
+}
+
 func Test_PatchDisabled(t *testing.T) {
 	t.Run("Test Kubernetes scheduler configuration patching not enabled", func(t *testing.T) {
 
