@@ -29,11 +29,11 @@ const (
 	openshiftPolicyFile = "policy.cfg"
 
 	openshiftSchedulerResourceName = "cluster"
-	// Openshift Secondary Scheduler Pod Label Key
+	// OpenshiftSecondarySchedulerLabelKey - Openshift Secondary Scheduler Pod Label Key
 	OpenshiftSecondarySchedulerLabelKey = "app"
-	// Openshift Secondary Scheduler Pod Label Value
+	// OpenshiftSecondarySchedulerLabelValue - Openshift Secondary Scheduler Pod Label Value
 	OpenshiftSecondarySchedulerLabelValue = "secondary-scheduler"
-	// Namespace for Openshift Secondary Scheduler Resources
+	// OpenshiftSecondarySchedulerNamespace - Namespace for Openshift Secondary Scheduler Resources
 	OpenshiftSecondarySchedulerNamespace = "openshift-secondary-scheduler-operator"
 	openshiftSecondarySchedulerDataKey   = "config.yaml"
 
