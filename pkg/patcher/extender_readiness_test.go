@@ -282,7 +282,8 @@ func Test_updateReadinessStatuses(t *testing.T) {
 		scheme, _ := common.PrepareScheme()
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(pod1, pod2, pod3), prepareValidatorClient(scheme, pod1, pod2, pod3))
 
-		statuses, err := sp.updateReadinessStatuses(ctx, "component=kube-scheduler", metav1.Time{Time: curTime})
+		statuses, err := sp.updateReadinessStatuses(ctx, "component=kube-scheduler",
+			metav1.Time{Time: curTime}, false)
 		assert.Nil(t, err)
 		assert.Equal(t, 3, len(statuses.Items))
 

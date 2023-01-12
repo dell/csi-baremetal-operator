@@ -146,27 +146,14 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		return err
 	}
 
-	readinessStatuses, err := p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime)
+	readinessStatuses, err := p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime,
+		useOpenshiftSecondaryScheduler)
 	if err != nil {
 		return err
 	}
-	if useOpenshiftSecondaryScheduler && len(readinessStatuses.Items) == 1 && readinessStatuses.Items[0].Restarted {
-		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
-		if err != nil {
-			return err
-		}
-		for _, node := range masterNodes.Items {
-			if readinessStatuses.Items[0].NodeName != node.Name {
-				readinessStatus := ReadinessStatus{}
-				readinessStatus.KubeScheduler = readinessStatuses.Items[0].KubeScheduler
-				readinessStatus.NodeName = node.Name
-				readinessStatus.Restarted = true
-				readinessStatuses.Items = append(readinessStatuses.Items, readinessStatus)
-			}
-		}
-	}
 
 	expected, err := createReadinessConfigMap(options, readinessStatuses)
+	p.Log.Infof("readinessStatuses: %s", expected.Data[options.readinessConfigMapFile])
 	if err != nil {
 		return err
 	}
@@ -208,7 +195,8 @@ func (p *SchedulerPatcher) getConfigMapCreationTime(ctx context.Context, options
 	return config.GetCreationTimestamp(), nil
 }
 
-func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSchedulerLabel string, cmCreationTime metav1.Time) (*ReadinessStatusList, error) {
+func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSchedulerLabel string,
+	cmCreationTime metav1.Time, useOpenshiftSecondaryScheduler bool) (*ReadinessStatusList, error) {
 	readinessStatuses := &ReadinessStatusList{}
 
 	pods, err := p.Clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: kubeSchedulerLabel})
@@ -233,6 +221,23 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 		}
 
 		readinessStatuses.Items = append(readinessStatuses.Items, readinessStatus)
+	}
+
+	if useOpenshiftSecondaryScheduler {
+		readinessStatus := readinessStatuses.Items[0]
+		readiness := len(readinessStatuses.Items) == 1 && readinessStatus.Restarted
+		readinessStatuses = &ReadinessStatusList{}
+		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range masterNodes.Items {
+			readinessStatuses.Items = append(readinessStatuses.Items, ReadinessStatus{
+				KubeScheduler: readinessStatus.KubeScheduler,
+				NodeName:      node.Name,
+				Restarted:     readiness,
+			})
+		}
 	}
 
 	return readinessStatuses, nil
