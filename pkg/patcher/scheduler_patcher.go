@@ -67,10 +67,16 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 		return nil
 	}
 
-	var err error
+	useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(csi.Spec.Platform)
+	if err != nil {
+		return err
+	}
+	if useOpenshiftSecondaryScheduler {
+		p.ExtenderPatternChecked = extenderFilterPattern
+	}
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
-		err = p.patchOpenShift(ctx, csi)
+		err = p.patchOpenShift(ctx, csi, useOpenshiftSecondaryScheduler)
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		err = p.updateVanilla(ctx, csi, scheme)
 	}
@@ -78,7 +84,7 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 		return err
 	}
 
-	return p.UpdateReadinessConfigMap(ctx, csi, scheme)
+	return p.UpdateReadinessConfigMap(ctx, csi, scheme, useOpenshiftSecondaryScheduler)
 }
 
 // Uninstall unpatch Openshift Scheduler

@@ -148,14 +148,8 @@ extenders:
 }`, csi.Spec.Scheduler.ExtenderPort), nil
 }
 
-func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
-	useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(csi.Spec.Platform)
-	if err != nil {
-		return err
-	}
-	if useOpenshiftSecondaryScheduler {
-		p.ExtenderPatternChecked = extenderFilterPattern
-	}
+func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment,
+	useOpenshiftSecondaryScheduler bool) error {
 
 	config, err := p.createOpenshiftConfig(ctx, csi, useOpenshiftSecondaryScheduler)
 	if err != nil {
@@ -231,14 +225,15 @@ func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 	return nil
 }
 
-func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment) error {
+func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment,
+	useOpenshiftSecondaryScheduler bool) error {
 	err := p.unPatchOpenShift(ctx)
 	if err != nil {
 		p.Log.Error(err, "Failed to unpatch Openshift Scheduler")
 		return err
 	}
 
-	err = p.patchOpenShift(ctx, csi)
+	err = p.patchOpenShift(ctx, csi, useOpenshiftSecondaryScheduler)
 	if err != nil {
 		return err
 	}
