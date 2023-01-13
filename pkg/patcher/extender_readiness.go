@@ -223,8 +223,12 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 	}
 
 	if useOpenshiftSecondaryScheduler {
-		readinessStatus := readinessStatuses.Items[0]
-		readiness := len(readinessStatuses.Items) == 1 && readinessStatus.Restarted
+		var readinessScheduler string
+		readiness := len(readinessStatuses.Items) == 1 && readinessStatuses.Items[0].Restarted
+		if len(readinessStatuses.Items) > 0 {
+			readinessScheduler = readinessStatuses.Items[0].KubeScheduler
+		}
+		p.Log.Infof("Number of Openshift Secondary Scheduler Pods: %d", len(readinessStatuses.Items))
 		p.Log.Infof("Readiness of Openshift Secondary Scheduler Extender: %t", readiness)
 		readinessStatuses = &ReadinessStatusList{}
 		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
@@ -233,7 +237,7 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 		}
 		for _, node := range masterNodes.Items {
 			readinessStatuses.Items = append(readinessStatuses.Items, ReadinessStatus{
-				KubeScheduler: readinessStatus.KubeScheduler,
+				KubeScheduler: readinessScheduler,
 				NodeName:      node.Name,
 				Restarted:     readiness,
 			})
