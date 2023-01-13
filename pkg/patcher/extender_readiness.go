@@ -153,7 +153,6 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	}
 
 	expected, err := createReadinessConfigMap(options, readinessStatuses)
-	p.Log.Infof("readinessStatuses: %s", expected.Data[options.readinessConfigMapFile])
 	if err != nil {
 		return err
 	}
@@ -226,6 +225,7 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 	if useOpenshiftSecondaryScheduler {
 		readinessStatus := readinessStatuses.Items[0]
 		readiness := len(readinessStatuses.Items) == 1 && readinessStatus.Restarted
+		p.Log.Infof("Readiness of Openshift Secondary Scheduler Extender: %t", readiness)
 		readinessStatuses = &ReadinessStatusList{}
 		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
 		if err != nil {
