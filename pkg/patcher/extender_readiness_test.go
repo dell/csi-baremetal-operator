@@ -180,7 +180,7 @@ func Test_NewExtenderReadinessOptions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewExtenderReadinessOptions(tt.args.csi)
+			got, err := NewExtenderReadinessOptions(tt.args.csi, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewExtenderReadinessOptions() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -219,7 +219,7 @@ func Test_createReadinessConfigMap(t *testing.T) {
 			savedStatuses = &ReadinessStatusList{}
 		)
 
-		options, err := NewExtenderReadinessOptions(csi)
+		options, err := NewExtenderReadinessOptions(csi, false)
 		assert.Nil(t, err)
 
 		config, err := createReadinessConfigMap(options, statuses)
@@ -282,7 +282,8 @@ func Test_updateReadinessStatuses(t *testing.T) {
 		scheme, _ := common.PrepareScheme()
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(pod1, pod2, pod3), prepareValidatorClient(scheme, pod1, pod2, pod3))
 
-		statuses, err := sp.updateReadinessStatuses(ctx, "component=kube-scheduler", metav1.Time{Time: curTime})
+		statuses, err := sp.updateReadinessStatuses(ctx, "component=kube-scheduler",
+			metav1.Time{Time: curTime}, false)
 		assert.Nil(t, err)
 		assert.Equal(t, 3, len(statuses.Items))
 
@@ -350,6 +351,7 @@ func prepareSchedulerPatcher(eventRecorder events.EventRecorder, clientSet kuber
 	sp := &SchedulerPatcher{
 		Clientset: clientSet,
 		Log:       logEntry,
+		Client:    client,
 		PodSecurityPolicyVerifier: securityverifier.NewPodSecurityPolicyVerifier(
 			validator.NewValidator(rbac.NewValidator(
 				client,

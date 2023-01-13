@@ -55,14 +55,18 @@ type ReadinessStatusList struct {
 }
 
 // NewExtenderReadinessOptions creates ExtenderReadinessOptions
-func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadinessOptions, error) {
+func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment,
+	useOpenshiftSecondaryScheduler bool) (*ExtenderReadinessOptions, error) {
 	options := &ExtenderReadinessOptions{}
 
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
-		{
-			options.watchedConfigMapName = openshiftConfig
-			options.watchedConfigMapNamespace = openshiftNS
+		if useOpenshiftSecondaryScheduler {
+			options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfigMapName
+			options.watchedConfigMapNamespace = OpenshiftSecondarySchedulerNamespace
+		} else {
+			options.watchedConfigMapName = openshiftSchedulerPolicyConfigMapName
+			options.watchedConfigMapNamespace = openshiftConfigNamespace
 		}
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		{
@@ -82,6 +86,9 @@ func NewExtenderReadinessOptions(csi *csibaremetalv1.Deployment) (*ExtenderReadi
 	labelKey, labelValue, err := ChooseKubeSchedulerLabel(csi)
 	if err != nil {
 		return nil, err
+	}
+	if useOpenshiftSecondaryScheduler {
+		labelValue = OpenshiftSecondarySchedulerLabelValue
 	}
 
 	options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", labelKey, labelValue)
@@ -127,22 +134,11 @@ func isPlatformSupported(platform string) bool {
 }
 
 // UpdateReadinessConfigMap collects info about ExtenderReadiness statuses and updates configmap
-func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *csibaremetalv1.Deployment, scheme *runtime.Scheme) error {
-	options, err := NewExtenderReadinessOptions(csi)
+func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *csibaremetalv1.Deployment,
+	scheme *runtime.Scheme, useOpenshiftSecondaryScheduler bool) error {
+	options, err := NewExtenderReadinessOptions(csi, useOpenshiftSecondaryScheduler)
 	if err != nil {
 		return err
-	}
-
-	useOpenshiftSecondaryScheduler, err := p.useOpenshiftSecondaryScheduler(csi.Spec.Platform)
-	if err != nil {
-		return err
-	}
-
-	if useOpenshiftSecondaryScheduler {
-		options.watchedConfigMapName = csiOpenshiftSecondarySchedulerConfig
-		options.watchedConfigMapNamespace = openshiftSecondarySchedulerNamespace
-		options.kubeSchedulerLabel = fmt.Sprintf("%s=%s", openshiftSecondarySchedulerLabelKey,
-			openshiftSecondarySchedulerLabelValue)
 	}
 
 	cmCreationTime, err := p.getConfigMapCreationTime(ctx, options)
@@ -150,24 +146,10 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		return err
 	}
 
-	readinessStatuses, err := p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime)
+	readinessStatuses, err := p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime,
+		useOpenshiftSecondaryScheduler)
 	if err != nil {
 		return err
-	}
-	if useOpenshiftSecondaryScheduler && len(readinessStatuses.Items) == 1 && readinessStatuses.Items[0].Restarted {
-		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
-		if err != nil {
-			return err
-		}
-		for _, node := range masterNodes.Items {
-			if readinessStatuses.Items[0].NodeName != node.Name {
-				readinessStatus := ReadinessStatus{}
-				readinessStatus.KubeScheduler = readinessStatuses.Items[0].KubeScheduler
-				readinessStatus.NodeName = node.Name
-				readinessStatus.Restarted = true
-				readinessStatuses.Items = append(readinessStatuses.Items, readinessStatus)
-			}
-		}
 	}
 
 	expected, err := createReadinessConfigMap(options, readinessStatuses)
@@ -190,7 +172,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		p.Log.Info("Retry patching")
 		switch csi.Spec.Platform {
 		case constant.PlatformOpenShift:
-			err = p.retryPatchOpenshift(ctx, csi)
+			err = p.retryPatchOpenshift(ctx, csi, useOpenshiftSecondaryScheduler)
 			return err
 		case constant.PlatformVanilla, constant.PlatformRKE:
 			err = p.retryPatchVanilla(ctx, csi, scheme)
@@ -212,7 +194,8 @@ func (p *SchedulerPatcher) getConfigMapCreationTime(ctx context.Context, options
 	return config.GetCreationTimestamp(), nil
 }
 
-func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSchedulerLabel string, cmCreationTime metav1.Time) (*ReadinessStatusList, error) {
+func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSchedulerLabel string,
+	cmCreationTime metav1.Time, useOpenshiftSecondaryScheduler bool) (*ReadinessStatusList, error) {
 	readinessStatuses := &ReadinessStatusList{}
 
 	pods, err := p.Clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: kubeSchedulerLabel})
@@ -237,6 +220,28 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 		}
 
 		readinessStatuses.Items = append(readinessStatuses.Items, readinessStatus)
+	}
+
+	if useOpenshiftSecondaryScheduler {
+		var readinessScheduler string
+		readiness := len(readinessStatuses.Items) == 1 && readinessStatuses.Items[0].Restarted
+		if len(readinessStatuses.Items) > 0 {
+			readinessScheduler = readinessStatuses.Items[0].KubeScheduler
+		}
+		p.Log.Infof("Number of Openshift Secondary Scheduler Pods: %d", len(readinessStatuses.Items))
+		p.Log.Infof("Readiness of Openshift Secondary Scheduler Extender: %t", readiness)
+		readinessStatuses = &ReadinessStatusList{}
+		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range masterNodes.Items {
+			readinessStatuses.Items = append(readinessStatuses.Items, ReadinessStatus{
+				KubeScheduler: readinessScheduler,
+				NodeName:      node.Name,
+				Restarted:     readiness,
+			})
+		}
 	}
 
 	return readinessStatuses, nil
