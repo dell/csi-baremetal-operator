@@ -228,6 +228,7 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 		if len(readinessStatuses.Items) > 0 {
 			readinessScheduler = readinessStatuses.Items[0].KubeScheduler
 		}
+		p.Log.Infof("Openshift Secondary Scheduler Pods Selected Label: %s", kubeSchedulerLabel)
 		p.Log.Infof("Number of Openshift Secondary Scheduler Pods: %d", len(readinessStatuses.Items))
 		p.Log.Infof("Readiness of Openshift Secondary Scheduler Extender: %t", readiness)
 		readinessStatuses = &ReadinessStatusList{}
