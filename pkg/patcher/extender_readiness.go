@@ -146,8 +146,13 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		return err
 	}
 
-	readinessStatuses, err := p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime,
-		useOpenshiftSecondaryScheduler)
+	var readinessStatuses *ReadinessStatusList
+	if useOpenshiftSecondaryScheduler {
+		readinessStatuses, err = p.updateReadinessStatusesForOpenshiftSecondaryScheduler(ctx,
+			options.kubeSchedulerLabel, cmCreationTime, 10*time.Second, 30)
+	} else {
+		readinessStatuses, err = p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime)
+	}
 	if err != nil {
 		return err
 	}
@@ -194,8 +199,46 @@ func (p *SchedulerPatcher) getConfigMapCreationTime(ctx context.Context, options
 	return config.GetCreationTimestamp(), nil
 }
 
-func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSchedulerLabel string,
-	cmCreationTime metav1.Time, useOpenshiftSecondaryScheduler bool) (*ReadinessStatusList, error) {
+func (p *SchedulerPatcher) updateReadinessStatusesForOpenshiftSecondaryScheduler(ctx context.Context, kubeSchedulerLabel string,
+	cmCreationTime metav1.Time, checkInterval time.Duration, numRetries int) (*ReadinessStatusList, error) {
+	readinessStatuses := &ReadinessStatusList{}
+	var err error
+	// keep checking until ready
+	for i := 0; i < numRetries; i++ {
+		readinessStatuses, err = p.updateReadinessStatuses(ctx, kubeSchedulerLabel, cmCreationTime)
+		if err != nil {
+			return nil, err
+		}
+		readiness := len(readinessStatuses.Items) == 1 && readinessStatuses.Items[0].Restarted
+		if readiness {
+			break
+		}
+		p.Log.Infof("Number of Openshift Secondary Scheduler Pods: %d", len(readinessStatuses.Items))
+		p.Log.Infof("Readiness of Openshift Secondary Scheduler Extender: %t", readiness)
+		<-time.After(checkInterval)
+	}
+
+	var readinessScheduler string
+	if len(readinessStatuses.Items) > 0 {
+		readinessScheduler = readinessStatuses.Items[0].KubeScheduler
+	}
+
+	readinessStatuses = &ReadinessStatusList{}
+	masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
+	if err != nil {
+		return nil, err
+	}
+	for _, node := range masterNodes.Items {
+		readinessStatuses.Items = append(readinessStatuses.Items, ReadinessStatus{
+			KubeScheduler: readinessScheduler,
+			NodeName:      node.Name,
+			Restarted:     true,
+		})
+	}
+	return readinessStatuses, err
+}
+
+func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSchedulerLabel string, cmCreationTime metav1.Time) (*ReadinessStatusList, error) {
 	readinessStatuses := &ReadinessStatusList{}
 
 	pods, err := p.Clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: kubeSchedulerLabel})
@@ -220,28 +263,6 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 		}
 
 		readinessStatuses.Items = append(readinessStatuses.Items, readinessStatus)
-	}
-
-	if useOpenshiftSecondaryScheduler {
-		var readinessScheduler string
-		readiness := len(readinessStatuses.Items) == 1 && readinessStatuses.Items[0].Restarted
-		if len(readinessStatuses.Items) > 0 {
-			readinessScheduler = readinessStatuses.Items[0].KubeScheduler
-		}
-		p.Log.Infof("Number of Openshift Secondary Scheduler Pods: %d", len(readinessStatuses.Items))
-		p.Log.Infof("Readiness of Openshift Secondary Scheduler Extender: %t", readiness)
-		readinessStatuses = &ReadinessStatusList{}
-		masterNodes, err := p.Clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: K8sMasterNodeLabelKey})
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range masterNodes.Items {
-			readinessStatuses.Items = append(readinessStatuses.Items, ReadinessStatus{
-				KubeScheduler: readinessScheduler,
-				NodeName:      node.Name,
-				Restarted:     readiness,
-			})
-		}
 	}
 
 	return readinessStatuses, nil
