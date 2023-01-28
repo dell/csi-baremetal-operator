@@ -162,7 +162,7 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		return err
 	}
 
-	// reconcile CSI Deployment if kube-scheduler pods were changed
+	// reconcile CSI Deployment if kube-scheduler or openshift secondary-scheduler pods were changed
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 		var (
 			ctx         = context.Background()
@@ -184,14 +184,15 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		for _, dep := range deployments.Items {
 			depIns := dep
 
-			// check kube-scheduler label
+			// check kube-scheduler label or openshift secondary-scheduler label
 			// it depends on platform
 			key, value, err := patcher.ChooseKubeSchedulerLabel(&depIns)
 			if err != nil {
 				continue
 			}
 
-			if realValue, ok := pod.GetLabels()[key]; !ok || value != realValue {
+			if realValue, ok := pod.GetLabels()[key]; !ok ||
+				(value != realValue && value != patcher.OpenshiftSecondarySchedulerLabelValue) {
 				continue
 			}
 

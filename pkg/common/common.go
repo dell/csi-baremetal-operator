@@ -4,6 +4,7 @@ import (
 	"context"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
+	ssv1 "github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -106,6 +107,9 @@ func PrepareScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := openshiftv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := ssv1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 
