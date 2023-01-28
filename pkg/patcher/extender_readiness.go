@@ -149,7 +149,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 	var readinessStatuses *ReadinessStatusList
 	if useOpenshiftSecondaryScheduler {
 		readinessStatuses, err = p.updateReadinessStatusesForOpenshiftSecondaryScheduler(ctx,
-			options.kubeSchedulerLabel, cmCreationTime, 10*time.Second, 30)
+			options.kubeSchedulerLabel, cmCreationTime, 10*time.Second, 12)
 	} else {
 		readinessStatuses, err = p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime)
 	}
