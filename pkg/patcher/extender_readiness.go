@@ -26,6 +26,9 @@ const (
 	ExtenderConfigMapFile = "nodes.yaml"
 
 	K8sMasterNodeLabelKey = "node-role.kubernetes.io/master"
+
+	readinessCheckIntervalForOpenshiftSecondaryScheduler = 10 * time.Second
+	readinessMaxRetiresForOpenshiftSecondaryScheduler    = 12
 )
 
 // ExtenderReadinessOptions contains options to deploy ExtenderConfigMap
@@ -148,8 +151,8 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 
 	var readinessStatuses *ReadinessStatusList
 	if useOpenshiftSecondaryScheduler {
-		readinessStatuses, err = p.updateReadinessStatusesForOpenshiftSecondaryScheduler(ctx,
-			options.kubeSchedulerLabel, cmCreationTime, 10*time.Second, 12)
+		readinessStatuses, err = p.updateReadinessStatusesForOpenshiftSecondaryScheduler(ctx, options.kubeSchedulerLabel,
+			cmCreationTime, readinessCheckIntervalForOpenshiftSecondaryScheduler, readinessMaxRetiresForOpenshiftSecondaryScheduler)
 	} else {
 		readinessStatuses, err = p.updateReadinessStatuses(ctx, options.kubeSchedulerLabel, cmCreationTime)
 	}
