@@ -214,7 +214,6 @@ func (p *SchedulerPatcher) updateReadinessStatusesForOpenshiftSecondaryScheduler
 			break
 		}
 		p.Log.Infof("Number of Openshift Secondary Scheduler Pods: %d", len(readinessStatuses.Items))
-		p.Log.Infof("Readiness of Openshift Secondary Scheduler Extender: %t", readiness)
 		<-time.After(checkInterval)
 	}
 
