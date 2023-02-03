@@ -11,7 +11,7 @@ CRD_OPTIONS ?= "crd:trivialVersions=true"
 # image vars
 BASE_IMAGE ?= golang:1.17
 CRD_BUILD_IMAGE ?= ${REGISTRY}/csi-baremetal-pre-upgrade-crds:${TAG}
-KUBECTL_IMAGE ?=  bitnami/kubectl:1.23 # https://hub.docker.com/r/bitnami/kubectl
+KUBECTL_IMAGE ?=  bitnami/kubectl:1.25 # https://hub.docker.com/r/bitnami/kubectl
 
 ### version
 MAJOR            := 1
