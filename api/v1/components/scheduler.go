@@ -26,6 +26,8 @@ type Scheduler struct {
 	Patcher            *Patcher `json:"patcher,omitempty"`
 	ExtenderPort       string   `json:"extenderPort,omitempty"`
 	StorageProvisioner string   `json:"storageProvisioner"`
+
+	OpenshiftSecondaryScheduler *OpenshiftSecondaryScheduler `json:"openshiftSecondaryScheduler,omitempty"`
 	// +nullable
 	// +optional
 	Resources         *ResourceRequirements `json:"resources,omitempty"`
