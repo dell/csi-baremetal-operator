@@ -36,7 +36,6 @@ const (
 	openshiftSecondarySchedulerDataKey   = "config.yaml"
 
 	csiOpenshiftSecondarySchedulerConfigMapName = "csi-baremetal-scheduler-config"
-	csiOpenshiftSecondarySchedulerImage         = "k8s.gcr.io/scheduler-plugins/kube-scheduler:v0.23.10"
 
 	csiExtenderName = constant.CSIName + "-se"
 
@@ -167,7 +166,7 @@ func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetal
 
 	// try to patch
 	if useOpenshiftSecondaryScheduler {
-		_, err = p.patchSecondaryScheduler(ctx)
+		_, err = p.patchSecondaryScheduler(ctx, csi)
 	} else {
 		err = p.patchScheduler(ctx, openshiftSchedulerPolicyConfigMapName)
 	}
@@ -263,8 +262,11 @@ func createOpenshiftConfigMapObject(config string, useOpenshiftSecondarySchedule
 	}
 }
 
-func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context) (*ssv1.SecondaryScheduler, error) {
+func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) (*ssv1.SecondaryScheduler, error) {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
+	csiOpenshiftSecondarySchedulerImage := common.ConstructFullImageName(
+		csi.Spec.Scheduler.OpenshiftSecondaryScheduler.Image, csi.Spec.GlobalRegistry)
+
 	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
 		Namespace: OpenshiftSecondarySchedulerNamespace}, secondaryScheduler)
 	if err != nil {
