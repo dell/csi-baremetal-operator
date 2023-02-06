@@ -29,13 +29,20 @@ var (
 			Namespace: ns,
 		},
 		Spec: components.DeploymentSpec{
-			Platform: constant.PlatformOpenShift,
+			GlobalRegistry: "asdrepo.isus.emc.com:9042",
+			Platform:       constant.PlatformOpenShift,
 			Scheduler: &components.Scheduler{
 				Patcher: &components.Patcher{
 					Enable:        true,
 					ConfigMapName: schedulerConf,
 				},
 				ExtenderPort: "8889",
+				OpenshiftSecondaryScheduler: &components.OpenshiftSecondaryScheduler{
+					Image: &components.Image{
+						Name: "kube-scheduler",
+						Tag:  "v0.23.10",
+					},
+				},
 			},
 		},
 	}
@@ -243,16 +250,18 @@ func Test_patchSecondaryScheduler(t *testing.T) {
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		ctx := context.Background()
+		csiOpenshiftSecondarySchedulerImage := common.ConstructFullImageName(
+			csiDeploy.Spec.Scheduler.OpenshiftSecondaryScheduler.Image, csiDeploy.Spec.GlobalRegistry)
 
 		// case that creates new SecondaryScheduler CR cluster
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
-		secondarySchduler, err := sp.patchSecondaryScheduler(ctx)
+		secondarySchduler, err := sp.patchSecondaryScheduler(ctx, csiDeploy)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
 		assert.Nil(t, err)
 
 		// case of no update on existing SecondaryScheduler CR cluster
-		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
 		assert.Nil(t, err)
@@ -260,14 +269,14 @@ func Test_patchSecondaryScheduler(t *testing.T) {
 		// cases that try to update existing SecondaryScheduler CR cluster
 		secondarySchduler.Spec.SchedulerConfig = "config"
 		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, secondarySchduler))
-		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
 		assert.Nil(t, err)
 
 		secondarySchduler.Spec.SchedulerImage = "image"
 		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, secondarySchduler))
-		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
 		assert.Nil(t, err)
