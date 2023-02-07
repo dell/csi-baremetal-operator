@@ -296,14 +296,15 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csi
 			return secondaryScheduler, nil
 		}
 		return nil, err
-	} else if secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfigMapName ||
-		secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage {
-		secondaryScheduler.Spec.SchedulerConfig = csiOpenshiftSecondarySchedulerConfigMapName
+	} else if secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfigMapName {
+		p.Log.Error("Existing 3rd-party secondary scheduler! Baremetal CSI will not be installed!")
+		return nil, errors.New("Existing 3rd-party secondary scheduler")
+	} else if secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage {
 		secondaryScheduler.Spec.SchedulerImage = csiOpenshiftSecondarySchedulerImage
 		if err = p.Client.Update(ctx, secondaryScheduler); err != nil {
 			return nil, err
 		}
-		p.Log.Info("SecondaryScheduler CR cluster has been successfully updated")
+		p.Log.Info("Secondary scheduler image has been successfully updated")
 		return secondaryScheduler, nil
 	}
 
@@ -346,10 +347,17 @@ func (p *SchedulerPatcher) uninstallSecondaryScheduler(ctx context.Context) erro
 		return err
 	}
 
-	err = p.Client.Delete(ctx, secondaryScheduler)
-	if err != nil {
-		return err
+	// only delete secondaryscheduler CR cluster created by baremetal CSI
+	if secondaryScheduler.Spec.SchedulerConfig == csiOpenshiftSecondarySchedulerConfigMapName {
+		err = p.Client.Delete(ctx, secondaryScheduler)
+		if err != nil {
+			return err
+		}
+		p.Log.Info("SecondaryScheduler CR cluster has been successfully deleted")
+	} else {
+		p.Log.Info("3rd-party secondary scheduler still exists!")
 	}
+
 	return nil
 }
 
