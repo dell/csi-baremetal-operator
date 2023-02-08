@@ -269,7 +269,8 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csi
 
 	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
 		Namespace: OpenshiftSecondarySchedulerNamespace}, secondaryScheduler)
-	if err != nil {
+	switch {
+	case err != nil:
 		if k8sError.IsNotFound(err) {
 			// TODO make scheduler image version dependent on platform's k8s version
 			secondaryScheduler = &ssv1.SecondaryScheduler{
@@ -296,10 +297,10 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csi
 			return secondaryScheduler, nil
 		}
 		return nil, err
-	} else if secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfigMapName {
+	case secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfigMapName:
 		p.Log.Error("Existing 3rd-party secondary scheduler! Baremetal CSI will not be installed!")
-		return nil, errors.New("Existing 3rd-party secondary scheduler")
-	} else if secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage {
+		return nil, errors.New("existing 3rd-party secondary scheduler")
+	case secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage:
 		secondaryScheduler.Spec.SchedulerImage = csiOpenshiftSecondarySchedulerImage
 		if err = p.Client.Update(ctx, secondaryScheduler); err != nil {
 			return nil, err
