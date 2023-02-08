@@ -41,6 +41,8 @@ const (
 
 	extenderFilterURLFormat = "http://%s:%s%s"
 	extenderFilterPattern   = "/filter"
+
+	existing3rdPartySecondarySchedulerErrMsg = "existing 3rd-party secondary scheduler"
 )
 
 func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error {
@@ -299,7 +301,7 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csi
 		return nil, err
 	case secondaryScheduler.Spec.SchedulerConfig != csiOpenshiftSecondarySchedulerConfigMapName:
 		p.Log.Error("Existing 3rd-party secondary scheduler! Baremetal CSI will not be installed!")
-		return nil, errors.New("existing 3rd-party secondary scheduler")
+		return nil, errors.New(existing3rdPartySecondarySchedulerErrMsg)
 	case secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage:
 		secondaryScheduler.Spec.SchedulerImage = csiOpenshiftSecondarySchedulerImage
 		if err = p.Client.Update(ctx, secondaryScheduler); err != nil {
