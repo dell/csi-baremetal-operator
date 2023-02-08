@@ -2,6 +2,7 @@ package patcher
 
 import (
 	"context"
+	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -244,8 +245,8 @@ func Test_createOpenshiftConfigMapObject(t *testing.T) {
 	})
 }
 
-func Test_patchSecondaryScheduler(t *testing.T) {
-	t.Run("Test patchSecondaryScheduler", func(t *testing.T) {
+func Test_SecondaryScheduler(t *testing.T) {
+	t.Run("Test patch and unpatch SecondaryScheduler", func(t *testing.T) {
 		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
@@ -266,6 +267,13 @@ func Test_patchSecondaryScheduler(t *testing.T) {
 		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
 		assert.Nil(t, err)
 
+		// uninstall secondaryscheduler
+		err = sp.unpatchSecondaryScheduler(ctx)
+		assert.Nil(t, err)
+		err = sp.unpatchSecondaryScheduler(ctx)
+		assert.NotNil(t, err)
+		assert.True(t, k8sError.IsNotFound(err))
+
 		// case that update existing csi-baremetal secondary scheduler with different kube-scheduler image
 		secondarySchduler.Spec.SchedulerImage = "image"
 		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, secondarySchduler))
@@ -281,6 +289,9 @@ func Test_patchSecondaryScheduler(t *testing.T) {
 		assert.Nil(t, secondarySchduler)
 		assert.NotNil(t, err)
 		assert.Equal(t, existing3rdPartySecondarySchedulerErrMsg, err.Error())
+
+		err = sp.unpatchSecondaryScheduler(ctx)
+		assert.Nil(t, err)
 	})
 }
 
