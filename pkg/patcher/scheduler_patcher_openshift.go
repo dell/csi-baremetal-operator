@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
+	"github.com/dell/csi-baremetal-operator/api/v1/components"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
 	"github.com/dell/csi-baremetal-operator/pkg/constant"
 )
@@ -34,6 +35,9 @@ const (
 	// OpenshiftSecondarySchedulerNamespace - Namespace for Openshift Secondary Scheduler Resources
 	OpenshiftSecondarySchedulerNamespace = "openshift-secondary-scheduler-operator"
 	openshiftSecondarySchedulerDataKey   = "config.yaml"
+
+	openshiftSecondarySchedulerDefaultImageName = "kube-scheduler"
+	openshiftSecondarySchedulerDefaultImageTag  = "v0.23.10"
 
 	csiOpenshiftSecondarySchedulerConfigMapName = "csi-baremetal-scheduler-config"
 
@@ -266,8 +270,17 @@ func createOpenshiftConfigMapObject(config string, useOpenshiftSecondarySchedule
 
 func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csibaremetalv1.Deployment) (*ssv1.SecondaryScheduler, error) {
 	secondaryScheduler := &ssv1.SecondaryScheduler{}
-	csiOpenshiftSecondarySchedulerImage := common.ConstructFullImageName(
-		csi.Spec.Scheduler.OpenshiftSecondaryScheduler.Image, csi.Spec.GlobalRegistry)
+
+	var csiOpenshiftSecondarySchedulerImage *components.Image
+	if csi.Spec.Scheduler.OpenshiftSecondaryScheduler != nil && csi.Spec.Scheduler.OpenshiftSecondaryScheduler.Image != nil {
+		csiOpenshiftSecondarySchedulerImage = csi.Spec.Scheduler.OpenshiftSecondaryScheduler.Image
+	} else {
+		csiOpenshiftSecondarySchedulerImage = &components.Image{
+			Name: openshiftSecondarySchedulerDefaultImageName,
+			Tag:  openshiftSecondarySchedulerDefaultImageTag,
+		}
+	}
+	csiOpenshiftSecondarySchedulerImageURL := common.ConstructFullImageName(csiOpenshiftSecondarySchedulerImage, csi.Spec.GlobalRegistry)
 
 	err := p.Client.Get(ctx, client.ObjectKey{Name: openshiftSchedulerResourceName,
 		Namespace: OpenshiftSecondarySchedulerNamespace}, secondaryScheduler)
@@ -288,7 +301,7 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csi
 						LogLevel:         "Normal",
 					},
 					SchedulerConfig: csiOpenshiftSecondarySchedulerConfigMapName,
-					SchedulerImage:  csiOpenshiftSecondarySchedulerImage,
+					SchedulerImage:  csiOpenshiftSecondarySchedulerImageURL,
 				},
 			}
 			err = p.Client.Create(ctx, secondaryScheduler)
@@ -304,8 +317,8 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csi
 		p.Log.Error("Existing 3rd-party secondary scheduler! Baremetal CSI will not be installed!")
 		return nil, errors.New(existing3rdPartySecondarySchedulerErrMsg)
 	// Existing csi-baremetal secondary scheduler, update scheduler image if necessary
-	case secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImage:
-		secondaryScheduler.Spec.SchedulerImage = csiOpenshiftSecondarySchedulerImage
+	case secondaryScheduler.Spec.SchedulerImage != csiOpenshiftSecondarySchedulerImageURL:
+		secondaryScheduler.Spec.SchedulerImage = csiOpenshiftSecondarySchedulerImageURL
 		if err = p.Client.Update(ctx, secondaryScheduler); err != nil {
 			return nil, err
 		}
