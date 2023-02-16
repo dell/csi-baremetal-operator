@@ -47,7 +47,6 @@ const (
 	extenderFilterPattern   = "/filter"
 
 	existing3rdPartySecondarySchedulerErrMsg = "existing 3rd-party secondary scheduler"
-	invalidSecondarySchedulerImgErrMsg       = "invalid secondary scheduler image provided"
 )
 
 func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error {
@@ -277,8 +276,11 @@ func (p *SchedulerPatcher) patchSecondaryScheduler(ctx context.Context, csi *csi
 	if csiOpenshiftSecondaryScheduler != nil && csiOpenshiftSecondaryScheduler.Image != nil {
 		csiOpenshiftSecondarySchedulerImage = csi.Spec.Scheduler.OpenshiftSecondaryScheduler.Image
 		if csiOpenshiftSecondarySchedulerImage.Name == "" || csiOpenshiftSecondarySchedulerImage.Tag == "" {
-			p.Log.Error(invalidSecondarySchedulerImgErrMsg)
-			return nil, errors.New(invalidSecondarySchedulerImgErrMsg)
+			p.Log.Warn("Invalid secondary scheduler image provided! Use default secondary scheduler image instead!")
+			csiOpenshiftSecondarySchedulerImage = &components.Image{
+				Name: openshiftSecondarySchedulerDefaultImageName,
+				Tag:  openshiftSecondarySchedulerDefaultImageTag,
+			}
 		}
 	} else {
 		csiOpenshiftSecondarySchedulerImage = &components.Image{
