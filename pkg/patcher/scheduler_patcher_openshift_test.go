@@ -38,12 +38,6 @@ var (
 					ConfigMapName: schedulerConf,
 				},
 				ExtenderPort: "8889",
-				OpenshiftSecondaryScheduler: &components.OpenshiftSecondaryScheduler{
-					Image: &components.Image{
-						Name: "kube-scheduler",
-						Tag:  "v0.23.10",
-					},
-				},
 			},
 		},
 	}
@@ -251,17 +245,39 @@ func Test_SecondaryScheduler(t *testing.T) {
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		ctx := context.Background()
-		csiOpenshiftSecondarySchedulerImage := common.ConstructFullImageName(
-			csiDeploy.Spec.Scheduler.OpenshiftSecondaryScheduler.Image, csiDeploy.Spec.GlobalRegistry)
 
+		csiOpenshiftSecondarySchedulerDefaultImage := common.ConstructFullImageName(
+			&components.Image{
+				Name: openshiftSecondarySchedulerDefaultImageName,
+				Tag:  openshiftSecondarySchedulerDefaultImageTag,
+			}, csiDeploy.Spec.GlobalRegistry)
 		// case that creates new SecondaryScheduler CR cluster
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
 		secondarySchduler, err := sp.patchSecondaryScheduler(ctx, csiDeploy)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
-		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerDefaultImage, secondarySchduler.Spec.SchedulerImage)
 		assert.Nil(t, err)
 
 		// case of no update on existing SecondaryScheduler CR cluster
+		csiDeploy.Spec.Scheduler.OpenshiftSecondaryScheduler = &components.OpenshiftSecondaryScheduler{
+			Image: &components.Image{
+				Name: "kube-scheduler",
+			},
+		}
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerDefaultImage, secondarySchduler.Spec.SchedulerImage)
+		assert.Nil(t, err)
+
+		// case that update existing csi-baremetal secondary scheduler with different kube-scheduler image
+		csiDeploy.Spec.Scheduler.OpenshiftSecondaryScheduler = &components.OpenshiftSecondaryScheduler{
+			Image: &components.Image{
+				Name: "kube-scheduler",
+				Tag:  "v0.24.9",
+			},
+		}
+		csiOpenshiftSecondarySchedulerImage := common.ConstructFullImageName(
+			csiDeploy.Spec.Scheduler.OpenshiftSecondaryScheduler.Image, csiDeploy.Spec.GlobalRegistry)
 		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
@@ -273,14 +289,6 @@ func Test_SecondaryScheduler(t *testing.T) {
 		err = sp.unpatchSecondaryScheduler(ctx)
 		assert.NotNil(t, err)
 		assert.True(t, k8sError.IsNotFound(err))
-
-		// case that update existing csi-baremetal secondary scheduler with different kube-scheduler image
-		secondarySchduler.Spec.SchedulerImage = "image"
-		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, secondarySchduler))
-		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
-		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
-		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
-		assert.Nil(t, err)
 
 		// cases that try to update on existing 3rd-party SecondaryScheduler CR cluster
 		secondarySchduler.Spec.SchedulerConfig = "config"
