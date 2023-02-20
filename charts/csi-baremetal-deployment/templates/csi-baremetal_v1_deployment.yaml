@@ -128,10 +128,16 @@ spec:
       configMapName: {{ .Values.scheduler.patcher.config_map_name }}
       readinessTimeout: {{ .Values.scheduler.patcher.readinessTimeout }}
     storageProvisioner: {{ .Values.scheduler.provisioner }}
+    {{- if .Values.scheduler.openshiftSecondaryScheduler }}
     openshiftSecondaryScheduler:
       image:
+        {{- if .Values.scheduler.openshiftSecondaryScheduler.image.name }}
         name: {{ .Values.scheduler.openshiftSecondaryScheduler.image.name }}
+        {{- end }}
+        {{- if .Values.scheduler.openshiftSecondaryScheduler.image.tag }}
         tag: {{ .Values.scheduler.openshiftSecondaryScheduler.image.tag }}
+        {{- end }}
+    {{- end }}
     {{- if .Values.scheduler.securityContext.enable }}
     securityContext:
       enable: {{ .Values.scheduler.securityContext.enable }}
