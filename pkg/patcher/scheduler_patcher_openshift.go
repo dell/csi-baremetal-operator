@@ -101,9 +101,9 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, csi *csib
 	if err == nil {
 		selectedSchedulerExtenderIP := selectedSchedulerExtenderIPConfigMap.Data[selectedSchedulerExtenderIPConfigMapDataKey]
 		if selectedSchedulerExtenderIP != p.SelectedSchedulerExtenderIP {
-			if err1 := p.checkSchedulerExtender(selectedSchedulerExtenderIP, extenderPort); err != nil {
+			if err = p.checkSchedulerExtender(selectedSchedulerExtenderIP, extenderPort); err != nil {
 				p.Log.Warnf("selectedSchedulerExtenderIPConfigMap's IP %s doesn't work: %s",
-					selectedSchedulerExtenderIP, err1.Error())
+					selectedSchedulerExtenderIP, err.Error())
 			} else {
 				p.SelectedSchedulerExtenderIP = selectedSchedulerExtenderIP
 				return p.SelectedSchedulerExtenderIP, nil
