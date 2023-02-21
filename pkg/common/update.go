@@ -126,31 +126,37 @@ func deploymentChanged(expected *appsv1.Deployment, found *appsv1.Deployment, lo
 
 	if !equality.Semantic.DeepEqual(expected.Spec.Selector, found.Spec.Selector) {
 		a, err := json.Marshal(expected.Spec.Selector)
-		if err != nil {
+		if a == nil || err != nil {
 			log.Error(err, "Failed to marshal expected selector of: "+expected.Name)
+		} else {
+			log.Debug("Spec.Selector expected is: " + string(a))
 		}
-		log.Debug("Spec.Selector expected is: " + string(a))
 
 		b, err := json.Marshal(found.Spec.Selector)
-		if err != nil {
+		if b == nil || err != nil {
 			log.Error(err, "Failed to marshal found selector of: "+found.Name)
+		} else {
+			log.Debug("Spec.Selector found is: " + string(b))
 		}
-		log.Debug("Spec.Selector found is: " + string(b))
+
 		return true
 	}
 
 	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
 		a, err := json.Marshal(expected.Spec.Template)
-		if err != nil {
+		if a == nil || err != nil {
 			log.Error(err, "Failed to marshal expected template of: "+expected.Name)
+		} else {
+			log.Debug("Spec.Template expected is: " + string(a))
 		}
-		log.Debug("Spec.Template expected is: " + string(a))
 
 		b, err := json.Marshal(found.Spec.Template)
-		if err != nil {
+		if b == nil || err != nil {
 			log.Error(err, "Failed to marshal found template of: "+found.Name)
+		} else {
+			log.Debug("Spec.Template found is: " + string(b))
 		}
-		log.Debug("Spec.Template found is: " + string(b))
+
 		return true
 	}
 
