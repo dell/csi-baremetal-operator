@@ -47,6 +47,9 @@ const (
 	extenderFilterPattern   = "/filter"
 
 	existing3rdPartySecondarySchedulerErrMsg = "existing 3rd-party secondary scheduler"
+
+	getSchedulerExtenderIPInterval   = 10 * time.Second
+	getSchedulerExtenderIPMaxRetires = 12
 )
 
 func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error {
@@ -77,7 +80,7 @@ func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error 
 func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
 	if p.SelectedSchedulerExtenderIP != "" {
 		if err := p.checkSchedulerExtender(p.SelectedSchedulerExtenderIP, extenderPort); err != nil {
-			p.Log.Warnf("Current Selected Scheduler Extender %s Unworkable: %s",
+			p.Log.Warnf("Current selected scheduler extender %s doesn't work: %s",
 				p.SelectedSchedulerExtenderIP, err.Error())
 		} else {
 			return p.SelectedSchedulerExtenderIP, nil
@@ -98,14 +101,14 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 			podIP := pod.Status.PodIP
 			if podIP != "" {
 				if err := p.checkSchedulerExtender(podIP, extenderPort); err != nil {
-					p.Log.Warnf("Scheduler Extender %s Unworkable: %s", podIP, err.Error())
+					p.Log.Warnf("Scheduler extender %s doesn't work: %s", podIP, err.Error())
 				} else {
 					p.SelectedSchedulerExtenderIP = podIP
 					return podIP, nil
 				}
 			}
 		}
-		return "", fmt.Errorf("no workable scheduler extender found")
+		return "", fmt.Errorf("no working scheduler extender found")
 	}
 	return "", fmt.Errorf("no scheduler extender found")
 }
@@ -113,8 +116,22 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 func (p *SchedulerPatcher) createOpenshiftConfig(ctx context.Context, csi *csibaremetalv1.Deployment,
 	useOpenshiftSecondaryScheduler bool) (string, error) {
 	if useOpenshiftSecondaryScheduler {
-		schedulerExtenderIP, err := p.getSchedulerExtenderIP(ctx, csi.Spec.Scheduler.ExtenderPort)
-		if err != nil {
+		// try to get scheduler extender IP
+		var (
+			schedulerExtenderIP string
+			err                 error
+		)
+		i := 0
+		for ; i < getSchedulerExtenderIPMaxRetires; i++ {
+			schedulerExtenderIP, err = p.getSchedulerExtenderIP(ctx, csi.Spec.Scheduler.ExtenderPort)
+			if err == nil {
+				break
+			}
+			p.SelectedSchedulerExtenderIP = ""
+			p.Log.Warnf("Fail to getSchedulerExtenderIP: %s", err.Error())
+			<-time.After(getSchedulerExtenderIPInterval)
+		}
+		if i == getSchedulerExtenderIPMaxRetires {
 			return "", err
 		}
 		p.Log.Infof("Selected Scheduler Extender's IP: %s", schedulerExtenderIP)
