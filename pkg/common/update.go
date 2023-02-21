@@ -2,6 +2,8 @@ package common
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/sirupsen/logrus"
@@ -103,7 +105,7 @@ func UpdateDeployment(ctx context.Context, client kubernetes.Interface, expected
 		return err
 	}
 
-	if deploymentChanged(expected, found) {
+	if deploymentChanged(expected, found, log) {
 		found.Spec = expected.Spec
 		if _, err := dsClient.Update(ctx, found, metav1.UpdateOptions{}); err != nil {
 			log.Error(err, "Failed to update deployment "+expected.Name)
@@ -115,16 +117,40 @@ func UpdateDeployment(ctx context.Context, client kubernetes.Interface, expected
 	return nil
 }
 
-func deploymentChanged(expected *appsv1.Deployment, found *appsv1.Deployment) bool {
+func deploymentChanged(expected *appsv1.Deployment, found *appsv1.Deployment, log *logrus.Entry) bool {
 	if !equality.Semantic.DeepEqual(expected.Spec.Replicas, found.Spec.Replicas) {
+		log.Debug("Replicas expected is: " + fmt.Sprint(expected.Spec.Replicas))
+		log.Debug("Replicas found is: " + fmt.Sprint(found.Spec.Replicas))
 		return true
 	}
 
 	if !equality.Semantic.DeepEqual(expected.Spec.Selector, found.Spec.Selector) {
+		a, err := json.Marshal(expected.Spec.Selector)
+		if err != nil {
+			log.Error(err, "Failed to marshal expected selector of: "+expected.Name)
+		}
+		log.Debug("Spec.Selector expected is: " + string(a))
+
+		b, err := json.Marshal(found.Spec.Selector)
+		if err != nil {
+			log.Error(err, "Failed to marshal found selector of: "+found.Name)
+		}
+		log.Debug("Spec.Selector found is: " + string(b))
 		return true
 	}
 
 	if !equality.Semantic.DeepEqual(expected.Spec.Template, found.Spec.Template) {
+		a, err := json.Marshal(expected.Spec.Template)
+		if err != nil {
+			log.Error(err, "Failed to marshal expected template of: "+expected.Name)
+		}
+		log.Debug("Spec.Template expected is: " + string(a))
+
+		b, err := json.Marshal(found.Spec.Template)
+		if err != nil {
+			log.Error(err, "Failed to marshal found template of: "+found.Name)
+		}
+		log.Debug("Spec.Template found is: " + string(b))
 		return true
 	}
 
