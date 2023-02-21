@@ -15,7 +15,9 @@ import (
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/api/v1/components"
@@ -50,6 +52,9 @@ const (
 
 	getSchedulerExtenderIPInterval   = 10 * time.Second
 	getSchedulerExtenderIPMaxRetires = 12
+
+	selectedSchedulerExtenderIPConfigMapName    = "selected-scheduler-extender-ip"
+	selectedSchedulerExtenderIPConfigMapDataKey = "selectedSchedulerExtenderIP"
 )
 
 func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error {
@@ -77,7 +82,9 @@ func (p *SchedulerPatcher) checkSchedulerExtender(ip string, port string) error 
 	return fmt.Errorf("scheduler extender filter %s doesn't work", extenderFilterURL)
 }
 
-func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderPort string) (string, error) {
+func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, csi *csibaremetalv1.Deployment,
+	scheme *runtime.Scheme) (string, error) {
+	extenderPort := csi.Spec.Scheduler.ExtenderPort
 	if p.SelectedSchedulerExtenderIP != "" {
 		if err := p.checkSchedulerExtender(p.SelectedSchedulerExtenderIP, extenderPort); err != nil {
 			p.Log.Warnf("Current selected scheduler extender %s doesn't work: %s",
@@ -87,6 +94,26 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 		}
 	}
 
+	// Now try to get selected extender IP from selectedSchedulerExtenderIPConfigMap
+	cfClient := p.Clientset.CoreV1().ConfigMaps(csi.Namespace)
+	selectedSchedulerExtenderIPConfigMap, err := cfClient.Get(ctx, selectedSchedulerExtenderIPConfigMapName,
+		metav1.GetOptions{})
+	if err == nil {
+		selectedSchedulerExtenderIP := selectedSchedulerExtenderIPConfigMap.Data[selectedSchedulerExtenderIPConfigMapDataKey]
+		if selectedSchedulerExtenderIP != p.SelectedSchedulerExtenderIP {
+			if err1 := p.checkSchedulerExtender(selectedSchedulerExtenderIP, extenderPort); err != nil {
+				p.Log.Warnf("selectedSchedulerExtenderIPConfigMap's IP %s doesn't work: %s",
+					selectedSchedulerExtenderIP, err1.Error())
+			} else {
+				p.SelectedSchedulerExtenderIP = selectedSchedulerExtenderIP
+				return p.SelectedSchedulerExtenderIP, nil
+			}
+		}
+	} else if !k8sError.IsNotFound(err) {
+		p.Log.Warnf("Error in getting selectedSchedulerExtenderIPConfigMap: %s", err.Error())
+	}
+
+	// Try to get new scheduler extender IP
 	labelSelector := labels.SelectorFromSet(common.ConstructSelectorMap(csiExtenderName))
 
 	var schedulerExtenderPods corev1.PodList
@@ -104,6 +131,18 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 					p.Log.Warnf("Scheduler extender %s doesn't work: %s", podIP, err.Error())
 				} else {
 					p.SelectedSchedulerExtenderIP = podIP
+
+					// also need to store this IP in selectedSchedulerExtenderIPConfigMap
+					selectedSchedulerExtenderIPConfigMap = createSelectedSchedulerExtenderIPConfigMap(podIP, csi)
+					err = controllerutil.SetControllerReference(csi, selectedSchedulerExtenderIPConfigMap, scheme)
+					if err != nil {
+						p.Log.Warnf("Error in setting selectedSchedulerExtenderIPConfigMap's owner: %s", err.Error())
+					}
+
+					err = common.UpdateConfigMap(ctx, p.Clientset, selectedSchedulerExtenderIPConfigMap, p.Log)
+					if err != nil {
+						p.Log.Warnf("Error in updating selectedSchedulerExtenderIPConfigMap: %s", err.Error())
+					}
 					return podIP, nil
 				}
 			}
@@ -113,28 +152,41 @@ func (p *SchedulerPatcher) getSchedulerExtenderIP(ctx context.Context, extenderP
 	return "", fmt.Errorf("no scheduler extender found")
 }
 
+func createSelectedSchedulerExtenderIPConfigMap(selectedSchedulerExtenderIP string,
+	csi *csibaremetalv1.Deployment) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      selectedSchedulerExtenderIPConfigMapName,
+			Namespace: csi.Namespace,
+		},
+		Data: map[string]string{selectedSchedulerExtenderIPConfigMapDataKey: selectedSchedulerExtenderIP},
+	}
+}
+
 func (p *SchedulerPatcher) createOpenshiftConfig(ctx context.Context, csi *csibaremetalv1.Deployment,
-	useOpenshiftSecondaryScheduler bool) (string, error) {
+	useOpenshiftSecondaryScheduler bool, scheme *runtime.Scheme, checkInterval time.Duration, maxRetries int) (string, error) {
 	if useOpenshiftSecondaryScheduler {
 		// try to get scheduler extender IP
 		var (
-			schedulerExtenderIP string
-			err                 error
+			selectedSchedulerExtenderIP string
+			err                         error
 		)
+
 		i := 0
-		for ; i < getSchedulerExtenderIPMaxRetires; i++ {
-			schedulerExtenderIP, err = p.getSchedulerExtenderIP(ctx, csi.Spec.Scheduler.ExtenderPort)
+		for ; i < maxRetries; i++ {
+			selectedSchedulerExtenderIP, err = p.getSchedulerExtenderIP(ctx, csi, scheme)
 			if err == nil {
 				break
 			}
 			p.SelectedSchedulerExtenderIP = ""
-			p.Log.Warnf("Fail to getSchedulerExtenderIP: %s", err.Error())
-			<-time.After(getSchedulerExtenderIPInterval)
+			p.Log.Warnf("Fail to get scheduler extender IP: %s", err.Error())
+			<-time.After(checkInterval)
 		}
-		if i == getSchedulerExtenderIPMaxRetires {
+		if i == maxRetries {
 			return "", err
 		}
-		p.Log.Infof("Selected Scheduler Extender's IP: %s", schedulerExtenderIP)
+		p.Log.Infof("Selected Scheduler Extender's IP: %s", selectedSchedulerExtenderIP)
 
 		return fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
 kind: KubeSchedulerConfiguration
@@ -149,7 +201,7 @@ extenders:
     weight: 1
     enableHTTPS: false
     nodeCacheCapable: false
-    ignorable: true`, schedulerExtenderIP, csi.Spec.Scheduler.ExtenderPort), nil
+    ignorable: true`, selectedSchedulerExtenderIP, csi.Spec.Scheduler.ExtenderPort), nil
 	}
 	return fmt.Sprintf(`{
    "kind" : "Policy",
@@ -169,8 +221,9 @@ extenders:
 }
 
 func (p *SchedulerPatcher) patchOpenShift(ctx context.Context, csi *csibaremetalv1.Deployment,
-	useOpenshiftSecondaryScheduler bool) error {
-	config, err := p.createOpenshiftConfig(ctx, csi, useOpenshiftSecondaryScheduler)
+	useOpenshiftSecondaryScheduler bool, scheme *runtime.Scheme) error {
+	config, err := p.createOpenshiftConfig(ctx, csi, useOpenshiftSecondaryScheduler, scheme,
+		getSchedulerExtenderIPInterval, getSchedulerExtenderIPMaxRetires)
 	if err != nil {
 		return err
 	}
@@ -245,14 +298,14 @@ func (p *SchedulerPatcher) unPatchOpenShift(ctx context.Context) error {
 }
 
 func (p *SchedulerPatcher) retryPatchOpenshift(ctx context.Context, csi *csibaremetalv1.Deployment,
-	useOpenshiftSecondaryScheduler bool) error {
+	useOpenshiftSecondaryScheduler bool, scheme *runtime.Scheme) error {
 	err := p.unPatchOpenShift(ctx)
 	if err != nil {
 		p.Log.Error(err, "Failed to unpatch Openshift Scheduler")
 		return err
 	}
 
-	err = p.patchOpenShift(ctx, csi, useOpenshiftSecondaryScheduler)
+	err = p.patchOpenShift(ctx, csi, useOpenshiftSecondaryScheduler, scheme)
 	if err != nil {
 		return err
 	}

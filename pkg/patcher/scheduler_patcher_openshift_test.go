@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dell/csi-baremetal/pkg/events/mocks"
 	"github.com/stretchr/testify/assert"
@@ -160,7 +161,7 @@ func Test_getSchedulerExtenderIP(t *testing.T) {
 		// case of no scheduler extender found
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
 		sp.HTTPClient = server.Client()
-		extenderIP, err := sp.getSchedulerExtenderIP(ctx, u.Port())
+		extenderIP, err := sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
 		assert.NotNil(t, err)
 		assert.Empty(t, extenderIP)
 
@@ -168,7 +169,7 @@ func Test_getSchedulerExtenderIP(t *testing.T) {
 		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(podTemplate, pendingPod, unworkablePod),
 			prepareValidatorClient(scheme, podTemplate, pendingPod, unworkablePod))
 		sp.HTTPClient = server.Client()
-		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
 		assert.NotNil(t, err)
 		assert.Empty(t, extenderIP)
 
@@ -177,16 +178,21 @@ func Test_getSchedulerExtenderIP(t *testing.T) {
 			prepareValidatorClient(scheme, pendingPod, workablePod))
 		sp.SelectedSchedulerExtenderIP = "192.168.1.2"
 		sp.HTTPClient = server.Client()
-		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
 		assert.Nil(t, err)
 		assert.Equal(t, extenderIP, u.Hostname())
 
 		// workable selected scheduler extender case
 		sp.SelectedSchedulerExtenderIP = u.Hostname()
-		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
 		assert.Nil(t, err)
 		assert.Equal(t, extenderIP, u.Hostname())
 
+		// workable selected scheduler extender from configMap
+		sp.SelectedSchedulerExtenderIP = "192.168.1.26"
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
+		assert.Nil(t, err)
+		assert.Equal(t, extenderIP, u.Hostname())
 	})
 }
 
@@ -212,18 +218,18 @@ func Test_createOpenshiftConfig(t *testing.T) {
 		sp.HTTPClient = server.Client()
 
 		// error case
-		config, err := sp.createOpenshiftConfig(ctx, csiDeploy, true)
+		config, err := sp.createOpenshiftConfig(ctx, csiDeploy, true, scheme, time.Second, 3)
 		assert.NotNil(t, err)
 		assert.Empty(t, config)
 
 		// secondary scheduler config case
 		sp.SelectedSchedulerExtenderIP = u.Hostname()
-		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, true)
+		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, true, scheme, time.Second, 3)
 		assert.Nil(t, err)
 		assert.True(t, strings.HasPrefix(config, "apiVersion: kubescheduler.config.k8s.io/v1beta3"))
 
 		// config case for secondary scheduler not used
-		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, false)
+		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, false, scheme, time.Second, 3)
 		assert.Nil(t, err)
 		assert.False(t, strings.HasPrefix(config, "apiVersion: kubescheduler.config.k8s.io/v1beta3"))
 	})
