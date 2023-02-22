@@ -2,11 +2,13 @@ package patcher
 
 import (
 	"context"
+	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dell/csi-baremetal/pkg/events/mocks"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +31,8 @@ var (
 			Namespace: ns,
 		},
 		Spec: components.DeploymentSpec{
-			Platform: constant.PlatformOpenShift,
+			GlobalRegistry: "asdrepo.isus.emc.com:9042",
+			Platform:       constant.PlatformOpenShift,
 			Scheduler: &components.Scheduler{
 				Patcher: &components.Patcher{
 					Enable:        true,
@@ -158,7 +161,7 @@ func Test_getSchedulerExtenderIP(t *testing.T) {
 		// case of no scheduler extender found
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
 		sp.HTTPClient = server.Client()
-		extenderIP, err := sp.getSchedulerExtenderIP(ctx, u.Port())
+		extenderIP, err := sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
 		assert.NotNil(t, err)
 		assert.Empty(t, extenderIP)
 
@@ -166,7 +169,7 @@ func Test_getSchedulerExtenderIP(t *testing.T) {
 		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(podTemplate, pendingPod, unworkablePod),
 			prepareValidatorClient(scheme, podTemplate, pendingPod, unworkablePod))
 		sp.HTTPClient = server.Client()
-		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
 		assert.NotNil(t, err)
 		assert.Empty(t, extenderIP)
 
@@ -175,16 +178,21 @@ func Test_getSchedulerExtenderIP(t *testing.T) {
 			prepareValidatorClient(scheme, pendingPod, workablePod))
 		sp.SelectedSchedulerExtenderIP = "192.168.1.2"
 		sp.HTTPClient = server.Client()
-		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
 		assert.Nil(t, err)
 		assert.Equal(t, extenderIP, u.Hostname())
 
 		// workable selected scheduler extender case
 		sp.SelectedSchedulerExtenderIP = u.Hostname()
-		extenderIP, err = sp.getSchedulerExtenderIP(ctx, u.Port())
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
 		assert.Nil(t, err)
 		assert.Equal(t, extenderIP, u.Hostname())
 
+		// workable selected scheduler extender from configMap
+		sp.SelectedSchedulerExtenderIP = "192.168.1.26"
+		extenderIP, err = sp.getSchedulerExtenderIP(ctx, csiDeploy, scheme)
+		assert.Nil(t, err)
+		assert.Equal(t, extenderIP, u.Hostname())
 	})
 }
 
@@ -210,18 +218,18 @@ func Test_createOpenshiftConfig(t *testing.T) {
 		sp.HTTPClient = server.Client()
 
 		// error case
-		config, err := sp.createOpenshiftConfig(ctx, csiDeploy, true)
+		config, err := sp.createOpenshiftConfig(ctx, csiDeploy, true, scheme, time.Second, 3)
 		assert.NotNil(t, err)
 		assert.Empty(t, config)
 
 		// secondary scheduler config case
 		sp.SelectedSchedulerExtenderIP = u.Hostname()
-		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, true)
+		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, true, scheme, time.Second, 3)
 		assert.Nil(t, err)
 		assert.True(t, strings.HasPrefix(config, "apiVersion: kubescheduler.config.k8s.io/v1beta3"))
 
 		// config case for secondary scheduler not used
-		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, false)
+		config, err = sp.createOpenshiftConfig(ctx, csiDeploy, false, scheme, time.Second, 3)
 		assert.Nil(t, err)
 		assert.False(t, strings.HasPrefix(config, "apiVersion: kubescheduler.config.k8s.io/v1beta3"))
 	})
@@ -237,39 +245,66 @@ func Test_createOpenshiftConfigMapObject(t *testing.T) {
 	})
 }
 
-func Test_patchSecondaryScheduler(t *testing.T) {
-	t.Run("Test patchSecondaryScheduler", func(t *testing.T) {
+func Test_SecondaryScheduler(t *testing.T) {
+	t.Run("Test patch and unpatch SecondaryScheduler", func(t *testing.T) {
 		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 		scheme, _ := common.PrepareScheme()
 		ctx := context.Background()
 
+		csiOpenshiftSecondarySchedulerDefaultImage := common.ConstructFullImageName(
+			&components.Image{
+				Name: openshiftSecondarySchedulerDefaultImageName,
+				Tag:  openshiftSecondarySchedulerDefaultImageTag,
+			}, csiDeploy.Spec.GlobalRegistry)
 		// case that creates new SecondaryScheduler CR cluster
 		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme))
-		secondarySchduler, err := sp.patchSecondaryScheduler(ctx)
+		secondarySchduler, err := sp.patchSecondaryScheduler(ctx, csiDeploy)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
-		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerDefaultImage, secondarySchduler.Spec.SchedulerImage)
 		assert.Nil(t, err)
 
 		// case of no update on existing SecondaryScheduler CR cluster
-		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
+		csiDeploy.Spec.Scheduler.OpenshiftSecondaryScheduler = &components.OpenshiftSecondaryScheduler{
+			Image: &components.Image{
+				Name: "kube-scheduler",
+			},
+		}
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
+		assert.Equal(t, csiOpenshiftSecondarySchedulerDefaultImage, secondarySchduler.Spec.SchedulerImage)
+		assert.Nil(t, err)
+
+		// case that update existing csi-baremetal secondary scheduler with different kube-scheduler image
+		csiDeploy.Spec.Scheduler.OpenshiftSecondaryScheduler = &components.OpenshiftSecondaryScheduler{
+			Image: &components.Image{
+				Name: "kube-scheduler",
+				Tag:  "v0.24.9",
+			},
+		}
+		csiOpenshiftSecondarySchedulerImage := common.ConstructFullImageName(
+			csiDeploy.Spec.Scheduler.OpenshiftSecondaryScheduler.Image, csiDeploy.Spec.GlobalRegistry)
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
 		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
 		assert.Nil(t, err)
 
-		// cases that try to update existing SecondaryScheduler CR cluster
+		// uninstall secondaryscheduler
+		err = sp.unpatchSecondaryScheduler(ctx)
+		assert.Nil(t, err)
+		err = sp.unpatchSecondaryScheduler(ctx)
+		assert.NotNil(t, err)
+		assert.True(t, k8sError.IsNotFound(err))
+
+		// cases that try to update on existing 3rd-party SecondaryScheduler CR cluster
 		secondarySchduler.Spec.SchedulerConfig = "config"
 		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, secondarySchduler))
-		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
-		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
-		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
-		assert.Nil(t, err)
+		secondarySchduler, err = sp.patchSecondaryScheduler(ctx, csiDeploy)
+		assert.Nil(t, secondarySchduler)
+		assert.NotNil(t, err)
+		assert.Equal(t, existing3rdPartySecondarySchedulerErrMsg, err.Error())
 
-		secondarySchduler.Spec.SchedulerImage = "image"
-		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, secondarySchduler))
-		secondarySchduler, err = sp.patchSecondaryScheduler(ctx)
-		assert.Equal(t, csiOpenshiftSecondarySchedulerConfigMapName, secondarySchduler.Spec.SchedulerConfig)
-		assert.Equal(t, csiOpenshiftSecondarySchedulerImage, secondarySchduler.Spec.SchedulerImage)
+		err = sp.unpatchSecondaryScheduler(ctx)
 		assert.Nil(t, err)
 	})
 }
