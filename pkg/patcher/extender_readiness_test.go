@@ -180,7 +180,7 @@ func Test_NewExtenderReadinessOptions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewExtenderReadinessOptions(tt.args.csi)
+			got, err := NewExtenderReadinessOptions(tt.args.csi, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewExtenderReadinessOptions() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -219,7 +219,7 @@ func Test_createReadinessConfigMap(t *testing.T) {
 			savedStatuses = &ReadinessStatusList{}
 		)
 
-		options, err := NewExtenderReadinessOptions(csi)
+		options, err := NewExtenderReadinessOptions(csi, false)
 		assert.Nil(t, err)
 
 		config, err := createReadinessConfigMap(options, statuses)
@@ -230,6 +230,75 @@ func Test_createReadinessConfigMap(t *testing.T) {
 		err = yaml.Unmarshal([]byte(config.Data[options.readinessConfigMapFile]), savedStatuses)
 		assert.Nil(t, err)
 		assert.Equal(t, statuses, savedStatuses)
+	})
+}
+
+func Test_updateReadinessStatusesForOpenshiftSecondaryScheduler(t *testing.T) {
+	t.Run("Test updateReadinessStatusesForOpenshiftSecondaryScheduler", func(t *testing.T) {
+		eventRecorder := new(mocks.EventRecorder)
+		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		scheme, _ := common.PrepareScheme()
+		ctx := context.Background()
+		curTime := time.Now()
+
+		nodeTemplate := &corev1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "master",
+				Labels: map[string]string{"node-role.kubernetes.io/master": ""},
+			},
+			Spec: corev1.NodeSpec{},
+		}
+		node0 := nodeTemplate.DeepCopy()
+		node0.Name = node0.Name + "0"
+		node1 := nodeTemplate.DeepCopy()
+		node1.Name = node1.Name + "1"
+
+		sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(node0, node1),
+			prepareValidatorClient(scheme, node0, node1))
+
+		statuses, err := sp.updateReadinessStatusesForOpenshiftSecondaryScheduler(ctx,
+			"app=secondary-scheduler", metav1.Time{Time: curTime}, time.Second, 6)
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(statuses.Items))
+		for _, status := range statuses.Items {
+			assert.Empty(t, status.KubeScheduler)
+			assert.True(t, status.Restarted)
+			assert.True(t, status.NodeName == "master0" || status.NodeName == "master1")
+		}
+
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "secondary-scheduler",
+				Namespace: OpenshiftSecondarySchedulerNamespace,
+				Labels:    map[string]string{"app": "secondary-scheduler"},
+			},
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{
+					State: corev1.ContainerState{
+						Running: &corev1.ContainerStateRunning{
+							StartedAt: metav1.Time{
+								Time: curTime,
+							},
+						},
+					}},
+				},
+			},
+			Spec: corev1.PodSpec{
+				NodeName: "worker0",
+			},
+		}
+		sp = prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(pod, node0, node1),
+			prepareValidatorClient(scheme, pod, node0, node1))
+
+		statuses, err = sp.updateReadinessStatusesForOpenshiftSecondaryScheduler(ctx,
+			"app=secondary-scheduler", metav1.Time{Time: curTime}, time.Second, 6)
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(statuses.Items))
+		for _, status := range statuses.Items {
+			assert.Equal(t, pod.Name, status.KubeScheduler)
+			assert.True(t, status.Restarted)
+			assert.True(t, status.NodeName == "master0" || status.NodeName == "master1")
+		}
 	})
 }
 
@@ -348,10 +417,10 @@ func prepareValidatorClient(scheme *runtime.Scheme, objects ...client.Object) cl
 
 func prepareSchedulerPatcher(eventRecorder events.EventRecorder, clientSet kubernetes.Interface, client client.Client) *SchedulerPatcher {
 	sp := &SchedulerPatcher{
-		clientSet,
-		logEntry,
-		nil,
-		securityverifier.NewPodSecurityPolicyVerifier(
+		Clientset: clientSet,
+		Log:       logEntry,
+		Client:    client,
+		PodSecurityPolicyVerifier: securityverifier.NewPodSecurityPolicyVerifier(
 			validator.NewValidator(rbac.NewValidator(
 				client,
 				logEntry,

@@ -1,0 +1,132 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "{{.Release.Name}}-puc"
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{.Release.Name}}
+    release: {{.Release.Name}}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+
+#
+# Create the cluster role for replacing CRDs during upgrade.
+#
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "{{.Release.Namespace}}-{{.Release.Name}}-puc"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{.Release.Name}}
+    release: {{.Release.Name}}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-4"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+rules:
+- apiGroups:
+  - operators.coreos.com
+  resources:
+  - operatorgroups
+  verbs:
+  - '*'
+#
+# Create the cluster role binding for replacing CRDs during upgrade.
+#
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "{{.Release.Namespace}}-{{.Release.Name}}-puc"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{.Release.Name}}
+    release: {{.Release.Name}}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+subjects:
+  - kind: ServiceAccount
+    name: "{{.Release.Name}}-puc"
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: "{{.Release.Namespace}}-{{.Release.Name}}-puc"
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-pre-install-script"
+  namespace: {{ .Release.Namespace }}
+  annotations:
+      "helm.sh/hook": pre-install
+      "helm.sh/hook-weight": "-2"
+      "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+data:
+  pre-install.sh: |
+    #!/bin/sh
+    set -e
+    cat << EOF | kubectl apply -f -
+    apiVersion: operators.coreos.com/v1
+    kind: OperatorGroup
+    metadata:
+      annotations:
+        olm.providedAPIs: SecondaryScheduler.v1.operator.openshift.io
+      name: openshift-secondary-scheduler-operator-jh7wv
+      namespace: {{ .Release.Namespace }}
+    spec:
+      targetNamespaces:
+      - {{ .Release.Namespace }}
+      upgradeStrategy: Default
+    EOF
+
+#
+# Create the job for replacing CRDs during upgrade.
+#
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-puc"
+  namespace: {{.Release.Namespace}}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{.Release.Name}}
+    release: {{.Release.Name}}
+spec:
+  backoffLimit: 4
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      name: "{{ .Chart.Name }}-puc"
+    spec:
+      serviceAccountName: "{{.Release.Name}}-puc"
+      restartPolicy: Never
+      containers:
+        - name: "{{ .Chart.Name }}-puc"
+          image: "{{ .Values.global.registry }}/{{ .Values.helmHooks.repository }}:{{ default .Values.image.tag .Values.helmHooks.version }}"
+          imagePullPolicy: "IfNotPresent"
+          command:
+           - /scripts/pre-install.sh
+          volumeMounts:
+            - name: sh
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: sh
+          configMap:
+            name: "{{ .Release.Name }}-pre-install-script"
+            defaultMode: 0555
