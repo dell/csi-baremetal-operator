@@ -180,7 +180,7 @@ func (p *SchedulerPatcher) UpdateReadinessConfigMap(ctx context.Context, csi *cs
 		p.Log.Info("Retry patching")
 		switch csi.Spec.Platform {
 		case constant.PlatformOpenShift:
-			err = p.retryPatchOpenshift(ctx, csi, useOpenshiftSecondaryScheduler)
+			err = p.retryPatchOpenshift(ctx, csi, useOpenshiftSecondaryScheduler, scheme)
 			return err
 		case constant.PlatformVanilla, constant.PlatformRKE:
 			err = p.retryPatchVanilla(ctx, csi, scheme)

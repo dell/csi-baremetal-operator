@@ -77,7 +77,7 @@ func (p *SchedulerPatcher) Update(ctx context.Context, csi *csibaremetalv1.Deplo
 	}
 	switch csi.Spec.Platform {
 	case constant.PlatformOpenShift:
-		err = p.patchOpenShift(ctx, csi, useOpenshiftSecondaryScheduler)
+		err = p.patchOpenShift(ctx, csi, useOpenshiftSecondaryScheduler, scheme)
 	case constant.PlatformVanilla, constant.PlatformRKE:
 		err = p.updateVanilla(ctx, csi, scheme)
 	}

@@ -548,6 +548,23 @@ spec:
                     - path
                     - port
                     type: object
+                  openshiftSecondaryScheduler:
+                    description: OpenshiftSecondaryScheduler represents information
+                      to deploy Openshift Secondary Scheduler if applicable
+                    properties:
+                      image:
+                        description: Image contain information for components docker
+                          images
+                        properties:
+                          name:
+                            type: string
+                          tag:
+                            type: string
+                        required:
+                        - name
+                        - tag
+                        type: object
+                    type: object
                   patcher:
                     description: Patcher represents scheduler patcher container, which
                       tries to patch Kubernetes scheduler
