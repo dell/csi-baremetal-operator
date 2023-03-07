@@ -90,6 +90,8 @@ spec:
             properties:
               Bay:
                 type: string
+              DriveHealthData:
+                type: string
               Enclosure:
                 type: string
               EncryptionCapable:
