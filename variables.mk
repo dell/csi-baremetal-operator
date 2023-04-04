@@ -13,7 +13,7 @@ BASE_IMAGE ?= golang:1.17
 CRD_BUILD_IMAGE ?= ${REGISTRY}/csi-baremetal-pre-upgrade-crds:${TAG}
 KUBECTL_IMAGE ?=  bitnami/kubectl:1.23 # https://hub.docker.com/r/bitnami/kubectl
 
-### version
+### version.
 MAJOR            := 1
 MINOR            := 2
 PATCH            := 0
