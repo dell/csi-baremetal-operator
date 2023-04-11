@@ -220,10 +220,10 @@ scheduler:
   # by storage class with provided provisioner name
   provisioner: csi-baremetal
   # properties for openshift secondary scheduler if applicable
-  # openshiftSecondaryScheduler:
-  #   image:
-  #     name: kube-scheduler
-  #     tag: v0.23.10
+  openshiftSecondaryScheduler:
+    image:
+      name: kube-scheduler
+      tag: v0.23.10
 
 # CSI Operator parameters
 nodeController:
