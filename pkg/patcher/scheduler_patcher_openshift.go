@@ -39,7 +39,7 @@ const (
 	openshiftSecondarySchedulerDataKey   = "config.yaml"
 
 	openshiftSecondarySchedulerDefaultImageName = "kube-scheduler"
-	openshiftSecondarySchedulerDefaultImageTag  = "v0.23.10"
+	openshiftSecondarySchedulerDefaultImageTag  = "v0.25.7"
 
 	csiOpenshiftSecondarySchedulerConfigMapName = "csi-baremetal-scheduler-config"
 
