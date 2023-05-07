@@ -20,21 +20,25 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - description: NumberDrivesPerNode of StorageGroup's DriveSelector
-      jsonPath: .spec.DriveSelector.NumberDrivesPerNode
+    - description: numberDrivesPerNode of StorageGroup's DriveSelector
+      jsonPath: .spec.driveSelector.numberDrivesPerNode
       name: DRIVES PER NODE
       type: string
     - description: Drive Type of StorageGroup's DriveSelector
-      jsonPath: .spec.DriveSelector.MatchFields.Type
+      jsonPath: .spec.driveSelector.matchFields.Type
       name: TYPE
       type: string
     - description: Drive Slot of StorageGroup's DriveSelector
-      jsonPath: .spec.DriveSelector.MatchFields.Slot
+      jsonPath: .spec.driveSelector.matchFields.Slot
       name: SLOT
       type: string
     - description: Drive Bay of StorageGroup's DriveSelector
-      jsonPath: .spec.DriveSelector.MatchFields.Bay
+      jsonPath: .spec.driveSelector.matchFields.Bay
       name: BAY
+      type: string
+    - description: Drive Path of StorageGroup's DriveSelector
+      jsonPath: .spec.driveSelector.matchFields.Path
+      name: PATH
       type: string
     name: v1
     schema:
@@ -51,14 +55,14 @@ spec:
             type: object
           spec:
             properties:
-              DriveSelector:
+              driveSelector:
                 properties:
-                  MatchFields:
+                  matchFields:
                     additionalProperties:
                       type: string
                     type: object
-                  NumberDrivesPerNode:
-                    format: int64
+                  numberDrivesPerNode:
+                    format: int32
                     type: integer
                 type: object
             type: object
