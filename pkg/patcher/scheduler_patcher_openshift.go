@@ -191,7 +191,7 @@ func (p *SchedulerPatcher) createOpenshiftConfig(ctx context.Context, csi *csiba
 		return fmt.Sprintf(`apiVersion: kubescheduler.config.k8s.io/v1beta3
 kind: KubeSchedulerConfiguration
 leaderElection:
-  leaderElect: false
+  leaderElect: true
 profiles:
   - schedulerName: csi-baremetal-scheduler
 extenders:
