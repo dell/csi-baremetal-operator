@@ -22,7 +22,7 @@ spec:
   - additionalPrinterColumns:
     - description: numberDrivesPerNode of StorageGroup's DriveSelector
       jsonPath: .spec.driveSelector.numberDrivesPerNode
-      name: DRIVES PER NODE
+      name: DRIVES_PER_NODE
       type: string
     - description: Drive Type of StorageGroup's DriveSelector
       jsonPath: .spec.driveSelector.matchFields.Type
@@ -32,13 +32,13 @@ spec:
       jsonPath: .spec.driveSelector.matchFields.Slot
       name: SLOT
       type: string
-    - description: Drive Bay of StorageGroup's DriveSelector
-      jsonPath: .spec.driveSelector.matchFields.Bay
-      name: BAY
-      type: string
     - description: Drive Path of StorageGroup's DriveSelector
       jsonPath: .spec.driveSelector.matchFields.Path
       name: PATH
+      type: string
+    - description: Whether StorageGroup's DriveSelector to Select System Drive
+      jsonPath: .spec.driveSelector.matchFields.IsSystem
+      name: SYSTEM
       type: string
     name: v1
     schema:
