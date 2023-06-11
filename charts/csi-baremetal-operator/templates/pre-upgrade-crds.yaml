@@ -129,4 +129,4 @@ spec:
               memory: {{ .Values.operator.resources.requests.memory }}
           command: ["/bin/sh", "-c"]
           args:
-          - kubectl replace crd -f /crds;
+          - kubectl apply -f /crds;
