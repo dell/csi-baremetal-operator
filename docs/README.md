@@ -254,7 +254,8 @@ Uninstallation process
 * Delete custom resources
     ```
     kubectl delete pvc --all
-    # wait for a while
+
+    # Please run the following commands after the completion of all Bare-metal-CSI-managed PVCs' deletion
     kubectl delete volumes --all -A
     kubectl delete lvgs --all
     kubectl delete sgs --all
