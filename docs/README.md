@@ -251,11 +251,20 @@ See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command document
  
 Uninstallation process
 ---------------------
+* Delete all Bare-metal-CSI-managed PVCs
+    ```
+    pvcs=($(kubectl get pvc -o wide -A | grep csi-baremetal-sc | awk {'print $1" "$2'}))
+    for (( i=0; i<${#pvcs[@]} ; i+=2 ))
+    do
+      kubectl delete pvc ${pvcs[i+1]} -n ${pvcs[i]}
+    done
+    ```
+* Ensure there is no Bare-metal-CSI-managed PVC left
+    ```
+    kubectl get pvc -o wide -A | grep csi-baremetal-sc
+    ```
 * Delete custom resources
     ```
-    kubectl delete pvc --all
-
-    # Please run the following commands after the completion of all Bare-metal-CSI-managed PVCs' deletion
     kubectl delete volumes --all -A
     kubectl delete lvgs --all
     kubectl delete sgs --all
