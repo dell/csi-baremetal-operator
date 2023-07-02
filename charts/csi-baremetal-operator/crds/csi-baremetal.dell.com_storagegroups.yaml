@@ -24,21 +24,13 @@ spec:
       jsonPath: .spec.driveSelector.numberDrivesPerNode
       name: DRIVES_PER_NODE
       type: string
-    - description: Drive Type of StorageGroup's DriveSelector
-      jsonPath: .spec.driveSelector.matchFields.Type
-      name: TYPE
+    - description: Match Fields of StorageGroup's DriveSelector to Select Drives on Field Values
+      jsonPath: .spec.driveSelector.matchFields
+      name: DRIVE_FIELDS
       type: string
-    - description: Drive Slot of StorageGroup's DriveSelector
-      jsonPath: .spec.driveSelector.matchFields.Slot
-      name: SLOT
-      type: string
-    - description: Drive Path of StorageGroup's DriveSelector
-      jsonPath: .spec.driveSelector.matchFields.Path
-      name: PATH
-      type: string
-    - description: Whether StorageGroup's DriveSelector to Select System Drive
-      jsonPath: .spec.driveSelector.matchFields.IsSystem
-      name: SYSTEM
+    - description: status of StorageGroup
+      jsonPath: .status.phase
+      name: STATUS
       type: string
     name: v1
     schema:
@@ -65,6 +57,11 @@ spec:
                     format: int32
                     type: integer
                 type: object
+            type: object
+          status:
+            properties:
+              phase:
+                type: string
             type: object
         type: object
     served: true
