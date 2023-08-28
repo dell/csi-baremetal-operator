@@ -240,6 +240,8 @@ Usage
 
     * Provisioned volumes - `kubectl get volumes.csi-baremetal.dell.com`
 
+    * Storage groups - `kubectl get sgs`
+
 Upgrade process
 ---------------------
 
@@ -249,11 +251,23 @@ See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command document
  
 Uninstallation process
 ---------------------
+* Delete all Bare-metal-CSI-managed PVCs
+    ```
+    pvcs=($(kubectl get pvc -o wide -A | grep csi-baremetal-sc | awk {'print $1" "$2'}))
+    for (( i=0; i<${#pvcs[@]} ; i+=2 ))
+    do
+      kubectl delete pvc ${pvcs[i+1]} -n ${pvcs[i]}
+    done
+    ```
+* Ensure there is no Bare-metal-CSI-managed PVC left
+    ```
+    kubectl get pvc -o wide -A | grep csi-baremetal-sc
+    ```
 * Delete custom resources
     ```
-    kubectl delete pvc --all
     kubectl delete volumes --all -A
     kubectl delete lvgs --all
+    kubectl delete sgs --all
     kubectl delete csibmnodes --all
     ```
 * Delete helm releases
@@ -265,5 +279,6 @@ Uninstallation process
     ```
     kubectl delete crd deployments.csi-baremetal.dell.com availablecapacities.csi-baremetal.dell.com \
   availablecapacityreservations.csi-baremetal.dell.com logicalvolumegroups.csi-baremetal.dell.com \
-  volumes.csi-baremetal.dell.com drives.csi-baremetal.dell.com nodes.csi-baremetal.dell.com
+  volumes.csi-baremetal.dell.com drives.csi-baremetal.dell.com nodes.csi-baremetal.dell.com \
+  storagegroups.csi-baremetal.dell.com
     ```

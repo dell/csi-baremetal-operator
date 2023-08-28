@@ -1,10 +1,9 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.5.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: availablecapacityreservations.csi-baremetal.dell.com
 spec:
@@ -86,6 +85,8 @@ spec:
                           type: integer
                         StorageClass:
                           type: string
+                        StorageGroup:
+                          type: string
                       type: object
                     Reservations:
                       description: reservation filled by csi driver controller
@@ -101,9 +102,3 @@ spec:
     served: true
     storage: true
     subresources: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
