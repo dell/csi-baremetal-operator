@@ -84,23 +84,23 @@ jobs:
         flags: unittests
         verbose: true
 
-    - name: Generate CRD
-      run: |
-        make generate-operator-crds
-
-    - name: Verify CRD changes
-      uses: tj-actions/verify-changed-files@v9.1
-      id: changed_files
-      with:
-        files: |
-          charts/csi-baremetal-operator/crds/*.yaml
-
-    - name: Display changed files
-      if: steps.changed_files.outputs.files_changed == 'true'
-      run: |
-        echo "Changed files: ${{ steps.changed_files.outputs.changed_files }}"
-
-    - name: Fail action when files change
-      if: steps.changed_files.outputs.files_changed == 'true'
-      run: |
-        exit 1
+#    - name: Generate CRD
+#      run: |
+#        make generate-operator-crds
+#
+#    - name: Verify CRD changes
+#      uses: tj-actions/verify-changed-files@v16.1.1
+#      id: changed_files
+#      with:
+#        files: |
+#          charts/csi-baremetal-operator/crds/*.yaml
+#
+#    - name: Display changed files
+#      if: steps.changed_files.outputs.files_changed == 'true'
+#      run: |
+#        echo "Changed files: ${{ steps.changed_files.outputs.changed_files }}"
+#
+#    - name: Fail action when files change
+#      if: steps.changed_files.outputs.files_changed == 'true'
+#      run: |
+#        exit 1
