@@ -89,7 +89,7 @@ jobs:
         make generate-operator-crds
 
     - name: Verify CRD changes
-      uses: tj-actions/verify-changed-files@v9.1
+      uses: tj-actions/verify-changed-files@v40.0.2
       id: changed_files
       with:
         files: |
