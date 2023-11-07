@@ -31,9 +31,9 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Set GOPROXY
-        env:
-          GOPROXY: https://proxy.golang.org,direct
-        run: go env -w GOPROXY=$GOPROXY
+      env:
+        GOPROXY: https://proxy.golang.org,direct
+      run: go env -w GOPROXY=$GOPROXY
 
     - name: Set up Go
       uses: actions/setup-go@v4
