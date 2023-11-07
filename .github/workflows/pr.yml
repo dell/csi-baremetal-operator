@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 env:
   go_version: '1.21.3'
-  golangci_version: '1.37.0'
+  golangci_version: '1.55.2'
 jobs:
   lint-test:
     name: Validate code and build it
@@ -65,13 +65,7 @@ jobs:
       run:  go mod download
         
     - name: Lint code
-  #    run: GOGC=300 make lint-code
-      uses: golangci/golangci-lint-action@v3
-      with:
-          # Require: The version of golangci-lint to use.
-          # When `install-mode` is `binary` (default) the value can be v1.2 or v1.2.3 or `latest` to use the latest version.
-          # When `install-mode` is `goinstall` the value can be v1.2.3, `latest`, or the hash of a commit.
-        version: v1.54
+      run: GOGC=300 make lint-code
 
     - name: Lint chart
       run: make lint-operator-chart
