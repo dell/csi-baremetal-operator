@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 env:
   go_version: '1.21.3'
-  golangci_version: '1.37.0'
+  golangci_version: '1.54.0'
 jobs:
   lint-test:
     name: Validate code and build it
@@ -34,6 +34,9 @@ jobs:
       env:
         GOPROXY: https://proxy.golang.org,direct
       run: go env -w GOPROXY=$GOPROXY
+
+    - name: Set GOROOT
+      run: export GOROOT=$(go env GOROOT)
 
     - name: Set up Go
       uses: actions/setup-go@v2
