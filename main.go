@@ -30,6 +30,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/dell/csi-baremetal-operator/controllers"
 	"github.com/dell/csi-baremetal-operator/pkg"
@@ -69,11 +70,10 @@ func main() {
 	}
 
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "7db7c6a0.dell.com",
+		Scheme:           scheme,
+		Metrics:          metricsserver.Options{BindAddress: metricsAddr},
+		LeaderElection:   enableLeaderElection,
+		LeaderElectionID: "7db7c6a0.dell.com",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
