@@ -92,7 +92,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	} else {
 		if containsFinalizer(deployment) {
-			if err = r.Uninstall(ctx, deployment); err != nil {
+			if err = r.CSIDeployment.Uninstall(ctx, deployment); err != nil {
 				log.Error(err, "Error uninstalling patcher")
 			}
 
