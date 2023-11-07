@@ -281,7 +281,7 @@ func Test_handleNodeMaintenance(t *testing.T) {
 
 		// Expected Deployment pod was deleted from tainted node
 		err = c.client.Get(ctx, client.ObjectKey{Namespace: podcontroller.Namespace, Name: podcontroller.Name}, &podcontroller)
-		//assert.True(t, k8serrors.IsNotFound(err))
+		assert.Nil(t, err)
 
 		// Expected not tainted node wasn't affected: Deployment pod still alive
 		err = c.client.Get(ctx, client.ObjectKey{Namespace: podnode1.Namespace, Name: podnode1.Name}, &podnode1)
