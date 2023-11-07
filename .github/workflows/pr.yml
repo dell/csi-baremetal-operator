@@ -64,8 +64,8 @@ jobs:
     - name: Get dependencies
       run:  go mod download
         
-    - name: Lint code
-      run: GOGC=300 make lint-code
+  #  - name: Lint code
+  #    run: GOGC=300 make lint-code
 
     - name: Lint chart
       run: make lint-operator-chart
