@@ -1,6 +1,6 @@
 module github.com/dell/csi-baremetal-operator
 
-go 1.17
+go 1.21
 
 require (
 	github.com/Masterminds/semver v1.5.0 // indirect
