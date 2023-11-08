@@ -34,11 +34,6 @@ jobs:
       env:
         GOPROXY: https://proxy.golang.org,direct
       run: go env -w GOPROXY=$GOPROXY
-      
-    - name: Set GOROOT
-      env:
-        GOROOT: /usr/share/go/1.21.3/x64/
-      run: go env -w GOROOT=$GOROOT
 
     - name: Set up Go
       uses: actions/setup-go@v2
@@ -47,6 +42,11 @@ jobs:
 
     - name: Set go_version variable 
       run: echo "go_version=`echo "$(go version)" | grep -oE '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,}'`" >> $GITHUB_ENV
+
+    - name: Set GOROOT
+      env:
+        GOROOT: /usr/share/go/1.21.3/x64/
+      run: go env -w GOROOT=$GOROOT  
 
     - name: Load dep cache
       uses: actions/cache@v2
