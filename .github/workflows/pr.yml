@@ -36,7 +36,7 @@ jobs:
       run: go env -w GOPROXY=$GOPROXY
       
     - name: Set GOROOT
-      run: export GOROOT=$(go env GOROOT)
+      run: echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
 
     - name: Set up Go
       uses: actions/setup-go@v2
