@@ -70,7 +70,7 @@ jobs:
       run:  go mod download
         
     - name: Lint code
-      run: GOGC=300 make lint-code
+      run: GOGC=300 GOROOT=/usr/local/go make lint-code
 
     - name: Lint chart
       run: make lint-operator-chart
