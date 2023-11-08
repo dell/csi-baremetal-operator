@@ -56,6 +56,7 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/.cache/golangci-lint
+          ~/go/pkg/mod
         key: go-build-${{ env.go_version }}-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/pkg') }}
         restore-keys: |
           go-build-${{ env.go_version }}-${{ hashFiles('**/go.sum') }}
