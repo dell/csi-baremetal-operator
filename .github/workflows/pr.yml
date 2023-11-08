@@ -45,7 +45,7 @@ jobs:
 
     - name: Set GOROOT
       env:
-        GOROOT: /usr/share/go/1.21.3/x64/
+        GOROOT: /usr/share/go
       run: go env -w GOROOT=$GOROOT  
 
     - name: Load dep cache
