@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 env:
   go_version: '1.21.3'
-  golangci_version: '1.37.0'
+  golangci_version: '1.55.2'
 jobs:
   lint-test:
     name: Validate code and build it
