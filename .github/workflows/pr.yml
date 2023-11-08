@@ -36,7 +36,9 @@ jobs:
       run: go env -w GOPROXY=$GOPROXY
       
     - name: Set GOROOT
-      run: echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
+      env:
+        GOROOT: /usr/share/go/1.21.3/x64/
+      run: go env -w GOROOT=$GOROOT
 
     - name: Set up Go
       uses: actions/setup-go@v2
