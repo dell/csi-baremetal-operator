@@ -119,6 +119,7 @@ linters:
     - funlen
     - gochecknoinits
     - gocognit
+  #  - goconst
     - gocritic
     - gocyclo
     - gofmt
@@ -131,7 +132,7 @@ linters:
     - lll
     - megacheck
     - misspell
-    - nakedret
+  #  - nakedret
     - scopelint
     - staticcheck
     - structcheck

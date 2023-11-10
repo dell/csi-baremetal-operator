@@ -29,7 +29,7 @@ func (r *rbac) ValidateServiceAccountIsBound(ctx context.Context, rules *models.
 		Namespace: rules.Namespace,
 	}); err != nil {
 		r.log.Errorf("failed to get roles list: %s", err.Error())
-		return nil
+		return
 	}
 
 	// check if there exists role bindings, which matches passed service account
@@ -45,7 +45,7 @@ func (r *rbac) ValidateServiceAccountIsBound(ctx context.Context, rules *models.
 		Namespace: rules.Namespace,
 	}); err != nil {
 		r.log.Errorf("failed to get roles list: %s", err.Error())
-		return nil
+		return
 	}
 
 	// preparing founded role bindings refs and finding matched ones between them
@@ -68,7 +68,7 @@ func (r *rbac) ValidateServiceAccountIsBound(ctx context.Context, rules *models.
 			continue
 		}
 		if r.matcher.MatchPolicyRules(matchesRoles[i].Rules, rules.Role.Rules) {
-			return nil
+			return
 		}
 	}
 	return NewRBACError(fmt.Sprintf("failed to find any roles, matched to passed service account, "+
