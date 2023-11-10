@@ -36,6 +36,7 @@ linters-settings:
           - github.com/dell/csi-baremetal-operator/pkg/validator/rbac
           - github.com/dell/csi-baremetal-operator/pkg/common
           - github.com/dell/csi-baremetal-operator/pkg/constant
+          - github.com/dell/csi-baremetal-operator/pkg/node
           - github.com/dell/csi-baremetal-operator/pkg/nodeoperations
           - github.com/dell/csi-baremetal-operator/pkg/patcher
           - github.com/dell/csi-baremetal-operator/controllers
@@ -60,8 +61,10 @@ linters-settings:
           - github.com/stretchr/testify/mock
           - github.com/viney-shih/go-lock
           - github.com/openshift/api/config/v1
+          - github.com/openshift/api/operator/v1
           - github.com/openshift/secondary-scheduler-operator/pkg/apis/secondaryscheduler/v1
           - github.com/dell/csi-baremetal-operator/pkg/constant
+          - github.com/masterminds/semver
           - k8s.io/api/apps/v1
           - k8s.io/api/core/v1
           - k8s.io/api/rbac/v1
@@ -75,6 +78,7 @@ linters-settings:
           - k8s.io/apimachinery/pkg/labels
           - k8s.io/apimachinery/pkg/util/intstr
           - k8s.io/apimachinery/pkg/api/equality
+          - k8s.io/apimachinery/pkg/fields
           - k8s.io/client-go/kubernetes
           - k8s.io/client-go/plugin/pkg/client/auth/gcp
           - k8s.io/client-go/rest
