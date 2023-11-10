@@ -30,17 +30,7 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
 
-    - name: Set GOPROXY
-      env:
-        GOPROXY: https://proxy.golang.org,direct
-      run: go env -w GOPROXY=$GOPROXY
-
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '1.21.3'
-
-    - name: Set go_version variable 
+    - name: Set go_version variable
       run: echo "go_version=`echo "$(go version)" | grep -oE '[0-9]{1,}\.[0-9]{1,}\.[0-9]{1,}'`" >> $GITHUB_ENV
 
     - name: Load dep cache
@@ -64,8 +54,8 @@ jobs:
     - name: Get dependencies
       run:  go mod download
         
-   # - name: Lint code
-   #   run: GOGC=300 make lint-code
+    - name: Lint code
+      run: GOGC=300 make lint-code
 
     - name: Lint chart
       run: make lint-operator-chart
