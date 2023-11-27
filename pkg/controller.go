@@ -135,7 +135,7 @@ func createControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Contain
 				"--endpoint=$(CSI_ENDPOINT)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--loglevel=" + common.MatchLogLevel(c.Log.Level),
+				constant.LogLevelSlogan + common.MatchLogLevel(c.Log.Level),
 				"--healthport=" + strconv.Itoa(healthPort),
 				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
 				"--metrics-path=/metrics",

@@ -244,7 +244,7 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				"main.py",
 			},
 			Args: []string{
-				"--loglevel=" + common.MatchLogLevel(p.loglevel),
+				constant.LogLevelSlogan + common.MatchLogLevel(p.loglevel),
 				"--restore",
 				"--interval=" + strconv.Itoa(p.interval),
 				"--target-config-path=" + p.targetConfig,

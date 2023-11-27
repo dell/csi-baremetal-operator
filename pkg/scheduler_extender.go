@@ -166,7 +166,7 @@ func createExtenderContainers(csi *csibaremetalv1.Deployment, isPatchingEnabled 
 		"--provisioner=" + constant.CSIName,
 		"--port=" + strconv.Itoa(extenderPort),
 		"--healthport=" + strconv.Itoa(healthPort),
-		"--loglevel=" + common.MatchLogLevel(csi.Spec.Scheduler.Log.Level),
+		constant.LogLevelSlogan + common.MatchLogLevel(csi.Spec.Scheduler.Log.Level),
 		"--certFile=",
 		"--privateKeyFile=",
 		"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
