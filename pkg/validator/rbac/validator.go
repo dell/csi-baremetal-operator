@@ -68,7 +68,7 @@ func (r *rbac) ValidateServiceAccountIsBound(ctx context.Context, rules *models.
 			continue
 		}
 		if r.matcher.MatchPolicyRules(matchesRoles[i].Rules, rules.Role.Rules) {
-			return nil
+			return err
 		}
 	}
 	return NewRBACError(fmt.Sprintf("failed to find any roles, matched to passed service account, "+
