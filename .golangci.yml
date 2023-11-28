@@ -112,40 +112,34 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
+    - dupl
     - errcheck
+    - exportloopref
     - funlen
     - gochecknoinits
     - gocognit
-  #  - goconst
+    - goconst
     - gocritic
     - gocyclo
     - gofmt
     - goimports
-    - golint
     - gosimple
+    - gosec
     - govet
     - ineffassign
-    - interfacer
     - lll
     - megacheck
     - misspell
-  #  - nakedret
-    - scopelint
+    - nakedret
     - staticcheck
-    - structcheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
-    - maligned
     - prealloc
-    - dupl
-    - gosec
 
   # don't enable:
   # - gochecknoglobals Because of setupMgr and CrushVolumes // TODO - https://github.com/dell/csi-baremetal/issues/474

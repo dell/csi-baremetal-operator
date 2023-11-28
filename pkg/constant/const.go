@@ -70,6 +70,8 @@ const (
 	RsysLabelKey = "app.kubernetes.io/instance"
 	// DefaultNamespace is the default namespace
 	DefaultNamespace = "default"
+	// LogLevelSlogan parameter definition
+	LogLevelSlogan = "--loglevel="
 )
 
 var (

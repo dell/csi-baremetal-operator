@@ -92,7 +92,7 @@ func createNodeControllerContainers(csi *csibaremetalv1.Deployment) []corev1.Con
 
 	args := []string{
 		"--namespace=$(NAMESPACE)",
-		"--loglevel=" + common.MatchLogLevel(log.Level),
+		constant.LogLevelSlogan + common.MatchLogLevel(log.Level),
 		"--logformat=" + common.MatchLogFormat(log.Format),
 	}
 	if ns != nil {

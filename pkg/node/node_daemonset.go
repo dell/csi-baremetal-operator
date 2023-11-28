@@ -176,7 +176,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 		nodeImage     = platform.NodeImage(node.Image)
 	)
 	args := []string{
-		"--loglevel=" + common.MatchLogLevel(node.Log.Level),
+		constant.LogLevelSlogan + common.MatchLogLevel(node.Log.Level),
 		"--drivemgrendpoint=" + driveMgr.Endpoint,
 	}
 	driveMgrMounts := []corev1.VolumeMount{
@@ -252,7 +252,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 				"--nodename=$(KUBE_NODE_NAME)",
 				"--namespace=$(NAMESPACE)",
 				"--extender=true",
-				"--loglevel=" + common.MatchLogLevel(node.Log.Level),
+				constant.LogLevelSlogan + common.MatchLogLevel(node.Log.Level),
 				"--metrics-address=:" + strconv.Itoa(constant.PrometheusPort),
 				"--metrics-path=/metrics",
 				"--drivemgrendpoint=" + driveMgr.Endpoint,
