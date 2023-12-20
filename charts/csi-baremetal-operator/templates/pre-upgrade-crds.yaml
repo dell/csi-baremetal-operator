@@ -103,6 +103,10 @@ spec:
   activeDeadlineSeconds: 300
   template:
     metadata:
+      {{- with .Values.preUpgradeCRDsHooks.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job"
     spec:
       serviceAccountName: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-sa"
