@@ -36,6 +36,7 @@ spec:
         - /manager
         args:
         - --enable-leader-election
+        - --loglevel={{ .Values.log.level }}
         image: {{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.operator.image.name }}:{{ default .Values.image.tag .Values.operator.image.tag }}
         name: manager
         imagePullPolicy: {{ default .Values.image.pullPolicy .Values.operator.image.pullPolicy }}

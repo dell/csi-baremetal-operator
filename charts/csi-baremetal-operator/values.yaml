@@ -42,3 +42,6 @@ preUpgradeCRDsHooks:
       memory: 20Mi
 
   podAnnotations: {}
+
+log:
+  level: info
