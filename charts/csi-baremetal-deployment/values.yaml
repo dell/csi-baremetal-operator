@@ -91,7 +91,7 @@ driver:
   provisioner:
     image:
       # if you want to use topology feature (multiple PVCs per pod) you should use v1.2.2
-      tag: v3.1.0
+      tag: v3.6.0
     args:
       # https://github.com/kubernetes-csi/external-provisioner#command-line-options
       timeout: 30s
@@ -108,7 +108,7 @@ driver:
 
   resizer:
     image:
-      tag: v1.4.0
+      tag: v1.9.0
     resources:
       limits:
         cpu:
@@ -119,7 +119,7 @@ driver:
 
   nodeDriverRegistrar:
     image:
-      tag: v2.5.0
+      tag: v2.9.0
     resources:
       limits:
         cpu:
@@ -130,7 +130,7 @@ driver:
 
   livenessProbe:
     image:
-      tag: v2.6.0
+      tag: v2.11.0
     resources:
       limits:
         cpu:
