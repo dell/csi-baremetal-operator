@@ -1,8 +1,10 @@
 package patcher
 
 import (
+	"bytes"
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -370,6 +372,131 @@ func Test_updateReadinessStatuses(t *testing.T) {
 			}
 		}
 	})
+}
+
+func Test_updateReadinessStatuses_Logs(t *testing.T) {
+	curTime := time.Now()
+	ctx := context.Background()
+
+	logrus.SetLevel(logrus.DebugLevel)
+
+	tests := []struct {
+		name      string
+		pod       *corev1.Pod
+		restarted bool
+		log       string
+	}{
+		{
+			name:      "should return false due to missing ContainerStatuses",
+			restarted: false,
+			log:       "Readiness status: FALSE, Pod: kube-scheduler, Node: node. ContainerStatuses empty",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kube-scheduler",
+					Namespace: ns,
+					Labels:    map[string]string{"component": "kube-scheduler"},
+				},
+				Status: corev1.PodStatus{},
+				Spec: corev1.PodSpec{
+					NodeName: "node",
+				},
+			},
+		},
+		{
+			name:      "should return false due to missing Status.Running",
+			restarted: false,
+			log:       "Readiness status: FALSE, Pod: kube-scheduler, Node: node. State.Running empty",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kube-scheduler",
+					Namespace: ns,
+					Labels:    map[string]string{"component": "kube-scheduler"},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{{
+						State: corev1.ContainerState{}},
+					},
+				},
+				Spec: corev1.PodSpec{
+					NodeName: "node",
+				},
+			},
+		},
+		{
+			name:      "should return false due to pod started before configmap was created",
+			restarted: false,
+			log:       "Readiness status: FALSE, Pod: kube-scheduler, Node: node. Pod started at:",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kube-scheduler",
+					Namespace: ns,
+					Labels:    map[string]string{"component": "kube-scheduler"},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{{
+						State: corev1.ContainerState{
+							Running: &corev1.ContainerStateRunning{
+								StartedAt: metav1.Time{
+									Time: curTime.Add(-time.Minute),
+								},
+							},
+						}},
+					},
+				},
+				Spec: corev1.PodSpec{
+					NodeName: "node",
+				},
+			},
+		},
+		{
+			name:      "should return teue due to pod started after configmap was created",
+			restarted: true,
+			log:       "Readiness status: TRUE, Pod: kube-scheduler, Node: node.",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kube-scheduler",
+					Namespace: ns,
+					Labels:    map[string]string{"component": "kube-scheduler"},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{{
+						State: corev1.ContainerState{
+							Running: &corev1.ContainerStateRunning{
+								StartedAt: metav1.Time{
+									Time: curTime.Add(time.Minute),
+								},
+							},
+						}},
+					},
+				},
+				Spec: corev1.PodSpec{
+					NodeName: "node",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buffer := bytes.NewBuffer(nil)
+			logrus.SetOutput(buffer)
+
+			eventRecorder := new(mocks.EventRecorder)
+			eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+			scheme, _ := common.PrepareScheme()
+			sp := prepareSchedulerPatcher(eventRecorder, prepareNodeClientSet(tt.pod), prepareValidatorClient(scheme, tt.pod))
+
+			statuses, err := sp.updateReadinessStatuses(ctx, "component=kube-scheduler", metav1.Time{Time: curTime})
+			assert.Nil(t, err)
+			assert.Equal(t, 1, len(statuses.Items))
+
+			for _, status := range statuses.Items {
+				assert.Equal(t, tt.pod.Spec.NodeName, status.NodeName)
+				assert.Equal(t, tt.restarted, status.Restarted)
+				assert.True(t, strings.Contains(buffer.String(), tt.log))
+			}
+		})
+	}
 }
 
 func Test_IsPatchingEnabled(t *testing.T) {

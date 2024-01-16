@@ -246,6 +246,7 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 
 	pods, err := p.Clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{LabelSelector: kubeSchedulerLabel})
 	if err != nil {
+		p.Log.Error(err, "Unable to get pods with kube scheduler label")
 		return nil, err
 	}
 
@@ -256,12 +257,20 @@ func (p *SchedulerPatcher) updateReadinessStatuses(ctx context.Context, kubeSche
 
 		// nolint
 		if len(pod.Status.ContainerStatuses) == 0 {
+			p.Log.Debugf("Readiness status: FALSE, Pod: %s, Node: %s. ContainerStatuses empty", pod.Name, pod.Spec.NodeName)
 			readinessStatus.Restarted = false
 		} else if pod.Status.ContainerStatuses[0].State.Running == nil {
+			p.Log.Debugf("Readiness status: FALSE, Pod: %s, Node: %s. State.Running empty", pod.Name, pod.Spec.NodeName)
 			readinessStatus.Restarted = false
 		} else if pod.Status.ContainerStatuses[0].State.Running.StartedAt.Before(&cmCreationTime) {
+			p.Log.Debugf("Readiness status: FALSE, Pod: %s, Node: %s. Pod started at: %s, CM Creation Time: %s",
+				pod.Name,
+				pod.Spec.NodeName,
+				pod.Status.ContainerStatuses[0].State.Running.StartedAt,
+				cmCreationTime)
 			readinessStatus.Restarted = false
 		} else {
+			p.Log.Debugf("Readiness status: TRUE, Pod: %s, Node: %s.", pod.Name, pod.Spec.NodeName)
 			readinessStatus.Restarted = true
 		}
 

@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/dell/csi-baremetal/pkg/events/recorder"
@@ -44,13 +45,34 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+func InitLogger(logLevel string) *logrus.Logger {
+	logger := logrus.New()
+
+	level, err := logrus.ParseLevel(logLevel)
+	if err != nil {
+		level = logrus.InfoLevel
+	}
+
+	logger.SetLevel(level)
+	return logger
+}
+
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var logLevel string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&logLevel, "loglevel", "info", fmt.Sprintf("Log level, support values are %s, %s, %s, %s, %s, %s, %s",
+		logrus.PanicLevel,
+		logrus.FatalLevel,
+		logrus.ErrorLevel,
+		logrus.WarnLevel,
+		logrus.InfoLevel,
+		logrus.DebugLevel,
+		logrus.TraceLevel))
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
@@ -83,7 +105,7 @@ func main() {
 	acrvalidator.LauncACRValidation(mgr.GetClient(), logrus.WithField("component", "acr_validator"))
 
 	ctx := context.Background()
-	logger := logrus.New()
+	logger := InitLogger(logLevel)
 
 	eventRecorder := recorder.New(&v1core.EventSinkImpl{Interface: clientSet.CoreV1().Events("")},
 		scheme, corev1.EventSource{Component: constant.ComponentName},
