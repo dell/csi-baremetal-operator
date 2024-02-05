@@ -11,12 +11,11 @@ Kubernetes Operator to deploy and manage lifecycle of [Bare-Metal CSI Driver](ht
 Supported environments
 ----------------------
 - **OpenShift**: 4.6
-- **RKE2r1**: 1.21-1.23
+- **RKE2r1**: 1.25-1.28
 - **Node OS**:
-  - Ubuntu 18.04 / 20.04 LTS
   - Red Hat Enterprise Linux 7.7 / 8.x
   - Red Hat Enterprise Linux CoreOS 4.6
-  - CentOS Linux 7 / 8
+  - CentOS Linux 8
 - **Helm**: 3.0
 
 Installation process
