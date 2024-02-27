@@ -75,6 +75,7 @@ spec:
     - description: Smart Info data
       jsonPath: .spec.SmartInfo
       name: Smart Info
+      priority: 1
       type: string
     name: v1
     schema:
