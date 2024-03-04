@@ -72,11 +72,6 @@ spec:
       jsonPath: .spec.EncryptionProtocol
       name: Encryption Protocol
       type: string
-    - description: Smart Info data
-      jsonPath: .spec.SmartInfo
-      name: Smart Info
-      priority: 1
-      type: string
     name: v1
     schema:
       openAPIV3Schema:
@@ -133,8 +128,6 @@ spec:
                 format: int64
                 type: integer
               Slot:
-                type: string
-              SmartInfo:
                 type: string
               Status:
                 type: string
