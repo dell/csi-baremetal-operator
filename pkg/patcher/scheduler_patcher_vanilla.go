@@ -145,6 +145,7 @@ clientConnection:
 
 	vanillaConfig19 := fmt.Sprintf(vanillaNewConfigTemplate, "v1beta1", csi.Spec.Scheduler.ExtenderPort, cfg.kubeconfig)
 	vanillaConfig23 := fmt.Sprintf(vanillaNewConfigTemplate, "v1beta3", csi.Spec.Scheduler.ExtenderPort, cfg.kubeconfig)
+	vanillaConfig29 := fmt.Sprintf(vanillaNewConfigTemplate, "v1", csi.Spec.Scheduler.ExtenderPort, cfg.kubeconfig)
 
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{},
@@ -157,6 +158,7 @@ clientConnection:
 			configFile:   vanillaConfig,
 			config19File: vanillaConfig19,
 			config23File: vanillaConfig23,
+			config29File: vanillaConfig29,
 		}}, nil
 }
 
@@ -255,6 +257,8 @@ func (p patcherConfiguration) createPatcherContainers() []corev1.Container {
 				"--target_config_19_path=" + p.targetConfig19,
 				"--source_config_23_path=" + configurationPath + "/" + config23File,
 				"--target_config_23_path=" + p.targetConfig23,
+				"--source_config_29_path=" + configurationPath + "/" + config29File,
+				"--target_config_29_path=" + p.targetConfig29,
 				"--backup-path=" + p.schedulerFolder,
 				"--platform=" + p.platform,
 			},
