@@ -47,8 +47,6 @@ rules:
   verbs:
   - list
   - watch
-# Required for Openshift only
-# TODO Deploy only when OpenShift - https://github.com/dell/csi-baremetal/issues/422
 - apiGroups:
   - config.openshift.io
   resources:
