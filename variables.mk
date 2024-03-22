@@ -15,7 +15,7 @@ KUBECTL_IMAGE ?=  bitnami/kubectl:1.29.1 # https://hub.docker.com/r/bitnami/kube
 
 ### version
 MAJOR            := 1
-MINOR            := 6
+MINOR            := 7
 PATCH            := 0
 PRODUCT_VERSION  ?= ${MAJOR}.${MINOR}.${PATCH}
 BUILD_REL_A      := $(shell git rev-list HEAD |wc -l)
