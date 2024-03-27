@@ -295,7 +295,15 @@ func Test_handleNodeMaintenance(t *testing.T) {
 
 func prepareController(objects ...runtime.Object) *Controller {
 	scheme, _ := common.PrepareScheme()
-	client := fake.NewFakeClientWithScheme(scheme, objects...)
+	indexFunc := func(obj client.Object) []string {
+		pod, _ := obj.(*corev1.Pod)
+		return []string{pod.Spec.NodeName}
+	}
+	client := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithRuntimeObjects(objects...).
+		WithIndex(&podnode1, "spec.nodeName", indexFunc).
+		Build()
 	controller := NewNodeOperationsController(
 		nil,
 		client,

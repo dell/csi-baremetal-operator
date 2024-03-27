@@ -133,39 +133,32 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &csibaremetalv1.Deployment{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(source.Kind(mgr.GetCache(), &csibaremetalv1.Deployment{}), &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &csibaremetalv1.Deployment{},
-	})
+	err = c.Watch(source.Kind(mgr.GetCache(), &appsv1.Deployment{}),
+		handler.EnqueueRequestForOwner(r.Scheme, mgr.GetRESTMapper(), &csibaremetalv1.Deployment{}, handler.OnlyControllerOwner()))
 	if err != nil {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &csibaremetalv1.Deployment{},
-	})
+	err = c.Watch(source.Kind(mgr.GetCache(), &appsv1.DaemonSet{}),
+		handler.EnqueueRequestForOwner(r.Scheme, mgr.GetRESTMapper(), &csibaremetalv1.Deployment{}, handler.OnlyControllerOwner()))
 	if err != nil {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &csibaremetalv1.Deployment{},
-	})
+	err = c.Watch(source.Kind(mgr.GetCache(), &corev1.ConfigMap{}),
+		handler.EnqueueRequestForOwner(r.Scheme, mgr.GetRESTMapper(), &csibaremetalv1.Deployment{}, handler.OnlyControllerOwner()))
 	if err != nil {
 		return err
 	}
 
 	// reconcile CSI Deployment if kube-scheduler or openshift secondary-scheduler pods were changed
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+	err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Pod{}), handler.EnqueueRequestsFromMapFunc(handler.MapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
 		var (
-			ctx         = context.Background()
 			deployments = &csibaremetalv1.DeploymentList{}
 			pod         *corev1.Pod
 			ok          bool
@@ -204,15 +197,14 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		}
 
 		return requests
-	}))
+	})))
 	if err != nil {
 		return err
 	}
 
 	// reconcile CSI Deployment if node was creates, node kernel-version or label were changed
-	err = c.Watch(&source.Kind{Type: &corev1.Node{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+	err = c.Watch(source.Kind(mgr.GetCache(), &corev1.Node{}), handler.EnqueueRequestsFromMapFunc(handler.MapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
 		var (
-			ctx         = context.Background()
 			deployments = &csibaremetalv1.DeploymentList{}
 			node        *corev1.Node
 			ok          bool
@@ -246,7 +238,7 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		}
 
 		return requests
-	}), predicate.Or(predicate.Funcs{
+	})), predicate.Or(predicate.Funcs{
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
 			return isNodeChanged(updateEvent.ObjectOld, updateEvent.ObjectNew)
 		},
@@ -255,11 +247,11 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 		return err
 	}
 
-	if err = watchRole(c, r.Client, r.Matcher, r.MatchPodSecurityPolicyTemplate, r.MatchSecurityContextConstraintsPolicies, r.Log); err != nil {
+	if err = watchRole(c, r.Client, r.Matcher, r.MatchPodSecurityPolicyTemplate, r.MatchSecurityContextConstraintsPolicies, r.Log, mgr); err != nil {
 		return err
 	}
 
-	if err = watchRoleBinding(c, r.Client, r.Matcher, r.Log); err != nil {
+	if err = watchRoleBinding(c, r.Client, r.Matcher, r.Log, mgr); err != nil {
 		return err
 	}
 
@@ -275,11 +267,9 @@ func (r *DeploymentReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher,
 	matchPodSecurityPolicyTemplate rbacv1.PolicyRule, matchSecurityContextConstraintsPolicies []rbacv1.PolicyRule,
-	log *logrus.Entry,
-) error {
-	return c.Watch(&source.Kind{Type: &rbacv1.Role{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+	log *logrus.Entry, mgr ctrl.Manager) error {
+	return c.Watch(source.Kind(mgr.GetCache(), &rbacv1.Role{}), handler.EnqueueRequestsFromMapFunc(handler.MapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
 		var (
-			ctx         = context.Background()
 			deployments = &csibaremetalv1.DeploymentList{}
 			role        = &rbacv1.Role{}
 			ok          bool
@@ -335,13 +325,12 @@ func watchRole(c controller.Controller, cl client.Client, m rbac.Matcher,
 				},
 			},
 		}
-	}))
+	})))
 }
 
-func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher, log *logrus.Entry) error {
-	return c.Watch(&source.Kind{Type: &rbacv1.RoleBinding{}}, handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher, log *logrus.Entry, mgr ctrl.Manager) error {
+	return c.Watch(source.Kind(mgr.GetCache(), &rbacv1.RoleBinding{}), handler.EnqueueRequestsFromMapFunc(handler.MapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
 		var (
-			ctx         = context.Background()
 			deployments = &csibaremetalv1.DeploymentList{}
 			roleBinding = &rbacv1.RoleBinding{}
 			ok          bool
@@ -394,7 +383,7 @@ func watchRoleBinding(c controller.Controller, cl client.Client, m rbac.Matcher,
 				},
 			},
 		}
-	}))
+	})))
 }
 
 func isNodeChanged(old runtime.Object, new runtime.Object) bool {

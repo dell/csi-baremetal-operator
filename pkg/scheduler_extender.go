@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
@@ -93,7 +93,7 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{Name: patcher.ExtenderConfigMapName},
 					DefaultMode:          &extenderConfigMapMode,
-					Optional:             pointer.BoolPtr(true),
+					Optional:             ptr.To(true),
 				},
 			}})
 	}
@@ -126,7 +126,7 @@ func (n *SchedulerExtender) createExtenderDaemonSet(csi *csibaremetalv1.Deployme
 					Containers:                    createExtenderContainers(csi, isPatchingEnabled),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: ptr.To(int64(constant.TerminationGracePeriodSeconds)),
 					ServiceAccountName:            csi.Spec.Scheduler.ServiceAccount,
 					DeprecatedServiceAccount:      csi.Spec.Scheduler.ServiceAccount,
 					SecurityContext:               &corev1.PodSecurityContext{},

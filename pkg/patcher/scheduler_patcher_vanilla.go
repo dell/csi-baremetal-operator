@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
@@ -209,7 +209,7 @@ func (p patcherConfiguration) createPatcherDaemonSet() *v1.DaemonSet {
 					Volumes:                       p.createPatcherVolumes(),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: ptr.To(int64(constant.TerminationGracePeriodSeconds)),
 					ServiceAccountName:            p.serviceAccount,
 					DeprecatedServiceAccount:      p.serviceAccount,
 					SecurityContext:               &corev1.PodSecurityContext{},
@@ -286,7 +286,7 @@ func (p patcherConfiguration) createPatcherVolumes() []corev1.Volume {
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{Name: p.configMapName},
 				DefaultMode:          &schedulerPatcherConfigMapMode,
-				Optional:             pointer.BoolPtr(true),
+				Optional:             ptr.To(true),
 			},
 		}},
 		{Name: kubernetesSchedulerVolume, VolumeSource: corev1.VolumeSource{

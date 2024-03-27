@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
@@ -54,7 +54,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 			Labels:    common.ConstructLabelAppMap(),
 		},
 		Spec: v1.DeploymentSpec{
-			Replicas: pointer.Int32Ptr(ncReplicasCount),
+			Replicas: ptr.To(int32(ncReplicasCount)),
 			// selector
 			Selector: &metav1.LabelSelector{
 				MatchLabels: common.ConstructSelectorMap(nodeControllerName),
@@ -69,7 +69,7 @@ func createNodeControllerDeployment(csi *csibaremetalv1.Deployment) *v1.Deployme
 					Containers:                    createNodeControllerContainers(csi),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: ptr.To(int64(constant.TerminationGracePeriodSeconds)),
 					ServiceAccountName:            nodeControllerServiceAccountName,
 					DeprecatedServiceAccount:      nodeControllerServiceAccountName,
 					ImagePullSecrets:              common.MakeImagePullSecrets(csi.Spec.RegistrySecret),
