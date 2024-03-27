@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	csibaremetalv1 "github.com/dell/csi-baremetal-operator/api/v1"
 	"github.com/dell/csi-baremetal-operator/pkg/common"
@@ -77,7 +77,7 @@ func createNodeDaemonSet(csi *csibaremetalv1.Deployment, platform *PlatformDescr
 					Containers:                    createNodeContainers(csi, platform),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
-					TerminationGracePeriodSeconds: pointer.Int64Ptr(constant.TerminationGracePeriodSeconds),
+					TerminationGracePeriodSeconds: ptr.To(int64(constant.TerminationGracePeriodSeconds)),
 					NodeSelector:                  nodeSelectors,
 					ServiceAccountName:            csi.Spec.Driver.Node.ServiceAccount,
 					DeprecatedServiceAccount:      csi.Spec.Driver.Node.ServiceAccount,
@@ -140,7 +140,7 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{Name: nodeConfigMapName},
 					DefaultMode:          &configMapMode,
-					Optional:             pointer.BoolPtr(true),
+					Optional:             ptr.To(true),
 				},
 			}},
 		constant.CrashVolume,
@@ -153,7 +153,7 @@ func createNodeVolumes(csi *csibaremetalv1.Deployment) []corev1.Volume {
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{Name: loopbackManagerConfigName},
 					DefaultMode:          &configMapMode,
-					Optional:             pointer.BoolPtr(true),
+					Optional:             ptr.To(true),
 				},
 			}})
 	}
@@ -299,7 +299,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.name"},
 				}},
 			},
-			SecurityContext:          &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
+			SecurityContext:          &corev1.SecurityContext{Privileged: ptr.To(true)},
 			VolumeMounts:             nodeMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
@@ -316,7 +316,7 @@ func createNodeContainers(csi *csibaremetalv1.Deployment, platform *PlatformDesc
 					FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"},
 				}},
 			},
-			SecurityContext:          &corev1.SecurityContext{Privileged: pointer.BoolPtr(true)},
+			SecurityContext:          &corev1.SecurityContext{Privileged: ptr.To(true)},
 			VolumeMounts:             driveMgrMounts,
 			TerminationMessagePath:   constant.TerminationMessagePath,
 			TerminationMessagePolicy: constant.TerminationMessagePolicy,
