@@ -116,14 +116,14 @@ spec:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
       {{- end }}
+      {{- if .Values.global.registrySecret }}
+      imagePullSecrets:
+        - name: {{ .Values.global.registrySecret }}
+      {{- end }}
       containers:
         - name: "{{.Release.Namespace}}-{{.Release.Name}}-csi-baremetal-pre-crds-job"
           image: {{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.preUpgradeCRDsHooks.image.name }}:{{ default .Values.image.tag .Values.preUpgradeCRDsHooks.image.tag }}
           imagePullPolicy: {{ default .Values.image.pullPolicy .Values.preUpgradeCRDsHooks.image.pullPolicy }}
-          {{- if .Values.global.registrySecret }}
-          imagePullSecrets:
-            - name: {{ .Values.global.registrySecret }}
-          {{- end }}
           resources:
             limits:
               cpu: {{ .Values.operator.resources.limits.cpu }}
