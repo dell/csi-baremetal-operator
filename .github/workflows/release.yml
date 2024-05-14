@@ -39,7 +39,7 @@ jobs:
 
       - name: Determine target version commit
         id: target
-        uses: jungwinter/split@v2
+        uses: winterjung/split@v2
         with:
           msg: ${{ github.event.inputs.csi_operator_version }}
           separator: '.'
