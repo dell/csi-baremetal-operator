@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: csi-smart-info-backend
+  namespace: {{ .Release.Namespace }}
+spec:
+  clusterIP: None
+  ports:
+  - name: http
+    port: {{ .Values.driver.metrics.port }}
+    targetPort: {{ .Values.driver.metrics.port }}
+    protocol: TCP
+  selector:
+    app: csi-baremetal
+    component: node
