@@ -78,7 +78,7 @@ driver:
         endpoint: tcp://localhost:8888
     deployConfig: false
     amountOfLoopDevices: 3
-    sizeOfLoopDevices: 101Mi
+    sizeOfLoopDevices: 302Mi
     resources:
       limits:
         cpu:
