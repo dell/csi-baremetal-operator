@@ -8,5 +8,5 @@ metadata:
 data:
   config.yaml: |-
     defaultDrivePerNodeCount: 3
-    defaultDriveSize: 101Mi
+    defaultDriveSize: 302Mi
 
