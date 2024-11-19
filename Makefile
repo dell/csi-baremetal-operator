@@ -67,7 +67,10 @@ vet:
 
 # Build the docker image
 docker-build: build-pre-upgrade-crds-image
-	docker build --build-arg BASE_IMAGE=${BASE_IMAGE} . -t ${IMG}
+	docker build --label image.version=${TAG} --build-arg BASE_IMAGE=${BASE_IMAGE} . -t ${IMG}
+	if [ "${PRODUCT_VERSION_FROM_JENKINS}" != "" ]; then \
+		docker tag ${IMG} ${REGISTRY}/csi-baremetal-operator:${PRODUCT_VERSION_FROM_JENKINS}; \
+	fi
 
 # Build the docker image
 kind-load: kind-load-pre-upgrade-crds-image
@@ -76,6 +79,9 @@ kind-load: kind-load-pre-upgrade-crds-image
 # Push the docker image
 docker-push: push-pre-upgrade-crds-image
 	docker push ${IMG}
+	if [ "${PRODUCT_VERSION_FROM_JENKINS}" != "" ]; then \
+		docker push ${REGISTRY}/csi-baremetal-operator:${PRODUCT_VERSION_FROM_JENKINS}; \
+	fi
 
 # build controller-gen executable
 install-controller-gen:
@@ -110,10 +116,16 @@ cleanup:
 
 build-pre-upgrade-crds-image:
 	echo "Building container image pre-upgrade-crds"
-	docker build -t ${CRD_BUILD_IMAGE} --build-arg KUBECTL_IMAGE=${KUBECTL_IMAGE} -f ./hook/Dockerfile .
+	docker build --label image.version=${TAG} -t ${CRD_BUILD_IMAGE} --build-arg KUBECTL_IMAGE=${KUBECTL_IMAGE} -f ./hook/Dockerfile .
+	if [ "${PRODUCT_VERSION_FROM_JENKINS}" != "" ]; then \
+		docker tag ${CRD_BUILD_IMAGE} ${REGISTRY}/csi-baremetal-pre-upgrade-crds:${PRODUCT_VERSION_FROM_JENKINS}; \
+	fi
 
 push-pre-upgrade-crds-image:
 	docker push ${CRD_BUILD_IMAGE}
+	if [ "${PRODUCT_VERSION_FROM_JENKINS}" != "" ]; then \
+		docker push ${REGISTRY}/csi-baremetal-pre-upgrade-crds:${PRODUCT_VERSION_FROM_JENKINS}; \
+	fi
 
 kind-load-pre-upgrade-crds-image:
 	kind load docker-image ${CRD_BUILD_IMAGE}
