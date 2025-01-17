@@ -19,7 +19,7 @@ Supported environments
 - **Helm**: 3.0
 
 Installation process
----------------------
+----------------------
 * Prerequisites
     * *lvm2* packet installed on the Kubernetes nodes
     * *helm v3+*
