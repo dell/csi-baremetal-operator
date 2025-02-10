@@ -22,13 +22,13 @@ type Sidecar struct {
 	// Arguments to the entrypoint.
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:validation:Required
-	Args *args `json:"args,omitempty"`
+	Args *Args `json:"args,omitempty"`
 	// +nullable
 	// +optional
 	Resources *ResourceRequirements `json:"resources,omitempty"`
 }
 
-type args struct {
+type Args struct {
 	Timeout            string `json:"timeout,omitempty"`
 	RetryIntervalStart string `json:"retryIntervalStart,omitempty"`
 	RetryIntervalMax   string `json:"retryIntervalMax,omitempty"`
