@@ -129,9 +129,7 @@ func Test_Update_Scheduler_Extender(t *testing.T) {
 		scheme, _ := common.PrepareScheme()
 		eventRecorder := new(mocks.EventRecorder)
 		eventRecorder.On("Eventf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-
 		scheduler := prepareSchedulerExtender(eventRecorder, prepareNodeClientSet(), prepareValidatorClient(scheme, roleBinding, role))
-
 		err := scheduler.Update(ctx, deployment, scheme)
 		assert.Nil(t, err)
 	})
