@@ -137,7 +137,7 @@ func Test_Update_Retry_Scheduler_Patcher_Vanilla(t *testing.T) {
 }
 
 func Test_Retry_Patch_Vanilla_Error(t *testing.T) {
-	t.Run("Update", func(t *testing.T) {
+	t.Run("Retry", func(t *testing.T) {
 		var (
 			ctx        = context.Background()
 			deployment = testDeploymentScheduler.DeepCopy()
