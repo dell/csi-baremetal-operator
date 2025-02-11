@@ -33,13 +33,13 @@ type CSIDeployment struct {
 }
 
 // NewCSIDeployment creates CSIDeployment
-func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client,
+func NewCSIDeployment(clientSet kubernetes.Interface, client client.Client,
 	matcher rbac.Matcher, matchSecurityContextConstraintsPolicies []rbacv1.PolicyRule, matchPodSecurityPolicyTemplate rbacv1.PolicyRule,
 	eventRecorder events.EventRecorder, log *logrus.Logger,
 ) CSIDeployment {
 	return CSIDeployment{
 		node: node.NewNode(
-			&clientSet,
+			clientSet,
 			securityverifier.NewPodSecurityPolicyVerifier(
 				validator.NewValidator(rbac.NewValidator(
 					client,
@@ -63,11 +63,11 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client,
 			log.WithField(constant.CSIName, "node"),
 		),
 		controller: Controller{
-			Clientset: &clientSet,
+			Clientset: clientSet,
 			Entry:     log.WithField(constant.CSIName, "controller"),
 		},
 		extender: SchedulerExtender{
-			Clientset: &clientSet,
+			Clientset: clientSet,
 			Entry:     log.WithField(constant.CSIName, "extender"),
 			PodSecurityPolicyVerifier: securityverifier.NewPodSecurityPolicyVerifier(
 				validator.NewValidator(rbac.NewValidator(
@@ -91,7 +91,7 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client,
 			),
 		},
 		patcher: patcher.SchedulerPatcher{
-			Clientset: &clientSet,
+			Clientset: clientSet,
 			Log:       log.WithField(constant.CSIName, "patcher"),
 			Client:    client,
 			PodSecurityPolicyVerifier: securityverifier.NewPodSecurityPolicyVerifier(
@@ -106,11 +106,11 @@ func NewCSIDeployment(clientSet kubernetes.Clientset, client client.Client,
 			),
 		},
 		nodeController: NodeController{
-			Clientset: &clientSet,
+			Clientset: clientSet,
 			Entry:     log.WithField(constant.CSIName, "nodeController"),
 		},
 		nodeOperationsController: nodeoperations.NewNodeOperationsController(
-			&clientSet,
+			clientSet,
 			client,
 			log.WithField(constant.CSIName, "nodeRemovalController"),
 		),
