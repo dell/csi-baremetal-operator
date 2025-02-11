@@ -50,7 +50,7 @@ var (
 		},
 	}
 )
-func Test_Update_Node_Contorller(t *testing.T) {
+func Test_Update_Node_Controller(t *testing.T) {
 	t.Run("Update", func(t *testing.T) {
 		var (
 			ctx        = context.Background()
