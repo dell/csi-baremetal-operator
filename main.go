@@ -140,7 +140,7 @@ func main() {
 		Log: logrus.WithFields(logrus.Fields{
 			"module": "controllers", "component": "DeploymentReconciler"}),
 		Scheme: mgr.GetScheme(),
-		CSIDeployment: pkg.NewCSIDeployment(*clientSet, mgr.GetClient(),
+		CSIDeployment: pkg.NewCSIDeployment(clientSet, mgr.GetClient(),
 			matcher, matchSecurityContextConstraintsPolicies, matchPodSecurityPolicyTemplate,
 			eventRecorder, logger,
 		),
